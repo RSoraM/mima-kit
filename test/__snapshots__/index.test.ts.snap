@@ -1,0 +1,5 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`codec > hex > 6361742C20E78CAB2C20F09F90B1 1`] = `"000000ca00"`;
+
+exports[`hash > md5 1`] = `"md5:meow, 喵， 🐱"`;
