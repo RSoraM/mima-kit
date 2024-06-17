@@ -1,6 +1,6 @@
 import { Hex, Utf8 } from '../core/codec'
 import type { Codec } from '../core/codec'
-import { ROTL } from '../core/utils'
+import { rotateL } from '../core/utils'
 
 // * Constants
 function K(t: number) {
@@ -83,12 +83,12 @@ export function sha1(input: string, codec: Codec = Hex) {
       if (i < 16)
         W[i] = dv.getUint32(i * 4, false)
       else
-        W[i] = ROTL(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16], 1)
+        W[i] = rotateL(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16], 1)
 
-      const T = ROTL(a, 5) + ft(b, c, d, i) + K(i) + e + W[i]
+      const T = rotateL(a, 5) + ft(b, c, d, i) + K(i) + e + W[i]
       e = d
       d = c
-      c = ROTL(b, 30)
+      c = rotateL(b, 30)
       b = a
       a = T
     }

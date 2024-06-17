@@ -1,6 +1,6 @@
 import type { Codec } from '../core/codec'
 import { Hex, Utf8 } from '../core/codec'
-import { ROTL } from '../core/utils'
+import { rotateL } from '../core/utils'
 
 // * Constants
 const K: number[] = []
@@ -12,22 +12,22 @@ for (let i = 0; i < 64; i++) {
 
 function FF(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + ((b & c) | (~b & d)) + m + k
-  return ROTL(n, s) + b
+  return rotateL(n, s) + b
 }
 
 function GG(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + ((b & d) | (c & ~d)) + m + k
-  return ROTL(n, s) + b
+  return rotateL(n, s) + b
 }
 
 function HH(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + (b ^ c ^ d) + m + k
-  return ROTL(n, s) + b
+  return rotateL(n, s) + b
 }
 
 function II(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + (c ^ (b | ~d)) + m + k
-  return ROTL(n, s) + b
+  return rotateL(n, s) + b
 }
 
 // * Algorithm
