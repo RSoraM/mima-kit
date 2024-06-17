@@ -3,8 +3,9 @@ import { md5, sha1 } from '../src/index'
 import { B64, B64url, Hex, Utf8 } from '../src/core/codec'
 
 describe('hash', () => {
-  it.skip('md5', () => {
-    expect(md5('meow, 喵， 🐱')).toMatchInlineSnapshot('')
+  it('md5', () => {
+    expect(md5('')).toMatchInlineSnapshot('"d41d8cd98f00b204e9800998ecf8427e"')
+    expect(md5('meow, 喵， 🐱')).toMatchInlineSnapshot('"49ac572e5f34b3e212e727fbd05df30c"')
   })
   it('sha1', () => {
     expect(sha1('')).toMatchInlineSnapshot('"da39a3ee5e6b4b0d3255bfef95601890afd80709"')

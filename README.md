@@ -6,7 +6,7 @@
 [![JSDocs][jsdocs-src]][jsdocs-href]
 [![License][license-src]][license-href]
 
-mima-lib 是一个使用 TypeScript 实现的密码学套件。目标是提供一个简单易用的密码学库。
+mima-kit 是一个使用 TypeScript 实现的密码学套件。目标是提供一个简单易用的密码学库。
 
 ## License
 
