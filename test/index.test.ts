@@ -3,6 +3,7 @@ import { md5, sha1 } from '../src/index'
 import { B64, B64url, Hex, Utf8 } from '../src/core/codec'
 import { sha224, sha256 } from '../src/hash/sha256'
 import { sha384, sha512, sha512t } from '../src/hash/sha512'
+import { sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../src/hash/sha3'
 
 describe('hash', () => {
   it('md5', () => {
@@ -34,6 +35,21 @@ describe('hash', () => {
     const sha512_224 = sha512t(224)
     expect(sha512_224('')).toMatchInlineSnapshot('"6ed0dd02806fa89e25de060c19d3ac86cabb87d6a0ddd05c333b84f4"')
     expect(sha512_224('meow, 喵， 🐱')).toMatchInlineSnapshot('"988a78f176c3f4cb1b19b3a4e0ae4f6924df720a04068713a6ee519e"')
+  })
+  it('sha3', () => {
+    expect(sha3_224('')).toMatchInlineSnapshot('"6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7"')
+    expect(sha3_224('meow, 喵， 🐱')).toMatchInlineSnapshot('"19b2d0e73d5e0ba70850be3714f651af047e50a66889a06cf3a23f37"')
+    expect(sha3_256('')).toMatchInlineSnapshot('"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"')
+    expect(sha3_256('meow, 喵， 🐱')).toMatchInlineSnapshot('"11253eef825cfe6766c2e9afad051084bf60e5998823f3f6455b3a00e850dead"')
+    expect(sha3_384('')).toMatchInlineSnapshot('"0c63a75b845e4f7d01107d852e4c2485c51a50aaaa94fc61995e71bbee983a2ac3713831264adb47fb6bd1e058d5f004"')
+    expect(sha3_384('meow, 喵， 🐱')).toMatchInlineSnapshot('"a240008e6a6899b793f2ab3fce4022eaa48b319ce1c4025e64b19c63f230ee8d57bb20f6c05b058e01781952f0b960c9"')
+    expect(sha3_512('')).toMatchInlineSnapshot('"a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26"')
+    expect(sha3_512('meow, 喵， 🐱')).toMatchInlineSnapshot('"624e65a5587f89665d43f2c47de89df0bdb8b93d775ce950afd75aca9306630df3d1f27bf67c8a068f9f4724512d30520e19c0e9241138a4fe37a7267844f703"')
+
+    expect(shake128('', 256)).toMatchInlineSnapshot('"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26"')
+    expect(shake128('meow, 喵， 🐱', 256)).toMatchInlineSnapshot('"5b6a7f04e608d48139e2b72aa4fc2d047fc1ae5c77aefec0fd822ad77dff56f1"')
+    expect(shake256('', 512)).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
+    expect(shake256('meow, 喵， 🐱', 512)).toMatchInlineSnapshot('"5db7c1ba86c680ac9d8442d18057f7bd28fb125e324271ca0327f2862173411b65ae4a9d454b31c52ab24a3b779bb67b2d9298e418d16ea737fc5d5d3fac760f"')
   })
 })
 

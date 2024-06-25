@@ -12,3 +12,8 @@ export function rotateR(x: number, n: number) {
 export function rotateRn(x: bigint, n: bigint) {
   return ((x >> n) | (x << (64n - n))) & 0xFFFFFFFFFFFFFFFFn
 }
+
+// 64-bit 循环左移
+export function rotateLn(x: bigint, n: bigint) {
+  return ((x << n) | (x >> (64n - n))) & 0xFFFFFFFFFFFFFFFFn
+}
