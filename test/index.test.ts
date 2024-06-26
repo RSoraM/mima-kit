@@ -4,6 +4,7 @@ import { B64, B64url, Hex, Utf8 } from '../src/core/codec'
 import { sha224, sha256 } from '../src/hash/sha256'
 import { sha384, sha512, sha512t } from '../src/hash/sha512'
 import { sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../src/hash/sha3'
+import { sm3 } from '../src/hash/sm3'
 
 describe('hash', () => {
   it('md5', () => {
@@ -50,6 +51,11 @@ describe('hash', () => {
     expect(shake128('meow, 喵， 🐱', 256)).toMatchInlineSnapshot('"5b6a7f04e608d48139e2b72aa4fc2d047fc1ae5c77aefec0fd822ad77dff56f1"')
     expect(shake256('', 512)).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
     expect(shake256('meow, 喵， 🐱', 512)).toMatchInlineSnapshot('"5db7c1ba86c680ac9d8442d18057f7bd28fb125e324271ca0327f2862173411b65ae4a9d454b31c52ab24a3b779bb67b2d9298e418d16ea737fc5d5d3fac760f"')
+  })
+
+  it('sm3', () => {
+    expect(sm3('')).toMatchInlineSnapshot('"1ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747ed035eb5082aa2b"')
+    expect(sm3('meow, 喵， 🐱')).toMatchInlineSnapshot('"cc1b7af8950bbb8dd71e4ef2ca85d527ba83502920c714ba8a1d61214d23c1e1"')
   })
 })
 
