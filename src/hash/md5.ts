@@ -9,7 +9,6 @@ for (let i = 0; i < 64; i++) {
 }
 
 // * Function
-
 function FF(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + ((b & c) | (~b & d)) + m + k
   return rotateL(n, s) + b
@@ -31,56 +30,54 @@ function II(a: number, b: number, c: number, d: number, m: number, s: number, k:
 }
 
 // * Algorithm
-
-export function md5(input: string, codec: Codec = Hex) {
-  // * Initialization
+export function md5(input: string | ArrayBufferLike, codec: Codec = Hex) {
+  // * 初始化
   const hashBuffer = new ArrayBuffer(16)
-  const hashDV = new DataView(hashBuffer)
-  hashDV.setUint32(0, 0x67452301, true)
-  hashDV.setUint32(4, 0xEFCDAB89, true)
-  hashDV.setUint32(8, 0x98BADCFE, true)
-  hashDV.setUint32(12, 0x10325476, true)
+  const hashView = new DataView(hashBuffer)
+  hashView.setUint32(0, 0x67452301, true)
+  hashView.setUint32(4, 0xEFCDAB89, true)
+  hashView.setUint32(8, 0x98BADCFE, true)
+  hashView.setUint32(12, 0x10325476, true)
 
-  const bytes = new Uint8Array(Utf8.parse(input))
-  const sigBytes = bytes.byteLength
+  const M = typeof input == 'string' ? Utf8.parse(input) : new Uint8Array(input)
+  const sigBytes = M.byteLength
   const BLOCK_SIZE = 64
   const BLOCK_TOTAL = Math.ceil((sigBytes + 9) / BLOCK_SIZE)
   const BITS_TOTAL = BigInt(sigBytes * 8)
   if (BITS_TOTAL > 0xFFFFFFFFFFFFFFn)
     throw new Error('Message is too long')
 
-  // * Preprocessing
-
-  const data = new Uint8Array(new ArrayBuffer(BLOCK_TOTAL * BLOCK_SIZE))
-  data.set(bytes)
+  // * 填充
+  const P = new Uint8Array(new ArrayBuffer(BLOCK_TOTAL * BLOCK_SIZE))
+  P.set(M)
 
   // appending the bit '1' to the message
-  data[sigBytes] = 0x80
+  P[sigBytes] = 0x80
 
   // appending length
-  const k = (56 - (sigBytes + 1) % 64) % 64
-  const dataDV = new DataView(data.buffer)
-  dataDV.setBigUint64(sigBytes + 1 + k, BITS_TOTAL, true)
+  const dataView = new DataView(P.buffer)
+  dataView.setBigUint64(P.byteLength - 8, BITS_TOTAL, true)
 
-  // * Processing
-
+  // * 处理
   function _doProcess(data: Uint8Array, i: number) {
-    // Initialize the five working variables:
-    const A = hashDV.getUint32(0, true)
-    const B = hashDV.getUint32(4, true)
-    const C = hashDV.getUint32(8, true)
-    const D = hashDV.getUint32(12, true)
+    // 获取分块
+    const currentBlock = data.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
+    const view = new DataView(currentBlock.buffer)
+
+    // 初始化工作变量
+    const A = hashView.getUint32(0, true)
+    const B = hashView.getUint32(4, true)
+    const C = hashView.getUint32(8, true)
+    const D = hashView.getUint32(12, true)
     let a = A
     let b = B
     let c = C
     let d = D
 
-    const currentBlock = data.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
-    const dv = new DataView(currentBlock.buffer)
-
+    // 划分词典
     const M = []
     for (let i = 0; i < 16; i++) {
-      M[i] = dv.getUint32(i * 4, true)
+      M[i] = view.getUint32(i * 4, true)
     }
 
     /* Round 1 */
@@ -155,17 +152,17 @@ export function md5(input: string, codec: Codec = Hex) {
     c = II(c, d, a, b, M[2], 15, K[62])
     b = II(b, c, d, a, M[9], 21, K[63])
 
-    // Add this chunk's hash to result so far:
-    hashDV.setUint32(0, (A + a) | 0, true)
-    hashDV.setUint32(4, (B + b) | 0, true)
-    hashDV.setUint32(8, (C + c) | 0, true)
-    hashDV.setUint32(12, (D + d) | 0, true)
+    // 更新工作变量
+    hashView.setUint32(0, (A + a) | 0, true)
+    hashView.setUint32(4, (B + b) | 0, true)
+    hashView.setUint32(8, (C + c) | 0, true)
+    hashView.setUint32(12, (D + d) | 0, true)
   }
 
+  // 分块处理
   for (let i = 0; i < BLOCK_TOTAL; i++)
-    _doProcess(data, i)
+    _doProcess(P, i)
 
-  // * TRUNCATION
-
+  // * 截断输出
   return codec.stringify(hashBuffer)
 }

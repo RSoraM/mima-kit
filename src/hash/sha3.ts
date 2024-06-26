@@ -369,26 +369,26 @@ function sha3(c: number, d: number, padding: typeof sha3Padding, codec: Codec = 
   }
 }
 
-export function sha3_224(input: string, codec: Codec = Hex) {
+export function sha3_224(input: string | ArrayBufferLike, codec: Codec = Hex) {
   return sha3(448, 224, sha3Padding, codec)(input)
 }
 
-export function sha3_256(input: string, codec: Codec = Hex) {
+export function sha3_256(input: string | ArrayBufferLike, codec: Codec = Hex) {
   return sha3(512, 256, sha3Padding, codec)(input)
 }
 
-export function sha3_384(input: string, codec: Codec = Hex) {
+export function sha3_384(input: string | ArrayBufferLike, codec: Codec = Hex) {
   return sha3(768, 384, sha3Padding, codec)(input)
 }
 
-export function sha3_512(input: string, codec: Codec = Hex) {
+export function sha3_512(input: string | ArrayBufferLike, codec: Codec = Hex) {
   return sha3(1024, 512, sha3Padding, codec)(input)
 }
 
-export function shake128(input: string, d: number, codec: Codec = Hex) {
+export function shake128(input: string | ArrayBufferLike, d: number, codec: Codec = Hex) {
   return sha3(256, d, shakePadding, codec)(input)
 }
 
-export function shake256(input: string, d: number, codec: Codec = Hex) {
+export function shake256(input: string | ArrayBufferLike, d: number, codec: Codec = Hex) {
   return sha3(512, d, shakePadding, codec)(input)
 }

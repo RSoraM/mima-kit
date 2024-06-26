@@ -14,92 +14,84 @@ const sigma0 = (x: bigint) => rotateRn(x, 1n) ^ rotateRn(x, 8n) ^ (x >> 7n)
 const sigma1 = (x: bigint) => rotateRn(x, 19n) ^ rotateRn(x, 61n) ^ (x >> 6n)
 
 // * Algorithm
-
-export function sha384(input: string, codec: Codec = Hex): string {
+export function sha384(input: string | ArrayBufferLike, codec: Codec = Hex): string {
+  // * 初始化
   const hashBuffer = new ArrayBuffer(64)
-  const hashDV = new DataView(hashBuffer)
-  hashDV.setBigUint64(0, 0xCBBB9D5DC1059ED8n, false)
-  hashDV.setBigUint64(8, 0x629A292A367CD507n, false)
-  hashDV.setBigUint64(16, 0x9159015A3070DD17n, false)
-  hashDV.setBigUint64(24, 0x152FECD8F70E5939n, false)
-  hashDV.setBigUint64(32, 0x67332667FFC00B31n, false)
-  hashDV.setBigUint64(40, 0x8EB44A8768581511n, false)
-  hashDV.setBigUint64(48, 0xDB0C2E0D64F98FA7n, false)
-  hashDV.setBigUint64(56, 0x47B5481DBEFA4FA4n, false)
+  const hashView = new DataView(hashBuffer)
+  hashView.setBigUint64(0, 0xCBBB9D5DC1059ED8n, false)
+  hashView.setBigUint64(8, 0x629A292A367CD507n, false)
+  hashView.setBigUint64(16, 0x9159015A3070DD17n, false)
+  hashView.setBigUint64(24, 0x152FECD8F70E5939n, false)
+  hashView.setBigUint64(32, 0x67332667FFC00B31n, false)
+  hashView.setBigUint64(40, 0x8EB44A8768581511n, false)
+  hashView.setBigUint64(48, 0xDB0C2E0D64F98FA7n, false)
+  hashView.setBigUint64(56, 0x47B5481DBEFA4FA4n, false)
 
   sha384_512(hashBuffer, input)
 
+  // * 截断输出
   return codec.stringify(hashBuffer.slice(0, 48))
 }
 
-export function sha512(input: string, codec: Codec = Hex): string {
+export function sha512(input: string | ArrayBufferLike, codec: Codec = Hex): string {
+  // * 初始化
   const hashBuffer = new ArrayBuffer(64)
-  const hashDV = new DataView(hashBuffer)
-  hashDV.setBigUint64(0, 0x6A09E667F3BCC908n, false)
-  hashDV.setBigUint64(8, 0xBB67AE8584CAA73Bn, false)
-  hashDV.setBigUint64(16, 0x3C6EF372FE94F82Bn, false)
-  hashDV.setBigUint64(24, 0xA54FF53A5F1D36F1n, false)
-  hashDV.setBigUint64(32, 0x510E527FADE682D1n, false)
-  hashDV.setBigUint64(40, 0x9B05688C2B3E6C1Fn, false)
-  hashDV.setBigUint64(48, 0x1F83D9ABFB41BD6Bn, false)
-  hashDV.setBigUint64(56, 0x5BE0CD19137E2179n, false)
+  const hashView = new DataView(hashBuffer)
+  hashView.setBigUint64(0, 0x6A09E667F3BCC908n, false)
+  hashView.setBigUint64(8, 0xBB67AE8584CAA73Bn, false)
+  hashView.setBigUint64(16, 0x3C6EF372FE94F82Bn, false)
+  hashView.setBigUint64(24, 0xA54FF53A5F1D36F1n, false)
+  hashView.setBigUint64(32, 0x510E527FADE682D1n, false)
+  hashView.setBigUint64(40, 0x9B05688C2B3E6C1Fn, false)
+  hashView.setBigUint64(48, 0x1F83D9ABFB41BD6Bn, false)
+  hashView.setBigUint64(56, 0x5BE0CD19137E2179n, false)
 
   sha384_512(hashBuffer, input)
 
+  // * 截断输出
   return codec.stringify(hashBuffer)
 }
 
-export function sha512t(t: number) {
-  const hashBuffer = IVGen(t)
-  return function (input: string, codec: Codec = Hex): string {
-    const buffer = hashBuffer.slice(0)
-    sha384_512(buffer, input)
-    return codec.stringify(buffer.slice(0, t / 8))
-  }
-}
+// SHA-384 & SHA-512 & SHA-512/t 通用函数
+function sha384_512(hashBuffer: ArrayBuffer, input: string | ArrayBufferLike) {
+  // * 初始化
+  const hashView = new DataView(hashBuffer)
 
-// common process for sha224 and sha256
-function sha384_512(hashBuffer: ArrayBuffer, input: string) {
-  // * Initialization
-  const hashDV = new DataView(hashBuffer)
-
-  const bytes = new Uint8Array(Utf8.parse(input))
-  const sigBytes = bytes.byteLength
+  const M = typeof input === 'string' ? Utf8.parse(input) : new Uint8Array(input)
+  const sigBytes = M.byteLength
   const BLOCK_SIZE = 128
   const BLOCK_TOTAL = Math.ceil((sigBytes + 17) / BLOCK_SIZE)
   const BITS_TOTAL = BigInt(sigBytes * 8)
   if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn)
     throw new Error('Message is too long')
 
-  // * Preprocessing
-
-  const data = new Uint8Array(new ArrayBuffer(BLOCK_TOTAL * BLOCK_SIZE))
-  data.set(bytes)
+  // * 填充
+  const P = new Uint8Array(new ArrayBuffer(BLOCK_TOTAL * BLOCK_SIZE))
+  P.set(M)
 
   // appending the bit '1' to the message
-  data[sigBytes] = 0x80
+  P[sigBytes] = 0x80
 
   // appending length
-  const k = (112 - (sigBytes + 1) % BLOCK_SIZE) % BLOCK_SIZE
-  const dataDV = new DataView(data.buffer)
-  dataDV.setBigUint64(sigBytes + 1 + k, BITS_TOTAL >> 32n, false)
-  dataDV.setBigUint64(sigBytes + 9 + k, BITS_TOTAL & 0xFFFFFFFFFFFFFFFFn, false)
+  const dataView = new DataView(P.buffer)
+  dataView.setBigUint64(P.byteLength - 16, BITS_TOTAL >> 32n, false)
+  dataView.setBigUint64(P.byteLength - 8, BITS_TOTAL & 0xFFFFFFFFFFFFFFFFn, false)
 
-  // * Processing
-
+  // * 处理
   function _doProcess(data: Uint8Array, i: number) {
+    // 获取当前块
     const currentBlock = data.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
     const dv = new DataView(currentBlock.buffer)
 
-    // Initialize the five working variables:
-    const h0 = hashDV.getBigUint64(0, false)
-    const h1 = hashDV.getBigUint64(8, false)
-    const h2 = hashDV.getBigUint64(16, false)
-    const h3 = hashDV.getBigUint64(24, false)
-    const h4 = hashDV.getBigUint64(32, false)
-    const h5 = hashDV.getBigUint64(40, false)
-    const h6 = hashDV.getBigUint64(48, false)
-    const h7 = hashDV.getBigUint64(56, false)
+    // 初始化工作变量
+    const h0 = hashView.getBigUint64(0, false)
+    const h1 = hashView.getBigUint64(8, false)
+    const h2 = hashView.getBigUint64(16, false)
+    const h3 = hashView.getBigUint64(24, false)
+    const h4 = hashView.getBigUint64(32, false)
+    const h5 = hashView.getBigUint64(40, false)
+    const h6 = hashView.getBigUint64(48, false)
+    const h7 = hashView.getBigUint64(56, false)
     let a = h0
     let b = h1
     let c = h2
@@ -109,14 +101,16 @@ function sha384_512(hashBuffer: ArrayBuffer, input: string) {
     let g = h6
     let h = h7
 
-    // Prepare the message schedule W and (1 ≤ t ≤ 80)
+    // 合并执行 扩展 & 压缩
     const W = new BigUint64Array(80)
     for (let i = 0; i < W.length; i++) {
+      // 扩展
       if (i < 16)
         W[i] = dv.getBigUint64(i * 8, false) | 0n
       else
         W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
 
+      // 压缩
       const T1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i]
       const T2 = Sigma0(a) + Maj(a, b, c)
       h = g
@@ -129,24 +123,26 @@ function sha384_512(hashBuffer: ArrayBuffer, input: string) {
       a = (T1 + T2) & 0xFFFFFFFFFFFFFFFFn
     }
 
-    // Add this chunk's hash to result so far:
-    hashDV.setBigUint64(0, (h0 + a) | 0n, false)
-    hashDV.setBigUint64(8, (h1 + b) | 0n, false)
-    hashDV.setBigUint64(16, (h2 + c) | 0n, false)
-    hashDV.setBigUint64(24, (h3 + d) | 0n, false)
-    hashDV.setBigUint64(32, (h4 + e) | 0n, false)
-    hashDV.setBigUint64(40, (h5 + f) | 0n, false)
-    hashDV.setBigUint64(48, (h6 + g) | 0n, false)
-    hashDV.setBigUint64(56, (h7 + h) | 0n, false)
+    // 更新工作变量
+    hashView.setBigUint64(0, (h0 + a) | 0n, false)
+    hashView.setBigUint64(8, (h1 + b) | 0n, false)
+    hashView.setBigUint64(16, (h2 + c) | 0n, false)
+    hashView.setBigUint64(24, (h3 + d) | 0n, false)
+    hashView.setBigUint64(32, (h4 + e) | 0n, false)
+    hashView.setBigUint64(40, (h5 + f) | 0n, false)
+    hashView.setBigUint64(48, (h6 + g) | 0n, false)
+    hashView.setBigUint64(56, (h7 + h) | 0n, false)
   }
 
+  // 分块处理
   for (let i = 0; i < BLOCK_TOTAL; i++)
-    _doProcess(data, i)
+    _doProcess(P, i)
 
+  // 返回工作变量
   return hashBuffer
 }
 
-// SHA-512/t IV Generation Function
+// SHA-512/t IV 生成函数
 function IVGen(t: number) {
   if (t <= 0) {
     throw new Error('t must be greater than 0')
@@ -159,17 +155,36 @@ function IVGen(t: number) {
   }
 
   const hashBuffer = new ArrayBuffer(64)
-  const hashDV = new DataView(hashBuffer)
-  hashDV.setBigUint64(0, 0x6A09E667F3BCC908n ^ 0xA5A5A5A5A5A5A5A5n, false)
-  hashDV.setBigUint64(8, 0xBB67AE8584CAA73Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
-  hashDV.setBigUint64(16, 0x3C6EF372FE94F82Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
-  hashDV.setBigUint64(24, 0xA54FF53A5F1D36F1n ^ 0xA5A5A5A5A5A5A5A5n, false)
-  hashDV.setBigUint64(32, 0x510E527FADE682D1n ^ 0xA5A5A5A5A5A5A5A5n, false)
-  hashDV.setBigUint64(40, 0x9B05688C2B3E6C1Fn ^ 0xA5A5A5A5A5A5A5A5n, false)
-  hashDV.setBigUint64(48, 0x1F83D9ABFB41BD6Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
-  hashDV.setBigUint64(56, 0x5BE0CD19137E2179n ^ 0xA5A5A5A5A5A5A5A5n, false)
+  const hashView = new DataView(hashBuffer)
+  hashView.setBigUint64(0, 0x6A09E667F3BCC908n ^ 0xA5A5A5A5A5A5A5A5n, false)
+  hashView.setBigUint64(8, 0xBB67AE8584CAA73Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
+  hashView.setBigUint64(16, 0x3C6EF372FE94F82Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
+  hashView.setBigUint64(24, 0xA54FF53A5F1D36F1n ^ 0xA5A5A5A5A5A5A5A5n, false)
+  hashView.setBigUint64(32, 0x510E527FADE682D1n ^ 0xA5A5A5A5A5A5A5A5n, false)
+  hashView.setBigUint64(40, 0x9B05688C2B3E6C1Fn ^ 0xA5A5A5A5A5A5A5A5n, false)
+  hashView.setBigUint64(48, 0x1F83D9ABFB41BD6Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
+  hashView.setBigUint64(56, 0x5BE0CD19137E2179n ^ 0xA5A5A5A5A5A5A5A5n, false)
 
   sha384_512(hashBuffer, `SHA-512/${t}`)
 
   return hashBuffer
+}
+
+/**
+ * @function sha512t
+ * @description
+ * SHA-512/t 生成函数
+ * @param t
+ * @returns
+ */
+export function sha512t(t: number) {
+  // * 初始化
+  const hashBuffer = IVGen(t)
+
+  // * 返回哈希函数
+  return function (input: string | ArrayBufferLike, codec: Codec = Hex): string {
+    const buffer = hashBuffer.slice(0)
+    sha384_512(buffer, input)
+    return codec.stringify(buffer.slice(0, t / 8))
+  }
 }

@@ -14,83 +14,83 @@ const sigma0 = (x: number) => rotateR(x, 7) ^ rotateR(x, 18) ^ (x >>> 3)
 const sigma1 = (x: number) => rotateR(x, 17) ^ rotateR(x, 19) ^ (x >>> 10)
 
 // * Algorithm
-export function sha224(input: string, codec: Codec = Hex) {
-  // * Initialization
+export function sha224(input: string | ArrayBufferLike, codec: Codec = Hex) {
+  // * 初始化
   const hashBuffer = new ArrayBuffer(32)
-  const hashDV = new DataView(hashBuffer)
-  hashDV.setUint32(0, 0xC1059ED8, false)
-  hashDV.setUint32(4, 0x367CD507, false)
-  hashDV.setUint32(8, 0x3070DD17, false)
-  hashDV.setUint32(12, 0xF70E5939, false)
-  hashDV.setUint32(16, 0xFFC00B31, false)
-  hashDV.setUint32(20, 0x68581511, false)
-  hashDV.setUint32(24, 0x64F98FA7, false)
-  hashDV.setUint32(28, 0xBEFA4FA4, false)
+  const hashView = new DataView(hashBuffer)
+  hashView.setUint32(0, 0xC1059ED8, false)
+  hashView.setUint32(4, 0x367CD507, false)
+  hashView.setUint32(8, 0x3070DD17, false)
+  hashView.setUint32(12, 0xF70E5939, false)
+  hashView.setUint32(16, 0xFFC00B31, false)
+  hashView.setUint32(20, 0x68581511, false)
+  hashView.setUint32(24, 0x64F98FA7, false)
+  hashView.setUint32(28, 0xBEFA4FA4, false)
 
   sha224_256(hashBuffer, input)
 
+  // * 截断输出
   return codec.stringify(hashBuffer.slice(0, 28))
 }
 
-export function sha256(input: string, codec: Codec = Hex) {
-  // * Initialization
+export function sha256(input: string | ArrayBufferLike, codec: Codec = Hex) {
+  // * 初始化
   const hashBuffer = new ArrayBuffer(32)
-  const hashDV = new DataView(hashBuffer)
-  hashDV.setUint32(0, 0x6A09E667, false)
-  hashDV.setUint32(4, 0xBB67AE85, false)
-  hashDV.setUint32(8, 0x3C6EF372, false)
-  hashDV.setUint32(12, 0xA54FF53A, false)
-  hashDV.setUint32(16, 0x510E527F, false)
-  hashDV.setUint32(20, 0x9B05688C, false)
-  hashDV.setUint32(24, 0x1F83D9AB, false)
-  hashDV.setUint32(28, 0x5BE0CD19, false)
+  const hashView = new DataView(hashBuffer)
+  hashView.setUint32(0, 0x6A09E667, false)
+  hashView.setUint32(4, 0xBB67AE85, false)
+  hashView.setUint32(8, 0x3C6EF372, false)
+  hashView.setUint32(12, 0xA54FF53A, false)
+  hashView.setUint32(16, 0x510E527F, false)
+  hashView.setUint32(20, 0x9B05688C, false)
+  hashView.setUint32(24, 0x1F83D9AB, false)
+  hashView.setUint32(28, 0x5BE0CD19, false)
 
   sha224_256(hashBuffer, input)
 
+  // * 截断输出
   return codec.stringify(hashBuffer)
 }
 
-// common process for sha224 and sha256
-function sha224_256(hashBuffer: ArrayBuffer, input: string) {
-  // * Initialization
-  const hashDV = new DataView(hashBuffer)
+// sha224 & sha256 通用函数
+function sha224_256(hashBuffer: ArrayBuffer, input: string | ArrayBufferLike) {
+  // * 初始化
+  const hashView = new DataView(hashBuffer)
 
-  const bytes = new Uint8Array(Utf8.parse(input))
-  const sigBytes = bytes.byteLength
+  const M = typeof input === 'string' ? Utf8.parse(input) : new Uint8Array(input)
+  const sigBytes = M.byteLength
   const BLOCK_SIZE = 64
   const BLOCK_TOTAL = Math.ceil((sigBytes + 9) / BLOCK_SIZE)
   const BITS_TOTAL = BigInt(sigBytes * 8)
   if (BITS_TOTAL > 0xFFFFFFFFFFFFFFn)
     throw new Error('Message is too long')
 
-  // * Preprocessing
-
-  const data = new Uint8Array(new ArrayBuffer(BLOCK_TOTAL * BLOCK_SIZE))
-  data.set(bytes)
+  // * 填充
+  const P = new Uint8Array(new ArrayBuffer(BLOCK_TOTAL * BLOCK_SIZE))
+  P.set(M)
 
   // appending the bit '1' to the message
-  data[sigBytes] = 0x80
+  P[sigBytes] = 0x80
 
   // appending length
-  const k = (56 - (sigBytes + 1) % 64) % 64
-  const dataDV = new DataView(data.buffer)
-  dataDV.setBigUint64(sigBytes + 1 + k, BITS_TOTAL, false)
+  const dataView = new DataView(P.buffer)
+  dataView.setBigUint64(P.byteLength - 8, BITS_TOTAL, false)
 
-  // * Processing
-
+  // * 处理
   function _doProcess(data: Uint8Array, i: number) {
+    // 获取当前块
     const currentBlock = data.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
     const dv = new DataView(currentBlock.buffer)
 
-    // Initialize the five working variables:
-    const h0 = hashDV.getUint32(0, false)
-    const h1 = hashDV.getUint32(4, false)
-    const h2 = hashDV.getUint32(8, false)
-    const h3 = hashDV.getUint32(12, false)
-    const h4 = hashDV.getUint32(16, false)
-    const h5 = hashDV.getUint32(20, false)
-    const h6 = hashDV.getUint32(24, false)
-    const h7 = hashDV.getUint32(28, false)
+    // 初始化工作变量
+    const h0 = hashView.getUint32(0, false)
+    const h1 = hashView.getUint32(4, false)
+    const h2 = hashView.getUint32(8, false)
+    const h3 = hashView.getUint32(12, false)
+    const h4 = hashView.getUint32(16, false)
+    const h5 = hashView.getUint32(20, false)
+    const h6 = hashView.getUint32(24, false)
+    const h7 = hashView.getUint32(28, false)
     let a = h0
     let b = h1
     let c = h2
@@ -100,14 +100,16 @@ function sha224_256(hashBuffer: ArrayBuffer, input: string) {
     let g = h6
     let h = h7
 
-    // Prepare the message schedule W and (1 ≤ t ≤ 80)
+    // 合并执行 扩展 & 压缩
     const W = new Uint32Array(64)
     for (let i = 0; i < W.length; i++) {
+      // 扩展
       if (i < 16)
         W[i] = dv.getUint32(i * 4, false) | 0
       else
         W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
 
+      // 压缩
       const T1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i]
       const T2 = Sigma0(a) + Maj(a, b, c)
       h = g
@@ -120,19 +122,21 @@ function sha224_256(hashBuffer: ArrayBuffer, input: string) {
       a = T1 + T2
     }
 
-    // Add this chunk's hash to result so far:
-    hashDV.setUint32(0, (h0 + a) | 0, false)
-    hashDV.setUint32(4, (h1 + b) | 0, false)
-    hashDV.setUint32(8, (h2 + c) | 0, false)
-    hashDV.setUint32(12, (h3 + d) | 0, false)
-    hashDV.setUint32(16, (h4 + e) | 0, false)
-    hashDV.setUint32(20, (h5 + f) | 0, false)
-    hashDV.setUint32(24, (h6 + g) | 0, false)
-    hashDV.setUint32(28, (h7 + h) | 0, false)
+    // 更新工作变量
+    hashView.setUint32(0, (h0 + a) | 0, false)
+    hashView.setUint32(4, (h1 + b) | 0, false)
+    hashView.setUint32(8, (h2 + c) | 0, false)
+    hashView.setUint32(12, (h3 + d) | 0, false)
+    hashView.setUint32(16, (h4 + e) | 0, false)
+    hashView.setUint32(20, (h5 + f) | 0, false)
+    hashView.setUint32(24, (h6 + g) | 0, false)
+    hashView.setUint32(28, (h7 + h) | 0, false)
   }
 
+  // 分块处理
   for (let i = 0; i < BLOCK_TOTAL; i++)
-    _doProcess(data, i)
+    _doProcess(P, i)
 
+  // 返回工作变量
   return hashBuffer
 }

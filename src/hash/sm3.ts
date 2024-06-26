@@ -20,15 +20,15 @@ const P1 = (X: number) => X ^ rotateL(X, 15) ^ rotateL(X, 23)
 export function sm3(input: string | ArrayBufferLike, codec: Codec = Hex) {
   // * 初始化
   const hashBuffer = new ArrayBuffer(32)
-  const hashDV = new DataView(hashBuffer)
-  hashDV.setUint32(0, 0x7380166F, false)
-  hashDV.setUint32(4, 0x4914B2B9, false)
-  hashDV.setUint32(8, 0x172442D7, false)
-  hashDV.setUint32(12, 0xDA8A0600, false)
-  hashDV.setUint32(16, 0xA96F30BC, false)
-  hashDV.setUint32(20, 0x163138AA, false)
-  hashDV.setUint32(24, 0xE38DEE4D, false)
-  hashDV.setUint32(28, 0xB0FB0E4E, false)
+  const hashView = new DataView(hashBuffer)
+  hashView.setUint32(0, 0x7380166F, false)
+  hashView.setUint32(4, 0x4914B2B9, false)
+  hashView.setUint32(8, 0x172442D7, false)
+  hashView.setUint32(12, 0xDA8A0600, false)
+  hashView.setUint32(16, 0xA96F30BC, false)
+  hashView.setUint32(20, 0x163138AA, false)
+  hashView.setUint32(24, 0xE38DEE4D, false)
+  hashView.setUint32(28, 0xB0FB0E4E, false)
 
   const M = typeof input === 'string' ? Utf8.parse(input) : new Uint8Array(input)
   const sigBytes = M.byteLength
@@ -56,14 +56,14 @@ export function sm3(input: string | ArrayBufferLike, codec: Codec = Hex) {
     const view = new DataView(currentBlock.buffer)
 
     // 初始化工作变量
-    const h0 = hashDV.getUint32(0, false)
-    const h1 = hashDV.getUint32(4, false)
-    const h2 = hashDV.getUint32(8, false)
-    const h3 = hashDV.getUint32(12, false)
-    const h4 = hashDV.getUint32(16, false)
-    const h5 = hashDV.getUint32(20, false)
-    const h6 = hashDV.getUint32(24, false)
-    const h7 = hashDV.getUint32(28, false)
+    const h0 = hashView.getUint32(0, false)
+    const h1 = hashView.getUint32(4, false)
+    const h2 = hashView.getUint32(8, false)
+    const h3 = hashView.getUint32(12, false)
+    const h4 = hashView.getUint32(16, false)
+    const h5 = hashView.getUint32(20, false)
+    const h6 = hashView.getUint32(24, false)
+    const h7 = hashView.getUint32(28, false)
     let A = h0
     let B = h1
     let C = h2
@@ -110,14 +110,14 @@ export function sm3(input: string | ArrayBufferLike, codec: Codec = Hex) {
     }
 
     // 更新工作变量
-    hashDV.setUint32(0, h0 ^ A, false)
-    hashDV.setUint32(4, h1 ^ B, false)
-    hashDV.setUint32(8, h2 ^ C, false)
-    hashDV.setUint32(12, h3 ^ D, false)
-    hashDV.setUint32(16, h4 ^ E, false)
-    hashDV.setUint32(20, h5 ^ F, false)
-    hashDV.setUint32(24, h6 ^ G, false)
-    hashDV.setUint32(28, h7 ^ H, false)
+    hashView.setUint32(0, h0 ^ A, false)
+    hashView.setUint32(4, h1 ^ B, false)
+    hashView.setUint32(8, h2 ^ C, false)
+    hashView.setUint32(12, h3 ^ D, false)
+    hashView.setUint32(16, h4 ^ E, false)
+    hashView.setUint32(20, h5 ^ F, false)
+    hashView.setUint32(24, h6 ^ G, false)
+    hashView.setUint32(28, h7 ^ H, false)
   }
 
   // 迭代过程
