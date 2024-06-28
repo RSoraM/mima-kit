@@ -1,5 +1,4 @@
-import type { Codec } from '../core/codec'
-import { Hex, Utf8 } from '../core/codec'
+import { createHash } from '../core/hash'
 import { rotateLn } from '../core/utils'
 
 // * Constants
@@ -62,10 +61,10 @@ const RC = [
 type StateArray = Array<BigUint64Array>
 
 /**
- * @function createStateArray
+ * ### createStateArray
+ *
  * @description
  * 创建一个 5x5 State Array
- * @returns State Array
  */
 function createStateArray(): StateArray {
   return Array.from({ length: 5 }).map(
@@ -74,17 +73,18 @@ function createStateArray(): StateArray {
 }
 
 /**
- * @function toStateArray
+ * ### toStateArray
+ *
  * @description
  * 3.1.2 Converting State to State Arrays
  */
-function toStateArray(S: ArrayBuffer) {
+function toStateArray(S: Uint8Array) {
   const A: StateArray = createStateArray()
-  const view = new BigUint64Array(S)
+  const view = new DataView(S.buffer)
 
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      A[x][y] = view[y * 5 + x]
+      A[x][y] = view.getBigUint64((y * 5 + x) * 8, true)
     }
   }
 
@@ -92,17 +92,18 @@ function toStateArray(S: ArrayBuffer) {
 }
 
 /**
- * @function toState
+ * ### toState
+ *
  * @description
  * 3.1.3 Converting State Arrays to State
  */
 function toState(A: StateArray) {
-  const S = new ArrayBuffer(200)
-  const view = new BigUint64Array(S)
+  const S = new Uint8Array(200)
+  const view = new DataView(S.buffer)
 
-  for (let y = 0; y < 5; y++) {
-    for (let x = 0; x < 5; x++) {
-      view[y * 5 + x] = A[x][y]
+  for (let x = 0; x < 5; x++) {
+    for (let y = 0; y < 5; y++) {
+      view.setBigUint64((y * 5 + x) * 8, A[x][y], true)
     }
   }
 
@@ -111,9 +112,7 @@ function toState(A: StateArray) {
 
 // * 3.2 Step Mappings
 
-/**
- * Algorithm 1: θ(A)
- */
+/** Algorithm 1: θ(A) */
 function theta(A: StateArray) {
   const _A = createStateArray()
 
@@ -137,9 +136,7 @@ function theta(A: StateArray) {
   return _A
 }
 
-/**
- * Algorithm 2: ρ(A)
- */
+/** Algorithm 2: ρ(A) */
 // eslint-disable-next-line unused-imports/no-unused-vars
 function rho(A: StateArray) {
   const _A = createStateArray()
@@ -151,9 +148,7 @@ function rho(A: StateArray) {
   return _A
 }
 
-/**
- * Algorithm 3: π(A)
- */
+/** Algorithm 3: π(A) */
 // eslint-disable-next-line unused-imports/no-unused-vars
 function pi(A: StateArray) {
   const _A = createStateArray()
@@ -165,9 +160,7 @@ function pi(A: StateArray) {
   return _A
 }
 
-/**
- * 合并执行 π(ρ(A))
- */
+/** 合并执行 π(ρ(A)) */
 function rhoPi(A: StateArray) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
@@ -178,9 +171,7 @@ function rhoPi(A: StateArray) {
   return _A
 }
 
-/**
- * Algorithm 4: χ(A)
- */
+/** Algorithm 4: χ(A) */
 function chi(A: StateArray) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
@@ -191,9 +182,7 @@ function chi(A: StateArray) {
   return _A
 }
 
-/**
- * Algorithm 6: ι(A, ir)
- */
+/** Algorithm 6: ι(A, ir) */
 function iota(A: StateArray, ir: number) {
   A[0][0] = A[0][0] ^ RC[ir]
   return A
@@ -202,62 +191,64 @@ function iota(A: StateArray, ir: number) {
 // * Padding Function
 
 /**
- * @function sha3Padding
- * FIPS.202 B.2:
- * SHA-3 填充函数
- * @param rBit 吸收量(bit)
- * @param sigByte 原始消息字节
- * @returns
+ * ### sha3Padding
+ *
+ * FIPS.202 B.2: <br>
+ * SHA3 填充函数
+ *
+ * @param {number} rBit 吸收量(bit)
+ * @param {number} sigByte 原始消息字节
  */
 function sha3Padding(rBit: number, sigByte: number) {
   const rByte = rBit >> 3
   const q = rByte - (sigByte % rByte)
-  const paddingBuffer = new ArrayBuffer(q)
-  const paddingView = new Uint8Array(paddingBuffer)
+  const p = new Uint8Array(q)
 
   if (q === 1) {
-    paddingView[0] = 0x86
-    return paddingBuffer
+    p[0] = 0x86
+    return p
   }
 
-  paddingView[0] = 0x06
-  paddingView[q - 1] = 0x80
-  return paddingBuffer
+  p[0] = 0x06
+  p[q - 1] = 0x80
+  return p
 }
 
 /**
- * @function shakePadding
+ * ### shakePadding
+ *
  * @description
- * FIPS.202 B.2:
+ * FIPS.202 B.2: <br>
  * SHAKE 填充函数
- * @param rBit 吸收量(bit)
- * @param sigByte 原始消息字节
- * @returns
+ *
+ * @param {number} rBit 吸收量(bit)
+ * @param {number} sigByte 原始消息字节
  */
 function shakePadding(rBit: number, sigByte: number) {
   const rByte = rBit >> 3
   const q = rByte - (sigByte % rByte)
-  const paddingBuffer = new ArrayBuffer(q)
-  const paddingView = new Uint8Array(paddingBuffer)
+  const p = new Uint8Array(q)
 
   if (q === 1) {
-    paddingView[0] = 0xF9
-    return paddingBuffer
+    p[0] = 0xF9
+    return p
   }
 
-  paddingView[0] = 0x1F
-  paddingView[q - 1] = 0x80
-  return paddingBuffer
+  p[0] = 0x1F
+  p[q - 1] = 0x80
+  return p
 }
 
 // * KECCAK family
 
 /**
- * @function Keccak[c]
+ * ### Keccak[c]
+ *
  * @description
  * FIPS.202 5.2:
  * Keccak 是 Sponge 函数家族.
  * 当 b = 1600, Keccak 家族表示为 Keccak[c];
+ *
  * @param c 容量(bit)
  */
 function Keccak(c: number) {
@@ -266,11 +257,12 @@ function Keccak(c: number) {
 }
 
 /**
- * @function Sponge
+ * ### Sponge
+ *
  * @description
- * 除去填充功能的 Sponge 结构，用于 SHA-3 系列函数.
- * 对于 SHA-3 系列函数，映射函数 f 是 Keccak_p(b:1600, nr:24).
- * @param b 状态量(bit)
+ * 除去填充功能的 Sponge 结构，用于 SHA3 系列函数. <br>
+ * 对于 SHA3 系列函数，映射函数 f 是 Keccak_p(b:1600, nr:24).
+ *
  * @param r 吸收量(bit): r = b - c
  */
 function Sponge(r: number) {
@@ -285,36 +277,40 @@ function Sponge(r: number) {
    * @param P 经过填充的消息
    * @param d 输出长度
    */
-  return (P: ArrayBuffer, d: number) => {
+  return (P: Uint8Array, d: number) => {
     const dByte = d >> 3
     // n: 分块数
     const blockTotal = P.byteLength / rByte
     // c: 容量
     // const c = b - r
 
-    let S = new ArrayBuffer(bByte)
-    const SView = new Uint8Array(S)
+    let S = new Uint8Array(bByte)
     for (let i = 0; i < blockTotal; i++) {
-      const Pi = new Uint8Array(P.slice(i * rByte, (i + 1) * rByte))
-      SView.forEach((byte, index) => SView[index] = byte ^ Pi[index])
+      const Pi = P.slice(i * rByte, (i + 1) * rByte)
+      S.forEach((byte, index) => S[index] = byte ^ Pi[index])
       S = f(S)
     }
 
-    let Z = new Uint8Array(S.slice(0, rByte))
+    let Z = S.slice(0, rByte)
 
     while (Z.byteLength < dByte) {
+      const temp = new Uint8Array(Z.byteLength + rByte)
+      temp.set(Z, 0)
       S = f(S)
-      Z = new Uint8Array(Z.byteLength + rByte)
-      Z.set(Z, 0)
+      temp.set(S.slice(0, rByte), Z.byteLength)
+      Z = temp
     }
 
-    return Z.buffer.slice(0, dByte)
+    return Z.slice(0, dByte)
   }
 }
 
 /**
- * @function Keccak-p
+ * ### Keccak-p
+ *
+ * @description
  * 吸收函数 f 生成器
+ *
  * @param b 状态量(bit)
  * @param nr 轮数
  */
@@ -326,7 +322,7 @@ function Keccak_p(b: number, nr: number) {
   /**
    * @param S 状态
    */
-  return (S: ArrayBuffer) => {
+  return (S: Uint8Array) => {
     if (S.byteLength * 8 !== b) {
       throw new Error('Invalid state size')
     }
@@ -340,55 +336,170 @@ function Keccak_p(b: number, nr: number) {
   }
 }
 
-// * 6. SHA-3 FUNCTION SPECIFICATIONS
+// * 6. SHA3 FUNCTION SPECIFICATIONS
 
 /**
- * @function SHA-3 生成函数
+ * ### SHA3 生成函数
+ *
  * @description
- * 对于 SHA-3 系列函数, Keccak-p 使用固定参数 Keccak-p(b:1600, nr:24).
- * SHA-3 和 SHA-3 XOF 函数的区别只有 c, d, padding.
+ * 对于 SHA3 系列函数, Keccak-p 使用固定参数 Keccak-p(b:1600, nr:24).
+ * SHA3 和 SHA3 XOF 函数的区别只有 c, d, padding.
  * 因此生成函数只需要提供 c, d, padding.
+ *
  * @param c 容量 bit
  * @param d 输出长度 bit
  * @param padding 填充函数
- * @param codec 编码器
  */
-function sha3(c: number, d: number, padding: typeof sha3Padding, codec: Codec = Hex) {
+function sha3(c: number, d: number, padding: typeof sha3Padding) {
   const b = 1600
-  return (input: string | ArrayBufferLike) => {
-    const M = typeof input == 'string' ? Utf8.parse(input) : input
-    const paddingBuffer = padding(b - c, M.byteLength)
+  return (M: Uint8Array) => {
+    const p = padding(b - c, M.byteLength)
 
     /** Padded Message */
-    const P = new ArrayBuffer(M.byteLength + paddingBuffer.byteLength)
-    const PView = new Uint8Array(P)
-    PView.set(new Uint8Array(M), 0)
-    PView.set(new Uint8Array(paddingBuffer), M.byteLength)
+    const P = new Uint8Array(M.byteLength + p.byteLength)
+    P.set(M, 0)
+    P.set(p, M.byteLength)
 
-    return codec.stringify(Keccak(c)(P, d))
+    return Keccak(c)(P, d)
   }
 }
 
-export function sha3_224(input: string | ArrayBufferLike, codec: Codec = Hex) {
-  return sha3(448, 224, sha3Padding, codec)(input)
+/**
+ * ### SHA3-224
+ *
+ * @description
+ * SHA3-224 hash algorithm <br>
+ * SHA3-224 散列算法
+ *
+ * @example
+ * sha3_224('hello') // 'b87f88c72702fff1748e58b87e9141a42c0dbedc29a78cb0d4a5cd81'
+ * sha3_224('hello', B64) // 'uH+IxycC//F0jli4fpFBpCwNvtwpp4yw1KXNgQ=='
+ *
+ * @param {string | Uint8Array} input 输入
+ * @param {Codec} codec 输出编解码器
+ */
+export const sha3_224 = createHash(
+  (M: Uint8Array) => sha3(448, 224, sha3Padding)(M),
+  {
+    ALGORITHM: 'SHA3-224',
+    BLOCK_SIZE: 144,
+    DIGEST_SIZE: 28,
+  },
+)
+
+/**
+ * ### SHA3-256
+ *
+ * @description
+ * SHA3-256 hash algorithm <br>
+ * SHA3-256 散列算法
+ *
+ * @example
+ * sha3_256('hello') // '3338be694f50c5f338814986cdf0686453a888b84f424d792af4b9202398f392'
+ * sha3_256('hello', B64) // 'Mzi+aU9QxfM4gUmGzfBoZFOoiLhPQk15KvS5ICOY85I='
+ *
+ * @param {string | Uint8Array} input 输入
+ * @param {Codec} codec 输出编解码器
+ */
+export const sha3_256 = createHash(
+  (M: Uint8Array) => sha3(512, 256, sha3Padding)(M),
+  {
+    ALGORITHM: 'SHA3-256',
+    BLOCK_SIZE: 136,
+    DIGEST_SIZE: 32,
+  },
+)
+
+/**
+ * ### SHA3-384
+ *
+ * @description
+ * SHA3-384 hash algorithm <br>
+ * SHA3-384 散列算法
+ *
+ * @example
+ * sha3_384('hello') // '720aea11019ef06440fbf05d87aa24680a2153df3907b23631e7177ce620fa1330ff07c0fddee54699a4c3ee0ee9d887'
+ * sha3_384('hello', B64) // 'cgrqEQGe8GRA+/Bdh6okaAohU985B7I2MecXfOYg+hMw/wfA/d7lRpmkw+4O6diH'
+ *
+ * @param {string | Uint8Array} input 输入
+ * @param {Codec} codec 输出编解码器
+ */
+export const sha3_384 = createHash(
+  (M: Uint8Array) => sha3(768, 384, sha3Padding)(M),
+  {
+    ALGORITHM: 'SHA3-384',
+    BLOCK_SIZE: 104,
+    DIGEST_SIZE: 48,
+  },
+)
+
+/**
+ * ### SHA3-512
+ *
+ * @description
+ * SHA3-512 hash algorithm <br>
+ * SHA3-512 散列算法
+ *
+ * @example
+ * sha3_512('hello') // '75d527c368f2efe848ecf6b073a36767800805e9eef2b1857d5f984f036eb6df891d75f72d9b154518c1cd58835286d1da9a38deba3de98b5a53e5ed78a84976'
+ * sha3_512('hello', B64) // 'ddUnw2jy7+hI7Pawc6NnZ4AIBenu8rGFfV+YTwNutt+JHXX3LZsVRRjBzViDUobR2po43ro96YtaU+XteKhJdg=='
+ *
+ * @param {string | Uint8Array} input 输入
+ * @param {Codec} codec 输出编解码器
+ */
+export const sha3_512 = createHash(
+  (M: Uint8Array) => sha3(1024, 512, sha3Padding)(M),
+  {
+    ALGORITHM: 'SHA3-512',
+    BLOCK_SIZE: 72,
+    DIGEST_SIZE: 64,
+  },
+)
+
+/**
+ * ### SHAKE128
+ *
+ * @description
+ * SHAKE128 is one of the SHA3 OXF hash algorithm <br>
+ * SHAKE128 是 SHA3 XOF 散列算法之一
+ *
+ * @example
+ * shake128(256)('hello') // '8eb4b6a932f280335ee1a279f8c208a349e7bc65daf831d3021c213825292463'
+ * shake128(256)('hello', B64) // 'jrS2qTLygDNe4aJ5+MIIo0nnvGXa+DHTAhwhOCUpJGM='
+ *
+ * @param {number} d 输出长度
+ */
+export function shake128(d: number) {
+  return createHash(
+    (M: Uint8Array) => sha3(256, d, shakePadding)(M),
+    {
+      ALGORITHM: `SHAKE128/${d}`,
+      BLOCK_SIZE: 168,
+      DIGEST_SIZE: d >> 3,
+    },
+  )
 }
 
-export function sha3_256(input: string | ArrayBufferLike, codec: Codec = Hex) {
-  return sha3(512, 256, sha3Padding, codec)(input)
-}
-
-export function sha3_384(input: string | ArrayBufferLike, codec: Codec = Hex) {
-  return sha3(768, 384, sha3Padding, codec)(input)
-}
-
-export function sha3_512(input: string | ArrayBufferLike, codec: Codec = Hex) {
-  return sha3(1024, 512, sha3Padding, codec)(input)
-}
-
-export function shake128(input: string | ArrayBufferLike, d: number, codec: Codec = Hex) {
-  return sha3(256, d, shakePadding, codec)(input)
-}
-
-export function shake256(input: string | ArrayBufferLike, d: number, codec: Codec = Hex) {
-  return sha3(512, d, shakePadding, codec)(input)
+/**
+ * ### SHAKE256
+ *
+ * @description
+ * SHAKE256 is one of the SHA3 OXF hash algorithm <br>
+ * SHAKE256 是 SHA3 XOF 散列算法之一
+ *
+ * @example
+ * shake256(512)('hello') // '1234075ae4a1e77316cf2d8000974581a343b9ebbca7e3d1db83394c30f221626f594e4f0de63902349a5ea5781213215813919f92a4d86d127466e3d07e8be3'
+ * shake256(512)('hello', B64) // 'EjQHWuSh53MWzy2AAJdFgaNDueu8p+PR24M5TDDyIWJvWU5PDeY5AjSaXqV4EhMhWBORn5Kk2G0SdGbj0H6L4w=='
+ *
+ * @param {number} d 输出长度
+ */
+export function shake256(d: number) {
+  return createHash(
+    (M: Uint8Array) => sha3(512, d, shakePadding)(M),
+    {
+      ALGORITHM: `SHAKE256/${d}`,
+      BLOCK_SIZE: 136,
+      DIGEST_SIZE: d >> 3,
+    },
+  )
 }

@@ -7,3 +7,5 @@ export { sha384, sha512, sha512t } from './hash/sha512'
 export { sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from './hash/sha3'
 
 export { sm3 } from './hash/sm3'
+
+export { hmac } from './hash/hmac'

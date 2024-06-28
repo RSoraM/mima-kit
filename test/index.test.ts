@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { md5, sha1 } from '../src/index'
 import { B64, B64url, Hex, Utf8 } from '../src/core/codec'
+import { md5 } from '../src/hash/md5'
+import { sha1 } from '../src/hash/sha1'
 import { sha224, sha256 } from '../src/hash/sha256'
 import { sha384, sha512, sha512t } from '../src/hash/sha512'
 import { sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../src/hash/sha3'
 import { sm3 } from '../src/hash/sm3'
+import { hmac } from '../src/hash/hmac'
 
 describe('hash', () => {
   it('md5', () => {
@@ -47,15 +49,29 @@ describe('hash', () => {
     expect(sha3_512('')).toMatchInlineSnapshot('"a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26"')
     expect(sha3_512('meow, 喵， 🐱')).toMatchInlineSnapshot('"624e65a5587f89665d43f2c47de89df0bdb8b93d775ce950afd75aca9306630df3d1f27bf67c8a068f9f4724512d30520e19c0e9241138a4fe37a7267844f703"')
 
-    expect(shake128('', 256)).toMatchInlineSnapshot('"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26"')
-    expect(shake128('meow, 喵， 🐱', 256)).toMatchInlineSnapshot('"5b6a7f04e608d48139e2b72aa4fc2d047fc1ae5c77aefec0fd822ad77dff56f1"')
-    expect(shake256('', 512)).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
-    expect(shake256('meow, 喵， 🐱', 512)).toMatchInlineSnapshot('"5db7c1ba86c680ac9d8442d18057f7bd28fb125e324271ca0327f2862173411b65ae4a9d454b31c52ab24a3b779bb67b2d9298e418d16ea737fc5d5d3fac760f"')
+    expect(shake128(256)('')).toMatchInlineSnapshot('"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26"')
+    expect(shake128(256)('meow, 喵， 🐱')).toMatchInlineSnapshot('"5b6a7f04e608d48139e2b72aa4fc2d047fc1ae5c77aefec0fd822ad77dff56f1"')
+    expect(shake256(512)('')).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
+    expect(shake256(512)('meow, 喵， 🐱')).toMatchInlineSnapshot('"5db7c1ba86c680ac9d8442d18057f7bd28fb125e324271ca0327f2862173411b65ae4a9d454b31c52ab24a3b779bb67b2d9298e418d16ea737fc5d5d3fac760f"')
+    expect(shake256(2048)('')).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be141e96616fb13957692cc7edd0b45ae3dc07223c8e92937bef84bc0eab862853349ec75546f58fb7c2775c38462c5010d846c185c15111e595522a6bcd16cf86f3d122109e3b1fdd943b6aec468a2d621a7c06c6a957c62b54dafc3be87567d677231395f6147293b68ceab7a9e0c58d864e8efde4e1b9a46cbe854713672f5caaae314ed9083dab4b099f8e300f01b8650f1f4b1d8fcf3f3cb53fb8e9eb2ea203bdc970f50ae55428a91f7f53ac266b28419c3778a15fd248d339ede785fb7f"')
   })
 
   it('sm3', () => {
     expect(sm3('')).toMatchInlineSnapshot('"1ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747ed035eb5082aa2b"')
     expect(sm3('meow, 喵， 🐱')).toMatchInlineSnapshot('"cc1b7af8950bbb8dd71e4ef2ca85d527ba83502920c714ba8a1d61214d23c1e1"')
+  })
+
+  it('hmac', () => {
+    expect(hmac(sha224, 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"796dac904862fc0cde2f6321a8dd9fc4f9e95af33430380ed5f21581"')
+    expect(hmac(sha224, 'password')('meow, 喵， 🐱', B64)).toMatchInlineSnapshot('"eW2skEhi/AzeL2MhqN2fxPnpWvM0MDgO1fIVgQ=="')
+
+    expect(hmac(sha256, 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"d1460c736797bff7d4ff11940451421e7f693a7d1d7b10e2a2c163f11a9ca53c"')
+    expect(hmac(sha256, 'password')('meow, 喵， 🐱', B64)).toMatchInlineSnapshot('"0UYMc2eXv/fU/xGUBFFCHn9pOn0dexDiosFj8RqcpTw="')
+
+    expect(hmac(sm3, 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"c8e111cdad100b08d04315081893bd5ac0b75180c492abe2fadcfbe027924904"')
+    expect(hmac(sm3, 'password')('meow, 喵， 🐱', B64)).toMatchInlineSnapshot('"yOERza0QCwjQQxUIGJO9WsC3UYDEkqvi+tz74CeSSQQ="')
+
+    expect(hmac(sha3_256, 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"969bdb3d05db27ee7df5ba69b6e2e2bf5d7abb3b13e8c181d6418d6f0403f3f0"')
   })
 })
 

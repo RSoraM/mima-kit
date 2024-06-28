@@ -1,5 +1,4 @@
-import { Hex, Utf8 } from '../core/codec'
-import type { Codec } from '../core/codec'
+import { createHash } from '../core/hash'
 import { rotateR } from '../core/utils'
 
 // * Constants
@@ -14,50 +13,12 @@ const sigma0 = (x: number) => rotateR(x, 7) ^ rotateR(x, 18) ^ (x >>> 3)
 const sigma1 = (x: number) => rotateR(x, 17) ^ rotateR(x, 19) ^ (x >>> 10)
 
 // * Algorithm
-export function sha224(input: string | ArrayBufferLike, codec: Codec = Hex) {
+
+/** SHA-224 & SHA-256 通用函数 */
+function sha224_256(status: Uint8Array, M: Uint8Array) {
   // * 初始化
-  const hashBuffer = new ArrayBuffer(32)
-  const hashView = new DataView(hashBuffer)
-  hashView.setUint32(0, 0xC1059ED8, false)
-  hashView.setUint32(4, 0x367CD507, false)
-  hashView.setUint32(8, 0x3070DD17, false)
-  hashView.setUint32(12, 0xF70E5939, false)
-  hashView.setUint32(16, 0xFFC00B31, false)
-  hashView.setUint32(20, 0x68581511, false)
-  hashView.setUint32(24, 0x64F98FA7, false)
-  hashView.setUint32(28, 0xBEFA4FA4, false)
+  const statusView = new DataView(status.buffer)
 
-  sha224_256(hashBuffer, input)
-
-  // * 截断输出
-  return codec.stringify(hashBuffer.slice(0, 28))
-}
-
-export function sha256(input: string | ArrayBufferLike, codec: Codec = Hex) {
-  // * 初始化
-  const hashBuffer = new ArrayBuffer(32)
-  const hashView = new DataView(hashBuffer)
-  hashView.setUint32(0, 0x6A09E667, false)
-  hashView.setUint32(4, 0xBB67AE85, false)
-  hashView.setUint32(8, 0x3C6EF372, false)
-  hashView.setUint32(12, 0xA54FF53A, false)
-  hashView.setUint32(16, 0x510E527F, false)
-  hashView.setUint32(20, 0x9B05688C, false)
-  hashView.setUint32(24, 0x1F83D9AB, false)
-  hashView.setUint32(28, 0x5BE0CD19, false)
-
-  sha224_256(hashBuffer, input)
-
-  // * 截断输出
-  return codec.stringify(hashBuffer)
-}
-
-// sha224 & sha256 通用函数
-function sha224_256(hashBuffer: ArrayBuffer, input: string | ArrayBufferLike) {
-  // * 初始化
-  const hashView = new DataView(hashBuffer)
-
-  const M = typeof input === 'string' ? Utf8.parse(input) : new Uint8Array(input)
   const sigBytes = M.byteLength
   const BLOCK_SIZE = 64
   const BLOCK_TOTAL = Math.ceil((sigBytes + 9) / BLOCK_SIZE)
@@ -66,7 +27,7 @@ function sha224_256(hashBuffer: ArrayBuffer, input: string | ArrayBufferLike) {
     throw new Error('Message is too long')
 
   // * 填充
-  const P = new Uint8Array(new ArrayBuffer(BLOCK_TOTAL * BLOCK_SIZE))
+  const P = new Uint8Array(BLOCK_TOTAL * BLOCK_SIZE)
   P.set(M)
 
   // appending the bit '1' to the message
@@ -76,21 +37,21 @@ function sha224_256(hashBuffer: ArrayBuffer, input: string | ArrayBufferLike) {
   const dataView = new DataView(P.buffer)
   dataView.setBigUint64(P.byteLength - 8, BITS_TOTAL, false)
 
-  // * 处理
-  function _doProcess(data: Uint8Array, i: number) {
+  // * 分块处理
+  for (let i = 0; i < BLOCK_TOTAL; i++) {
     // 获取当前块
-    const currentBlock = data.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
-    const dv = new DataView(currentBlock.buffer)
+    const currentBlock = P.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
+    const view = new DataView(currentBlock.buffer)
 
     // 初始化工作变量
-    const h0 = hashView.getUint32(0, false)
-    const h1 = hashView.getUint32(4, false)
-    const h2 = hashView.getUint32(8, false)
-    const h3 = hashView.getUint32(12, false)
-    const h4 = hashView.getUint32(16, false)
-    const h5 = hashView.getUint32(20, false)
-    const h6 = hashView.getUint32(24, false)
-    const h7 = hashView.getUint32(28, false)
+    const h0 = statusView.getUint32(0, false)
+    const h1 = statusView.getUint32(4, false)
+    const h2 = statusView.getUint32(8, false)
+    const h3 = statusView.getUint32(12, false)
+    const h4 = statusView.getUint32(16, false)
+    const h5 = statusView.getUint32(20, false)
+    const h6 = statusView.getUint32(24, false)
+    const h7 = statusView.getUint32(28, false)
     let a = h0
     let b = h1
     let c = h2
@@ -105,7 +66,7 @@ function sha224_256(hashBuffer: ArrayBuffer, input: string | ArrayBufferLike) {
     for (let i = 0; i < W.length; i++) {
       // 扩展
       if (i < 16)
-        W[i] = dv.getUint32(i * 4, false) | 0
+        W[i] = view.getUint32(i * 4, false) | 0
       else
         W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
 
@@ -123,20 +84,96 @@ function sha224_256(hashBuffer: ArrayBuffer, input: string | ArrayBufferLike) {
     }
 
     // 更新工作变量
-    hashView.setUint32(0, (h0 + a) | 0, false)
-    hashView.setUint32(4, (h1 + b) | 0, false)
-    hashView.setUint32(8, (h2 + c) | 0, false)
-    hashView.setUint32(12, (h3 + d) | 0, false)
-    hashView.setUint32(16, (h4 + e) | 0, false)
-    hashView.setUint32(20, (h5 + f) | 0, false)
-    hashView.setUint32(24, (h6 + g) | 0, false)
-    hashView.setUint32(28, (h7 + h) | 0, false)
+    statusView.setUint32(0, (h0 + a) | 0, false)
+    statusView.setUint32(4, (h1 + b) | 0, false)
+    statusView.setUint32(8, (h2 + c) | 0, false)
+    statusView.setUint32(12, (h3 + d) | 0, false)
+    statusView.setUint32(16, (h4 + e) | 0, false)
+    statusView.setUint32(20, (h5 + f) | 0, false)
+    statusView.setUint32(24, (h6 + g) | 0, false)
+    statusView.setUint32(28, (h7 + h) | 0, false)
   }
 
-  // 分块处理
-  for (let i = 0; i < BLOCK_TOTAL; i++)
-    _doProcess(P, i)
-
   // 返回工作变量
-  return hashBuffer
+  return status
 }
+
+/**
+ * ### SHA-224
+ *
+ * @description
+ * SHA-224 hash algorithm is truncated versions of SHA-256 <br>
+ * SHA-224 散列算法 是 SHA-256 的截断版本
+ *
+ * @example
+ * sha224('hello') // 'ea09ae9cc6768c50fcee903ed054556e5bfc8347907f12598aa24193'
+ * sha224('hello', B64) // '6gmunMZ2jFD87pA+0FRVblv8g0eQfxJZiqJBkw=='
+ *
+ * @param {string | Uint8Array} input 输入
+ * @param {Codec} codec 输出编解码器
+ */
+export const sha224 = createHash(
+  (M: Uint8Array) => {
+    // * 初始化
+    const status = new Uint8Array(32)
+    const statusView = new DataView(status.buffer)
+    statusView.setUint32(0, 0xC1059ED8, false)
+    statusView.setUint32(4, 0x367CD507, false)
+    statusView.setUint32(8, 0x3070DD17, false)
+    statusView.setUint32(12, 0xF70E5939, false)
+    statusView.setUint32(16, 0xFFC00B31, false)
+    statusView.setUint32(20, 0x68581511, false)
+    statusView.setUint32(24, 0x64F98FA7, false)
+    statusView.setUint32(28, 0xBEFA4FA4, false)
+
+    sha224_256(status, M)
+
+    // * 截断输出
+    return status.slice(0, 28)
+  },
+  {
+    ALGORITHM: 'SHA-224',
+    BLOCK_SIZE: 64,
+    DIGEST_SIZE: 28,
+  },
+)
+
+/**
+ * ### SHA-256
+ *
+ * @description
+ * SHA-256 hash algorithm <br>
+ * SHA-256 散列算法
+ *
+ * @example
+ * sha256('hello') // '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+ * sha256('hello', B64) // 'LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ='
+ *
+ * @param {string | Uint8Array} input 输入
+ * @param {Codec} codec 输出编解码器
+ */
+export const sha256 = createHash(
+  (M: Uint8Array) => {
+    // * 初始化
+    const status = new Uint8Array(32)
+    const statusView = new DataView(status.buffer)
+    statusView.setUint32(0, 0x6A09E667, false)
+    statusView.setUint32(4, 0xBB67AE85, false)
+    statusView.setUint32(8, 0x3C6EF372, false)
+    statusView.setUint32(12, 0xA54FF53A, false)
+    statusView.setUint32(16, 0x510E527F, false)
+    statusView.setUint32(20, 0x9B05688C, false)
+    statusView.setUint32(24, 0x1F83D9AB, false)
+    statusView.setUint32(28, 0x5BE0CD19, false)
+
+    sha224_256(status, M)
+
+    // * 截断输出
+    return status
+  },
+  {
+    ALGORITHM: 'SHA-256',
+    BLOCK_SIZE: 64,
+    DIGEST_SIZE: 32,
+  },
+)

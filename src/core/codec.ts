@@ -1,33 +1,56 @@
-// * Codec
-
+/**
+ * @interface Codec
+ *
+ * @description
+ * Codec interface provides two methods: parse and stringify <br>
+ * 编解码器接口提供两个方法：parse 和 stringify
+ */
 export interface Codec {
   parse: (input: string) => Uint8Array
-  stringify: (input: ArrayBufferLike) => string
+  stringify: (input: Uint8Array) => string
 }
 
-// * Utf8 Codec
-
+/**
+ * ### Utf8 Codec
+ *
+ * @description
+ * Utf8 codec provides conversion between Utf8 string and Uint8Array <br>
+ * Utf8 编解码器提供 UTF-8字符串 与 Uint8Array相互转换
+ *
+ * @example
+ * Utf8.parse('hello') // Uint8Array(5) [ 104, 101, 108, 108, 111 ]
+ * Utf8.stringify(Uint8Array(5) [ 104, 101, 108, 108, 111 ]) // 'hello'
+ */
 export const Utf8: Codec = {
-  parse(Utf8String) {
-    return new TextEncoder().encode(Utf8String)
+  parse(input) {
+    return new TextEncoder().encode(input)
   },
-  stringify(buffer) {
-    return new TextDecoder('utf-8').decode(buffer)
+  stringify(input) {
+    return new TextDecoder('utf-8').decode(input)
   },
 }
 
-// * Hex Codec
-
+/**
+ * ### Hex Codec
+ *
+ * @description
+ * Hex codec provides conversion between Hex string and Uint8Array <br>
+ * Hex 编解码器提供 HEX字符串 与 Uint8Array相互转换
+ *
+ * @example
+ * Hex.parse('deadbeef') // Uint8Array(4) [ 222, 173, 190, 239 ]
+ * Hex.stringify(Uint8Array(4) [ 222, 173, 190, 239 ]) // 'deadbeef'
+ */
 export const Hex: Codec = {
-  parse(HexString) {
-    const arr = HexString.match(/[\da-f]{2}/gi)
+  parse(input) {
+    const arr = input.match(/[\da-f]{2}/gi)
     if (arr == null) {
       return new Uint8Array()
     }
     return new Uint8Array(arr.map(h => Number.parseInt(h, 16)))
   },
-  stringify(buffer) {
-    const view = new DataView(new Uint8Array(buffer).buffer)
+  stringify(input) {
+    const view = new DataView(input.buffer)
     let result = ''
     for (let i = 0; i < view.byteLength; i++) {
       result += view.getUint8(i).toString(16).padStart(2, '0')
@@ -36,23 +59,43 @@ export const Hex: Codec = {
   },
 }
 
-// * B64 Codec
-
+/**
+ * ### B64 Codec
+ *
+ * @description
+ * B64 codec provides conversion between Base64 string and Uint8Array <br>
+ * B64 编解码器提供 Base64字符串 与 Uint8Array相互转换
+ *
+ * @example
+ * B64.parse('aGVsbG8=') // Uint8Array(5) [ 104, 101, 108, 108, 111 ]
+ * B64.stringify(Uint8Array(5) [ 104, 101, 108, 108, 111 ]) // 'aGVsbG8='
+ */
 export const B64: Codec = {
-  parse(B64String) {
-    return B64CommonParse(B64String, false)
+  parse(input) {
+    return B64CommonParse(input, false)
   },
-  stringify(buffer) {
-    return B64CommonStringify(buffer, false)
+  stringify(input) {
+    return B64CommonStringify(input, false)
   },
 }
 
+/**
+ * ### B64url Codec
+ *
+ * @description
+ * B64url codec provides conversion between Base64url string and Uint8Array <br>
+ * B64url 编解码器提供 Base64url字符串 与 Uint8Array相互转换
+ *
+ * @example
+ * B64url.parse('aGVsbG8') // Uint8Array(5) [ 104, 101, 108, 108, 111 ]
+ * B64url.stringify(Uint8Array(5) [ 104, 101, 108, 108, 111 ]) // 'aGVsbG8'
+ */
 export const B64url: Codec = {
-  parse(B64urlString) {
-    return B64CommonParse(B64urlString, true)
+  parse(input) {
+    return B64CommonParse(input, true)
   },
-  stringify(buffer) {
-    return B64.stringify(buffer).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+  stringify(input) {
+    return B64.stringify(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   },
 }
 
@@ -74,9 +117,9 @@ function B64CommonParse(input: string, url: boolean) {
   return view
 }
 
-/** stringify ArrayBuffer to b64 string */
-export function B64CommonStringify(buffer: ArrayBufferLike, url: boolean) {
-  const view = new DataView(new Uint8Array(buffer).buffer)
+/** stringify Uint8Array to b64 string */
+export function B64CommonStringify(input: Uint8Array, url: boolean) {
+  const view = new DataView(input.buffer)
 
   let map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   map += url ? '-_' : '+/'
