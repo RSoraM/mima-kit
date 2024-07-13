@@ -56,8 +56,8 @@ export const sha1 = createHash(
     const sigBytes = M.byteLength
     const BLOCK_SIZE = 64
     const BLOCK_TOTAL = Math.ceil((sigBytes + 9) / BLOCK_SIZE)
-    const BITS_TOTAL = BigInt(sigBytes * 8)
-    if (BITS_TOTAL > 0xFFFFFFFFFFFFFFn)
+    const BITS_TOTAL = BigInt(sigBytes) << 3n
+    if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFn)
       throw new Error('Message is too long')
 
     // * 填充

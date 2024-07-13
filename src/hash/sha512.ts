@@ -23,8 +23,8 @@ function sha384_512(status: Uint8Array, M: Uint8Array) {
   const sigBytes = M.byteLength
   const BLOCK_SIZE = 128
   const BLOCK_TOTAL = Math.ceil((sigBytes + 17) / BLOCK_SIZE)
-  const BITS_TOTAL = BigInt(sigBytes * 8)
-  if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn)
+  const BITS_TOTAL = BigInt(sigBytes) << 3n
+  if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn)
     throw new Error('Message is too long')
 
   // * 填充
@@ -68,7 +68,7 @@ function sha384_512(status: Uint8Array, M: Uint8Array) {
     for (let i = 0; i < W.length; i++) {
       // 扩展
       if (i < 16)
-        W[i] = view.getBigUint64(i * 8, false) | 0n
+        W[i] = view.getBigUint64(i << 3, false) | 0n
       else
         W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
 

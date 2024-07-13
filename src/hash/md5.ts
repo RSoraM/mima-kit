@@ -58,9 +58,7 @@ export const md5 = createHash(
     const sigBytes = M.byteLength
     const BLOCK_SIZE = 64
     const BLOCK_TOTAL = Math.ceil((sigBytes + 9) / BLOCK_SIZE)
-    const BITS_TOTAL = BigInt(sigBytes * 8)
-    if (BITS_TOTAL > 0xFFFFFFFFFFFFFFn)
-      throw new Error('Message is too long')
+    const BITS_TOTAL = BigInt(sigBytes) << 3n
 
     // * 填充
     const P = new Uint8Array(BLOCK_TOTAL * BLOCK_SIZE)
