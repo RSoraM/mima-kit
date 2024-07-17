@@ -66,7 +66,7 @@ function sha224_256(status: Uint8Array, M: Uint8Array) {
     for (let i = 0; i < W.length; i++) {
       // 扩展
       if (i < 16)
-        W[i] = view.getUint32(i * 4, false) | 0
+        W[i] = view.getUint32(i * 4, false)
       else
         W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
 
@@ -84,14 +84,14 @@ function sha224_256(status: Uint8Array, M: Uint8Array) {
     }
 
     // 更新工作变量
-    statusView.setUint32(0, (h0 + a) | 0, false)
-    statusView.setUint32(4, (h1 + b) | 0, false)
-    statusView.setUint32(8, (h2 + c) | 0, false)
-    statusView.setUint32(12, (h3 + d) | 0, false)
-    statusView.setUint32(16, (h4 + e) | 0, false)
-    statusView.setUint32(20, (h5 + f) | 0, false)
-    statusView.setUint32(24, (h6 + g) | 0, false)
-    statusView.setUint32(28, (h7 + h) | 0, false)
+    statusView.setUint32(0, h0 + a, false)
+    statusView.setUint32(4, h1 + b, false)
+    statusView.setUint32(8, h2 + c, false)
+    statusView.setUint32(12, h3 + d, false)
+    statusView.setUint32(16, h4 + e, false)
+    statusView.setUint32(20, h5 + f, false)
+    statusView.setUint32(24, h6 + g, false)
+    statusView.setUint32(28, h7 + h, false)
   }
 
   // 返回工作变量

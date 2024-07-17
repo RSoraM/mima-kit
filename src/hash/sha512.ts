@@ -68,7 +68,7 @@ function sha384_512(status: Uint8Array, M: Uint8Array) {
     for (let i = 0; i < W.length; i++) {
       // 扩展
       if (i < 16)
-        W[i] = view.getBigUint64(i << 3, false) | 0n
+        W[i] = view.getBigUint64(i << 3, false)
       else
         W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
 
@@ -86,14 +86,14 @@ function sha384_512(status: Uint8Array, M: Uint8Array) {
     }
 
     // 更新工作变量
-    statusView.setBigUint64(0, (h0 + a) | 0n, false)
-    statusView.setBigUint64(8, (h1 + b) | 0n, false)
-    statusView.setBigUint64(16, (h2 + c) | 0n, false)
-    statusView.setBigUint64(24, (h3 + d) | 0n, false)
-    statusView.setBigUint64(32, (h4 + e) | 0n, false)
-    statusView.setBigUint64(40, (h5 + f) | 0n, false)
-    statusView.setBigUint64(48, (h6 + g) | 0n, false)
-    statusView.setBigUint64(56, (h7 + h) | 0n, false)
+    statusView.setBigUint64(0, h0 + a, false)
+    statusView.setBigUint64(8, h1 + b, false)
+    statusView.setBigUint64(16, h2 + c, false)
+    statusView.setBigUint64(24, h3 + d, false)
+    statusView.setBigUint64(32, h4 + e, false)
+    statusView.setBigUint64(40, h5 + f, false)
+    statusView.setBigUint64(48, h6 + g, false)
+    statusView.setBigUint64(56, h7 + h, false)
   }
 
   // 返回工作变量

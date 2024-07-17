@@ -108,11 +108,11 @@ export const sha1 = createHash(
       }
 
       // 更新工作变量
-      statusView.setUint32(0, (h0 + a) | 0, false)
-      statusView.setUint32(4, (h1 + b) | 0, false)
-      statusView.setUint32(8, (h2 + c) | 0, false)
-      statusView.setUint32(12, (h3 + d) | 0, false)
-      statusView.setUint32(16, (h4 + e) | 0, false)
+      statusView.setUint32(0, h0 + a, false)
+      statusView.setUint32(4, h1 + b, false)
+      statusView.setUint32(8, h2 + c, false)
+      statusView.setUint32(12, h3 + d, false)
+      statusView.setUint32(16, h4 + e, false)
     }
 
     // * 截断输出

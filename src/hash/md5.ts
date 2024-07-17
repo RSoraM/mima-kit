@@ -166,10 +166,10 @@ export const md5 = createHash(
       b = II(b, c, d, a, M[9], 21, K[63])
 
       // 更新工作变量
-      statusView.setUint32(0, (A + a) | 0, true)
-      statusView.setUint32(4, (B + b) | 0, true)
-      statusView.setUint32(8, (C + c) | 0, true)
-      statusView.setUint32(12, (D + d) | 0, true)
+      statusView.setUint32(0, A + a, true)
+      statusView.setUint32(4, B + b, true)
+      statusView.setUint32(8, C + c, true)
+      statusView.setUint32(12, D + d, true)
     }
 
     // * 截断输出
