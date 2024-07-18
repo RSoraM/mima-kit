@@ -1,6 +1,6 @@
 import type { Keccak, KeccakPermutation } from '../core/keccakUtils'
 import { RCGen, Sponge } from '../core/keccakUtils'
-import { rotateL } from '../core/utils'
+import { rotateL32 } from '../core/utils'
 
 // * Constants
 
@@ -109,7 +109,7 @@ function theta(A: StateArray800) {
   }
 
   for (let x = 0; x < 5; x++) {
-    D[x] = C[(x + 4) % 5] ^ rotateL(C[(x + 1) % 5], 1)
+    D[x] = C[(x + 4) % 5] ^ rotateL32(C[(x + 1) % 5], 1)
 
     for (let y = 0; y < 5; y++) {
       A[x][y] = A[x][y] ^ D[x]
@@ -125,7 +125,7 @@ function rho(A: StateArray800) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[x][y] = rotateL(A[x][y], R[x][y])
+      _A[x][y] = rotateL32(A[x][y], R[x][y])
     }
   }
   return _A
@@ -148,7 +148,7 @@ function rhoPi(A: StateArray800) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[y][(2 * x + 3 * y) % 5] = rotateL(A[x][y], R[x][y])
+      _A[y][(2 * x + 3 * y) % 5] = rotateL32(A[x][y], R[x][y])
     }
   }
   return _A

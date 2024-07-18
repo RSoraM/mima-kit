@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { rotateL } from '../core/utils'
+import { rotateL32 } from '../core/utils'
 
 // * Constants
 const K: number[] = []
@@ -10,22 +10,22 @@ for (let i = 0; i < 64; i++) {
 // * Function
 function FF(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + ((b & c) | (~b & d)) + m + k
-  return rotateL(n, s) + b
+  return rotateL32(n, s) + b
 }
 
 function GG(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + ((b & d) | (c & ~d)) + m + k
-  return rotateL(n, s) + b
+  return rotateL32(n, s) + b
 }
 
 function HH(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + (b ^ c ^ d) + m + k
-  return rotateL(n, s) + b
+  return rotateL32(n, s) + b
 }
 
 function II(a: number, b: number, c: number, d: number, m: number, s: number, k: number) {
   const n = a + (c ^ (b | ~d)) + m + k
-  return rotateL(n, s) + b
+  return rotateL32(n, s) + b
 }
 
 // * Algorithm

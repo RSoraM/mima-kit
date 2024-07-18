@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { rotateL } from '../core/utils'
+import { rotateL32 } from '../core/utils'
 
 // * Constants
 function K(t: number) {
@@ -96,13 +96,13 @@ export const sha1 = createHash(
         if (i < 16)
           W[i] = view.getUint32(i * 4, false)
         else
-          W[i] = rotateL(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16], 1)
+          W[i] = rotateL32(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16], 1)
 
         // 压缩
-        const T = rotateL(a, 5) + ft(b, c, d, i) + K(i) + e + W[i]
+        const T = rotateL32(a, 5) + ft(b, c, d, i) + K(i) + e + W[i]
         e = d
         d = c
-        c = rotateL(b, 30)
+        c = rotateL32(b, 30)
         b = a
         a = T
       }

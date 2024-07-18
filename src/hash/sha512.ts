@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { rotateRn } from '../core/utils'
+import { rotateR64 } from '../core/utils'
 import { Utf8 } from '../core/codec'
 
 // * Constants
@@ -8,10 +8,10 @@ const K = [0x428A2F98D728AE22n, 0x7137449123EF65CDn, 0xB5C0FBCFEC4D3B2Fn, 0xE9B5
 // * Function
 const Ch = (x: bigint, y: bigint, z: bigint) => (x & y) ^ ((~x) & z)
 const Maj = (x: bigint, y: bigint, z: bigint) => (x & y) ^ (x & z) ^ (y & z)
-const Sigma0 = (x: bigint) => rotateRn(x, 28n) ^ rotateRn(x, 34n) ^ rotateRn(x, 39n)
-const Sigma1 = (x: bigint) => rotateRn(x, 14n) ^ rotateRn(x, 18n) ^ rotateRn(x, 41n)
-const sigma0 = (x: bigint) => rotateRn(x, 1n) ^ rotateRn(x, 8n) ^ (x >> 7n)
-const sigma1 = (x: bigint) => rotateRn(x, 19n) ^ rotateRn(x, 61n) ^ (x >> 6n)
+const Sigma0 = (x: bigint) => rotateR64(x, 28n) ^ rotateR64(x, 34n) ^ rotateR64(x, 39n)
+const Sigma1 = (x: bigint) => rotateR64(x, 14n) ^ rotateR64(x, 18n) ^ rotateR64(x, 41n)
+const sigma0 = (x: bigint) => rotateR64(x, 1n) ^ rotateR64(x, 8n) ^ (x >> 7n)
+const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n)
 
 // * Algorithm
 

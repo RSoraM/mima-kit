@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { rotateL } from '../core/utils'
+import { rotateL32 } from '../core/utils'
 
 // * Function
 function FF(X: number, Y: number, Z: number, j: number) {
@@ -12,8 +12,8 @@ function GG(X: number, Y: number, Z: number, j: number) {
     return X ^ Y ^ Z
   return (X & Y) | (~X & Z)
 }
-const P0 = (X: number) => X ^ rotateL(X, 9) ^ rotateL(X, 17)
-const P1 = (X: number) => X ^ rotateL(X, 15) ^ rotateL(X, 23)
+const P0 = (X: number) => X ^ rotateL32(X, 9) ^ rotateL32(X, 17)
+const P1 = (X: number) => X ^ rotateL32(X, 15) ^ rotateL32(X, 23)
 
 // * Algorithm
 
@@ -96,7 +96,7 @@ export const sm3 = createHash(
           W[i] = view.getUint32(i * 4, false)
         }
         else {
-          W[i] = P1(W[i - 16] ^ W[i - 9] ^ rotateL(W[i - 3], 15)) ^ rotateL(W[i - 13], 7) ^ W[i - 6]
+          W[i] = P1(W[i - 16] ^ W[i - 9] ^ rotateL32(W[i - 3], 15)) ^ rotateL32(W[i - 13], 7) ^ W[i - 6]
         }
 
         // W1 拓展 & 压缩
@@ -108,16 +108,16 @@ export const sm3 = createHash(
 
           // 压缩
           const T = j < 16 ? 0x79CC4519 : 0x7A879D8A
-          const SS1 = rotateL(rotateL(A, 12) + E + rotateL(T, j), 7)
-          const SS2 = SS1 ^ rotateL(A, 12)
+          const SS1 = rotateL32(rotateL32(A, 12) + E + rotateL32(T, j), 7)
+          const SS2 = SS1 ^ rotateL32(A, 12)
           const TT1 = FF(A, B, C, j) + D + SS2 + W1[j]
           const TT2 = GG(E, F, G, j) + H + SS1 + W[j]
           D = C
-          C = rotateL(B, 9)
+          C = rotateL32(B, 9)
           B = A
           A = TT1
           H = G
-          G = rotateL(F, 19)
+          G = rotateL32(F, 19)
           F = E
           E = P0(TT2)
         }

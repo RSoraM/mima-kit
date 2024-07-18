@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { joinBuffer, rotateLn } from '../core/utils'
+import { joinBuffer, rotateL64 } from '../core/utils'
 import type { KeccakPermutation } from '../core/keccakUtils'
 import { RCGen, Sponge } from '../core/keccakUtils'
 
@@ -117,7 +117,7 @@ function theta(A: StateArray1600) {
   }
 
   for (let x = 0; x < 5; x++) {
-    D[x] = C[(x + 4) % 5] ^ rotateLn(C[(x + 1) % 5], 1n)
+    D[x] = C[(x + 4) % 5] ^ rotateL64(C[(x + 1) % 5], 1n)
 
     for (let y = 0; y < 5; y++) {
       A[x][y] = A[x][y] ^ D[x]
@@ -133,7 +133,7 @@ function rho(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[x][y] = rotateLn(A[x][y], BigInt(R[x][y]))
+      _A[x][y] = rotateL64(A[x][y], BigInt(R[x][y]))
     }
   }
   return _A
@@ -156,7 +156,7 @@ function rhoPi(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[y][(2 * x + 3 * y) % 5] = rotateLn(A[x][y], BigInt(R[x][y]))
+      _A[y][(2 * x + 3 * y) % 5] = rotateL64(A[x][y], BigInt(R[x][y]))
     }
   }
   return _A

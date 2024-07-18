@@ -1,5 +1,6 @@
 import type { Keccak, KeccakPermutation } from '../core/keccakUtils'
 import { RCGen, Sponge } from '../core/keccakUtils'
+import { rotateL8 } from '../core/utils'
 
 // * Constants
 
@@ -46,12 +47,6 @@ const RC = [
   0x40,
   0x01,
 ]
-
-// * Functions
-
-function rotateL8(x: number, n: number) {
-  return ((x << n) | (x >>> (8 - n))) & 0xFF
-}
 
 // * 3.1 State
 

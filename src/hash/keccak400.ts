@@ -1,5 +1,6 @@
 import type { Keccak, KeccakPermutation } from '../core/keccakUtils'
 import { RCGen, Sponge } from '../core/keccakUtils'
+import { rotateL16 } from '../core/utils'
 
 // * Constants
 
@@ -48,12 +49,6 @@ const RC = [
   0x5001,
   0x5000,
 ]
-
-// * Functions
-
-function rotateL16(x: number, n: number) {
-  return ((x << n) | (x >>> (16 - n))) & 0xFF
-}
 
 // * 3.1 State
 
