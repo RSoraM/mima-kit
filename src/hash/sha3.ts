@@ -1,21 +1,18 @@
 import { createHash } from '../core/hash'
-import { rotateLn } from '../core/utils'
+import { joinBuffer, rotateLn } from '../core/utils'
+import type { KeccakPermutation } from '../core/keccakUtils'
+import { RCGen, Sponge } from '../core/keccakUtils'
 
 // * Constants
 
-// FIPS.202 3.1
-// b is size of KECCAK-p PERMUTATIONS(aka. State size).
-// w = b / 25
-// l = log2(w)
-// nr = 12 + 2 * l
-//
-// |  b | 25 | 50 | 100 | 200 | 400 | 800 | 1600 |
-// |----|----|----|-----|-----|-----|-----|------|
-// |  w |  1 |  2 |   4 |   8 |  16 |  32 |   64 |
-// |  l |  0 |  1 |   2 |   3 |   4 |   5 |    6 |
-// | nr | 12 | 14 |  16 |  18 |  20 |  22 |   24 |
-//
-const LEGAL_B = [25, 50, 100, 200, 400, 800, 1600]
+const PERMUTATION: KeccakPermutation = {
+  b: 1600,
+  bByte: 200,
+  w: 64,
+  wByte: 8,
+  l: 6,
+  nr: 24,
+}
 
 // FIPS.202 3.2.2
 // Algorithm 2: ρ(A) 位移表
@@ -58,7 +55,7 @@ const RC = [
 
 // * 3.1 State
 
-type StateArray = Array<BigUint64Array>
+type StateArray1600 = BigUint64Array[]
 
 /**
  * ### createStateArray
@@ -66,10 +63,8 @@ type StateArray = Array<BigUint64Array>
  * @description
  * 创建一个 5x5 State Array
  */
-function createStateArray(): StateArray {
-  return Array.from({ length: 5 }).map(
-    () => new BigUint64Array(5),
-  )
+function createStateArray(): StateArray1600 {
+  return Array.from({ length: 5 }).map(() => new BigUint64Array(5))
 }
 
 /**
@@ -79,12 +74,12 @@ function createStateArray(): StateArray {
  * 3.1.2 Converting State to State Arrays
  */
 function toStateArray(S: Uint8Array) {
-  const A: StateArray = createStateArray()
+  const A = createStateArray()
   const view = new DataView(S.buffer)
 
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      A[x][y] = view.getBigUint64((y * 5 + x) * 8, true)
+      A[x][y] = view.getBigUint64((y * 5 + x) * PERMUTATION.wByte, true)
     }
   }
 
@@ -97,13 +92,13 @@ function toStateArray(S: Uint8Array) {
  * @description
  * 3.1.3 Converting State Arrays to State
  */
-function toState(A: StateArray) {
-  const S = new Uint8Array(200)
+function toState(A: StateArray1600) {
+  const S = new Uint8Array(PERMUTATION.bByte)
   const view = new DataView(S.buffer)
 
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      view.setBigUint64((y * 5 + x) * 8, A[x][y], true)
+      view.setBigUint64((y * 5 + x) * PERMUTATION.wByte, A[x][y], true)
     }
   }
 
@@ -113,9 +108,7 @@ function toState(A: StateArray) {
 // * 3.2 Step Mappings
 
 /** Algorithm 1: θ(A) */
-function theta(A: StateArray) {
-  const _A = createStateArray()
-
+function theta(A: StateArray1600) {
   const C = new BigUint64Array(5)
   const D = new BigUint64Array(5)
 
@@ -125,20 +118,18 @@ function theta(A: StateArray) {
 
   for (let x = 0; x < 5; x++) {
     D[x] = C[(x + 4) % 5] ^ rotateLn(C[(x + 1) % 5], 1n)
-  }
 
-  for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[x][y] = A[x][y] ^ D[x]
+      A[x][y] = A[x][y] ^ D[x]
     }
   }
 
-  return _A
+  return A
 }
 
 /** Algorithm 2: ρ(A) */
 // eslint-disable-next-line unused-imports/no-unused-vars
-function rho(A: StateArray) {
+function rho(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
@@ -150,7 +141,7 @@ function rho(A: StateArray) {
 
 /** Algorithm 3: π(A) */
 // eslint-disable-next-line unused-imports/no-unused-vars
-function pi(A: StateArray) {
+function pi(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
@@ -161,7 +152,7 @@ function pi(A: StateArray) {
 }
 
 /** 合并执行 π(ρ(A)) */
-function rhoPi(A: StateArray) {
+function rhoPi(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
@@ -172,7 +163,7 @@ function rhoPi(A: StateArray) {
 }
 
 /** Algorithm 4: χ(A) */
-function chi(A: StateArray) {
+function chi(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
@@ -183,8 +174,8 @@ function chi(A: StateArray) {
 }
 
 /** Algorithm 6: ι(A, ir) */
-function iota(A: StateArray, ir: number) {
-  A[0][0] = A[0][0] ^ RC[ir]
+function iota(A: StateArray1600, RC: bigint) {
+  A[0][0] = A[0][0] ^ RC
   return A
 }
 
@@ -239,98 +230,33 @@ function shakePadding(rBit: number, sigByte: number) {
   return p
 }
 
-// * KECCAK family
+// * KECCAK-p[1600]
 
 /**
- * ### Keccak[c]
- *
- * @description
- * FIPS.202 5.2:
- * Keccak 是 Sponge 函数家族.
- * 当 b = 1600, Keccak 家族表示为 Keccak[c];
- *
- * @param c 容量(bit)
- */
-function Keccak(c: number) {
-  const b = 1600
-  return Sponge(b - c)
-}
-
-/**
- * ### Sponge
- *
- * @description
- * 除去填充功能的 Sponge 结构，用于 SHA3 系列函数. <br>
- * 对于 SHA3 系列函数，映射函数 f 是 Keccak_p(b:1600, nr:24).
- *
- * @param r 吸收量(bit): r = b - c
- */
-function Sponge(r: number) {
-  const b = 1600
-  const nr = 24
-  const bByte = b >> 3
-  const rByte = r >> 3
-
-  const f = Keccak_p(b, nr)
-
-  /**
-   * @param P 经过填充的消息
-   * @param d 输出长度
-   */
-  return (P: Uint8Array, d: number) => {
-    const dByte = d >> 3
-    // n: 分块数
-    const blockTotal = P.byteLength / rByte
-    // c: 容量
-    // const c = b - r
-
-    let S = new Uint8Array(bByte)
-    for (let i = 0; i < blockTotal; i++) {
-      const Pi = P.slice(i * rByte, (i + 1) * rByte)
-      S.forEach((byte, index) => S[index] = byte ^ Pi[index])
-      S = f(S)
-    }
-
-    let Z = S.slice(0, rByte)
-
-    while (Z.byteLength < dByte) {
-      const temp = new Uint8Array(Z.byteLength + rByte)
-      temp.set(Z, 0)
-      S = f(S)
-      temp.set(S.slice(0, rByte), Z.byteLength)
-      Z = temp
-    }
-
-    return Z.slice(0, dByte)
-  }
-}
-
-/**
- * ### Keccak-p
+ * ### Keccak-p[1600]
  *
  * @description
  * 吸收函数 f 生成器
  *
- * @param b 状态量(bit)
  * @param nr 轮数
  */
-function Keccak_p(b: number, nr: number) {
-  if (!LEGAL_B.includes(b)) {
-    throw new Error('Invalid state size')
-  }
+export function Keccak_p_1600(nr?: number) {
+  nr = nr || PERMUTATION.nr
+
+  // 当轮数非默认的情况下，重新生成 RC
+  const _RC = nr === PERMUTATION.nr ? RC : RCGen(PERMUTATION, nr, true)
 
   /**
    * @param S 状态
    */
   return (S: Uint8Array) => {
-    if (S.byteLength * 8 !== b) {
+    if (S.byteLength !== PERMUTATION.bByte) {
       throw new Error('Invalid state size')
     }
 
     let A = toStateArray(S)
     for (let i = 0; i < nr; i++) {
-      // Rnd(A,ir) = iota(chi(rhoPi(theta(A))), ir)
-      A = iota(chi(rhoPi(theta(A))), i)
+      A = iota(chi(rhoPi(theta(A))), _RC[i])
     }
     return toState(A)
   }
@@ -351,16 +277,12 @@ function Keccak_p(b: number, nr: number) {
  * @param padding 填充函数
  */
 function sha3(c: number, d: number, padding: typeof sha3Padding) {
-  const b = 1600
+  const r = PERMUTATION.b - c
   return (M: Uint8Array) => {
-    const p = padding(b - c, M.byteLength)
-
     /** Padded Message */
-    const P = new Uint8Array(M.byteLength + p.byteLength)
-    P.set(M, 0)
-    P.set(p, M.byteLength)
+    const P = joinBuffer(M, padding(r, M.byteLength))
 
-    return Keccak(c)(P, d)
+    return Sponge(Keccak_p_1600(), PERMUTATION.bByte, r >> 3)(P, d)
   }
 }
 
