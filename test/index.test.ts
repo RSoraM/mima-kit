@@ -5,6 +5,7 @@ import { sha1 } from '../src/hash/sha1'
 import { sha224, sha256 } from '../src/hash/sha256'
 import { sha384, sha512, sha512t } from '../src/hash/sha512'
 import { sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../src/hash/sha3'
+import { cShake128, cShake256 } from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import { hmac } from '../src/hash/hmac'
 
@@ -54,6 +55,14 @@ describe('hash', () => {
     expect(shake256(512)('')).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
     expect(shake256(512)('meow, 喵， 🐱')).toMatchInlineSnapshot('"5db7c1ba86c680ac9d8442d18057f7bd28fb125e324271ca0327f2862173411b65ae4a9d454b31c52ab24a3b779bb67b2d9298e418d16ea737fc5d5d3fac760f"')
     expect(shake256(2048)('')).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be141e96616fb13957692cc7edd0b45ae3dc07223c8e92937bef84bc0eab862853349ec75546f58fb7c2775c38462c5010d846c185c15111e595522a6bcd16cf86f3d122109e3b1fdd943b6aec468a2d621a7c06c6a957c62b54dafc3be87567d677231395f6147293b68ceab7a9e0c58d864e8efde4e1b9a46cbe854713672f5caaae314ed9083dab4b099f8e300f01b8650f1f4b1d8fcf3f3cb53fb8e9eb2ea203bdc970f50ae55428a91f7f53ac266b28419c3778a15fd248d339ede785fb7f"')
+
+    expect(cShake128(256)('')).toMatchInlineSnapshot('"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26"')
+    expect(cShake128(256, 'fn', 'password')('')).toMatchInlineSnapshot('"8949abe9aa6f75cc32d7ae0668798a5491530d2dad1c85a3fea68689fc20cb0e"')
+    expect(cShake128(256, 'meow', 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"c6c729b124020e81cec50c281b2fa863ae613ee5c5f0432b4f43fedb29364c7a"')
+
+    expect(cShake256(512)('')).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
+    expect(cShake256(512, 'fn', 'password')('')).toMatchInlineSnapshot('"1ff1d7cc4b14a1d86eb1d763501705199ae4208ca3ebd83809f95189c9b08a1fdf6d9b182f14541888b3b0ba7023dc53a7f8025de2eed1b8dacc95edf9c13b91"')
+    expect(cShake256(512, 'meow', 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"6ba1b872ade77effc824d222654c841d8a99369b533e540007ac3383693d3ff68687892dbd2cc2ea3c8ae61578a6c3c0c7a89235db524db223ff7770293724a3"')
   })
 
   it('sm3', () => {
