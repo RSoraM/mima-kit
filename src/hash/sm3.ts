@@ -18,18 +18,18 @@ const P1 = (X: number) => X ^ rotateL32(X, 15) ^ rotateL32(X, 23)
 // * Algorithm
 
 /**
- * ### SM3
- *
  * @description
- * SM3 hash algorithm <br>
+ * SM3 hash algorithm
  * SM3 散列算法
  *
  * @example
+ * ```ts
  * sm3('hello') // 'becbbfaae6548b8bf0cfcad5a27183cd1be6093b1cceccc303d9c61d0a645268'
  * sm3('hello', B64) // 'vsu/quZUi4vwz8rVonGDzRvmCTsczszDA9nGHQpkUmg='
+ * ```
  *
- * @param {string | Uint8Array} input 输入
- * @param {Codec} codec 输出编解码器
+ * @param {string | Uint8Array} input - 输入
+ * @param {Codec} codec - 输出编解码器
  */
 export const sm3 = createHash(
   (M: Uint8Array) => {

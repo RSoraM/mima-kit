@@ -3,18 +3,18 @@ import { createHash } from '../core/hash'
 import { Utf8 } from '../core/codec'
 
 /**
- * ### HMAC
- *
  * @description
  * FIPS.198-1: The Keyed-Hash Message Authentication Code (HMAC).
  * FIPS.198-1: 散列消息认证码 (HMAC).
  *
  * @example
+ * ```ts
  * hmac(sm3, 'key')('hello')
  * hmac(sm3, 'key')('hello', B64)
+ * ```
  *
- * @param {Hash} hash 散列函数
- * @param {string | Uint8Array} key 密钥
+ * @param {Hash} hash - 散列函数
+ * @param {string | Uint8Array} key - 密钥
  */
 export function hmac(hash: Hash, key: string | Uint8Array) {
   // * 初始化

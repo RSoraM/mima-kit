@@ -1,6 +1,6 @@
 // FIPS.202 3.1
 //
-// KECCAK-p 置换组合
+// Keccak 置换组合
 //
 // w = b / 25
 // l = log2(w)
@@ -13,10 +13,10 @@
 // | nr | 12 | 14 |  16 |  18 |  20 |  22 |   24 |
 //
 
-const LEGAL_B = [200, 400, 800, 1600]
-
 /**
- * Keccak-p 排列接口
+ * @description
+ * Keccak Permutation Descration Interface
+ * Keccak 置换描述接口
  */
 export interface KeccakPermutation {
   b: number
@@ -27,40 +27,21 @@ export interface KeccakPermutation {
   nr: number
 }
 
+// * Permutation Utils
+
 /**
- * ### getKeccakPermutation
- *
  * @description
- * 获取 Keccak-p 排列
+ * FIPS.202 3.2.5
  *
- * @param {number} b 状态的比特长度
- */
-export function getKeccakPermutation(b: number): KeccakPermutation {
-  if (!LEGAL_B.includes(b)) {
-    throw new Error('Invalid Permutation')
-  }
-
-  const w = b / 25
-  const l = Math.log2(w)
-  const nr = 12 + 2 * l
-
-  return { b, bByte: b >> 3, w, wByte: w >> 3, l, nr }
-}
-
-// * State Utils
-
-// FIPS.202 3.2.5
-// RC 由 Algorithm 5: rc(t) 生成
-/**
- * ### RCGen
+ * RC Generation Function, the implementation uses text-to-number conversion.
+ * The performance is very poor, for known and unchanged parameters,
+ * you should use pre-generated tables.
+ * RC 生成函数, 底层实现使用文本转数字的方式.
+ * 性能非常差, 对于已知不变的参数, 应使用预生成的表.
  *
- * @description
- * RC 生成函数，底层实现使用文本转数字的方式 <br>
- * 性能非常差，对于已知不变的参数，可以使用预生成的表
- *
- * @param PERMUTATION Keccak 置换参数
- * @param nr 指定轮数
- * @param bigint 是否返回 BigInt
+ * @param {KeccakPermutation} PERMUTATION - Keccak 置换描述
+ * @param {number} nr - 指定轮数
+ * @param {boolean} bigint - 是否返回 BigInt
  */
 export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint?: false): number[]
 export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint?: true): bigint[]
@@ -100,13 +81,13 @@ export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint = fals
   return RCTable
 }
 
-// FIPS.202 3.2.2
-// Algorithm 2: ρ(A) 位移表生成函数
 /**
- * ### RGen
- *
  * @description
- * 生成 ρ(A) 位移表，对于已知不变的参数，可以使用预生成的表
+ * FIPS.202 3.2.2
+ *
+ * Generate ρ(A) displacement table, for known and unchanged parameters,
+ * you should use pre-generated tables.
+ * 生成 ρ(A) 位移表, 对于已知不变的参数, 应使用预生成的表.
  *
  * @param w 工作字长
  */
@@ -124,17 +105,24 @@ export function RGen(w: number) {
 
 // * Sponge Construction
 
-export type Keccak = (S: Uint8Array) => Uint8Array
+/**
+ * @description
+ * Keccak Permutation Function Interface
+ * Keccak 置换函数接口
+ */
+export interface Keccak {
+  (S: Uint8Array): Uint8Array
+}
 
 /**
- * ### Sponge
- *
  * @description
- * 海绵函数，与文档中的描述不同，这里的海绵函数不包含填充函数，请在调用时自行填充
+ * Sponge Construction, different from the the document, this the sponge function
+ * does not include the padding function, please fill it in before using.
+ * 海绵构造, 与文档不同, 该海绵函数不包含填充函数, 请在使用前填充.
  *
- * @param f Keccak 置换函数
- * @param bByte 状态的字节长度
- * @param rByte 吸收量的字节长度
+ * @param {Keccak} f - Keccak 置换函数
+ * @param {number} bByte - 状态的字节长度
+ * @param {number} rByte - 吸收量的字节长度
  */
 export function Sponge(f: Keccak, bByte: number, rByte: number) {
   /**

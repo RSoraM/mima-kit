@@ -29,18 +29,15 @@ function ft(x: number, y: number, z: number, t: number) {
 // * Algorithm
 
 /**
- * ### SHA-1
- *
  * @description
- * SHA-1 hash algorithm <br>
+ * SHA-1 hash algorithm
  * SHA-1 散列算法
  *
  * @example
+ * ```ts
  * sha1('hello') // 'aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d'
  * sha1('hello', B64) // 'qvTGHdzF6KLavt4PO0gs2a6pQ00='
- *
- * @param {string | Uint8Array} input 输入
- * @param {Codec} codec 输出编解码器
+ * ```
  */
 export const sha1 = createHash(
   (M: Uint8Array) => {

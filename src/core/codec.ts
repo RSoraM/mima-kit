@@ -1,25 +1,44 @@
 /**
- * @interface Codec
- *
  * @description
- * Codec interface provides two methods: parse and stringify <br>
- * 编解码器接口提供两个方法：parse 和 stringify
+ * Codec interface provides two methods: parse and stringify.
+ * 编解码器接口提供两个方法：parse 和 stringify.
+ *
+ * @example
+ * ```ts
+ * codec.parse('') // Uint8Array
+ * codec.stringify(new Uint8Array()) // string
+ * ```
  */
 export interface Codec {
+  /**
+   * @description
+   * Parse encoded string to Uint8Array.
+   * 将编码字符串解析为 Uint8Array.
+   *
+   * @param {string} input - 输入字符串
+   */
   parse: (input: string) => Uint8Array
+
+  /**
+   * @description
+   * Stringify Uint8Array to encoded string.
+   * 将 Uint8Array 编码为字符串.
+   *
+   * @param input - 输入 Uint8Array
+   */
   stringify: (input: Uint8Array) => string
 }
 
 /**
- * ### Utf8 Codec
- *
  * @description
- * Utf8 codec provides conversion between Utf8 string and Uint8Array <br>
- * Utf8 编解码器提供 UTF-8字符串 与 Uint8Array相互转换
+ * Utf8 codec provides conversion between Utf8 string and Uint8Array.
+ * Utf8 编解码器提供 UTF-8字符串 与 Uint8Array相互转换.
  *
  * @example
+ * ```ts
  * Utf8.parse('hello') // Uint8Array(5) [ 104, 101, 108, 108, 111 ]
- * Utf8.stringify(Uint8Array(5) [ 104, 101, 108, 108, 111 ]) // 'hello'
+ * Utf8.stringify(new Uint8Array([ 104, 101, 108, 108, 111 ])) // 'hello'
+ * ```
  */
 export const Utf8: Codec = {
   parse(input) {
@@ -31,15 +50,15 @@ export const Utf8: Codec = {
 }
 
 /**
- * ### Hex Codec
- *
  * @description
- * Hex codec provides conversion between Hex string and Uint8Array <br>
- * Hex 编解码器提供 HEX字符串 与 Uint8Array相互转换
+ * Hex codec provides conversion between Hex string and Uint8Array.
+ * Hex 编解码器提供 HEX字符串 与 Uint8Array相互转换.
  *
  * @example
+ * ```ts
  * Hex.parse('deadbeef') // Uint8Array(4) [ 222, 173, 190, 239 ]
- * Hex.stringify(Uint8Array(4) [ 222, 173, 190, 239 ]) // 'deadbeef'
+ * Hex.stringify(new Uint8Array([ 222, 173, 190, 239 ])) // 'deadbeef'
+ * ```
  */
 export const Hex: Codec = {
   parse(input) {
@@ -60,15 +79,15 @@ export const Hex: Codec = {
 }
 
 /**
- * ### B64 Codec
- *
  * @description
- * B64 codec provides conversion between Base64 string and Uint8Array <br>
- * B64 编解码器提供 Base64字符串 与 Uint8Array相互转换
+ * B64 codec provides conversion between Base64 string and Uint8Array.
+ * B64 编解码器提供 Base64字符串 与 Uint8Array相互转换.
  *
  * @example
+ * ```ts
  * B64.parse('aGVsbG8=') // Uint8Array(5) [ 104, 101, 108, 108, 111 ]
- * B64.stringify(Uint8Array(5) [ 104, 101, 108, 108, 111 ]) // 'aGVsbG8='
+ * B64.stringify(new Uint8Array([ 104, 101, 108, 108, 111 ])) // 'aGVsbG8='
+ * ```
  */
 export const B64: Codec = {
   parse(input) {
@@ -80,15 +99,15 @@ export const B64: Codec = {
 }
 
 /**
- * ### B64url Codec
- *
  * @description
- * B64url codec provides conversion between Base64url string and Uint8Array <br>
- * B64url 编解码器提供 Base64url字符串 与 Uint8Array相互转换
+ * B64url codec provides conversion between Base64url string and Uint8Array.
+ * B64url 编解码器提供 Base64url字符串 与 Uint8Array相互转换.
  *
  * @example
+ * ```ts
  * B64url.parse('aGVsbG8') // Uint8Array(5) [ 104, 101, 108, 108, 111 ]
- * B64url.stringify(Uint8Array(5) [ 104, 101, 108, 108, 111 ]) // 'aGVsbG8'
+ * B64url.stringify(new Uint8Array([ 104, 101, 108, 108, 111 ])) // 'aGVsbG8'
+ * ```
  */
 export const B64url: Codec = {
   parse(input) {
@@ -99,7 +118,14 @@ export const B64url: Codec = {
   },
 }
 
-/** parse b64 string to uint8array */
+/**
+ * @description
+ * B64CommonParse can parse B64 or B64url string to Uint8Array.
+ * B64CommonParse 可以将 B64 或者 B64url 字符串解析为 Uint8Array.
+ *
+ * @param {string} input - B64 或 B64url 字符串
+ * @param {boolean} url - 是否是 B64url 字符串
+ */
 function B64CommonParse(input: string, url: boolean) {
   if (url) {
     input = input.replace(/-/g, '+').replace(/_/g, '/')
@@ -117,8 +143,15 @@ function B64CommonParse(input: string, url: boolean) {
   return view
 }
 
-/** stringify Uint8Array to b64 string */
-export function B64CommonStringify(input: Uint8Array, url: boolean) {
+/**
+ * @description
+ * B64CommonStringify can stringify Uint8Array to B64 or B64url string.
+ * B64CommonStringify 可以将 Uint8Array 编码为 B64 或 B64url 字符串.
+ *
+ * @param {Uint8Array} input - Uint8Array
+ * @param {boolean} url - 是否是 B64url 字符串
+ */
+function B64CommonStringify(input: Uint8Array, url: boolean) {
   const view = new DataView(input.buffer)
 
   let map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'

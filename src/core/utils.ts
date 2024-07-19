@@ -39,9 +39,8 @@ export function rotateR64(x: bigint, n: bigint) {
 }
 
 /**
- * ### joinBuffer
- *
  * @description
+ * Merging multiple ArrayBuffers
  * 合并多个 ArrayBuffer
  */
 export function joinBuffer(...buffers: ArrayBuffer[]) {

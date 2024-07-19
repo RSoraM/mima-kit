@@ -1,3 +1,7 @@
+export type { Codec } from './core/codec'
+export type { Hash } from './core/hash'
+
+// * Codec
 export { Utf8, Hex, B64, B64url } from './core/codec'
 
 // * MD5

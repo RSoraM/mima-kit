@@ -13,9 +13,11 @@ const PERMUTATION: KeccakPermutation = {
   nr: 20,
 }
 
-// FIPS.202 3.2.2
-// Algorithm 2: ρ(A) 位移表
-// 由 src/core/keccakUtils.ts 中的 RGen 函数生成
+/**
+ * FIPS.202 3.2.2
+ * Algorithm 2: ρ(A) 位移表
+ * 由 src/core/keccakUtils.ts 中的 RGen 函数生成
+ */
 const R = [
   [0, 4, 3, 9, 2],
   [1, 12, 10, 13, 2],
@@ -24,44 +26,30 @@ const R = [
   [11, 4, 2, 2, 13],
 ]
 
-// FIPS.202 3.2.5
-// RC 由 Algorithm 5: rc(t) 生成
-// 由 src/core/keccakUtils.ts 中的 RCGen 函数生成
-const RC = [
-  0x8000,
-  0x4101,
-  0x5101,
-  0x0001,
-  0xD101,
-  0x8000,
-  0x8101,
-  0x9001,
-  0x5100,
-  0x1100,
-  0x9001,
-  0x5000,
-  0xD101,
-  0xD100,
-  0x9101,
-  0xC001,
-  0x4001,
-  0x0100,
-  0x5001,
-  0x5000,
-]
+/**
+ * FIPS.202 3.2.5
+ * RC 由 Algorithm 5: rc(t) 生成
+ * 由 src/core/keccakUtils.ts 中的 RCGen 函数生成
+ */
+const RC = [0x8000, 0x4101, 0x5101, 0x0001, 0xD101, 0x8000, 0x8101, 0x9001, 0x5100, 0x1100, 0x9001, 0x5000, 0xD101, 0xD100, 0x9101, 0xC001, 0x4001, 0x0100, 0x5001, 0x5000]
 
-// * 3.1 State
+// * Permutation Function
 
 type StateArray400 = Uint16Array[]
+
+/**
+ * @description
+ * create a 5x5 State Array
+ * 创建一个 5x5 State Array
+ */
 function createStateArray(): StateArray400 {
   return Array.from({ length: 5 }).map(() => new Uint16Array(5))
 }
 
 /**
- * ### toStateArray
- *
  * @description
- * 3.1.2 Converting State to State Arrays
+ * Converting State to State Arrays
+ * 将状态转换为状态数组
  */
 function toStateArray(S: Uint8Array) {
   const A = createStateArray()
@@ -77,10 +65,9 @@ function toStateArray(S: Uint8Array) {
 }
 
 /**
- * ### toState
- *
  * @description
- * 3.1.3 Converting State Arrays to State
+ * Converting State Arrays to State
+ * 将状态数组转换为状态
  */
 function toState(A: StateArray400) {
   const S = new Uint8Array(PERMUTATION.bByte)
@@ -95,7 +82,7 @@ function toState(A: StateArray400) {
   return S
 }
 
-// * 3.2 Step Mappings
+// * Mapping Function
 
 /** Algorithm 1: θ(A) */
 function theta(A: StateArray400) {
@@ -169,15 +156,14 @@ function iota(A: StateArray400, RC: number) {
   return A
 }
 
-// * KECCAK-p[200]
+// * Keccak-p[400]
 
 /**
- * ### Keccak-p[200]
- *
  * @description
- * 吸收函数 f 生成器
+ * Keccak-p[400] Permutation Function
+ * Keccak-p[400] 置换函数
  *
- * @param nr 轮数
+ * @param {number} nr 轮数
  */
 export function Keccak_p_400(nr?: number) {
   nr = nr || PERMUTATION.nr
@@ -186,7 +172,11 @@ export function Keccak_p_400(nr?: number) {
   const _RC = nr === PERMUTATION.nr ? RC : RCGen(PERMUTATION, nr)
 
   /**
-   * @param S 状态
+   * @description
+   * Absorbing Function
+   * 吸收函数
+   *
+   * @param {Uint8Array} S - 状态
    */
   return (S: Uint8Array) => {
     if (S.byteLength !== PERMUTATION.bByte) {
@@ -201,6 +191,15 @@ export function Keccak_p_400(nr?: number) {
   }
 }
 
+/**
+ * @description
+ * Keccak-p[400] Sponge Construction
+ * Keccak-p[400] 海绵构造
+ *
+ * @param {number} rByte - 吸收量的字节长度
+ * @param {Keccak} f - Keccak 置换函数
+ * @returns
+ */
 export function Sponge_400(rByte: number, f: Keccak = Keccak_p_400()) {
   return Sponge(f, PERMUTATION.bByte, rByte)
 }

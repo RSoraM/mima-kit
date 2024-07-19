@@ -15,7 +15,14 @@ const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n)
 
 // * Algorithm
 
-/** SHA-384 & SHA-512 & SHA-512/t 通用函数 */
+/**
+ * @description
+ * SHA-384 & SHA-512 & SHA-512/t common function
+ * SHA-384 & SHA-512 & SHA-512/t 通用函数
+ *
+ * @param {Uint8Array} status - 工作变量
+ * @param {Uint8Array} M - 消息
+ */
 function sha384_512(status: Uint8Array, M: Uint8Array) {
   // * 初始化
   const statusView = new DataView(status.buffer)
@@ -100,7 +107,13 @@ function sha384_512(status: Uint8Array, M: Uint8Array) {
   return status
 }
 
-/** SHA-512/t IV 生成函数 */
+/**
+ * @description
+ * SHA-512/t IV generator
+ * SHA-512/t IV 生成函数
+ *
+ * @param {number} t 0 < t < 512 && t !== 384
+ */
 function IVGen(t: number) {
   if (t <= 0) {
     throw new Error('t must be greater than 0')
@@ -127,18 +140,15 @@ function IVGen(t: number) {
 }
 
 /**
- * ### SHA-384
- *
  * @description
- * SHA-384 hash algorithm is truncated versions of SHA-512 <br>
+ * SHA-384 hash algorithm is truncated versions of SHA-512
  * SHA-384 散列算法 是 SHA-512 的截断版本
  *
  * @example
+ * ```t
  * sha384('hello') // '59e1748777448c69de6b800d7a33bbfb9ff1b463e44354c3553bcdb9c666fa90125a3c79f90397bdf5f6a13de828684f'
  * sha384('hello', B64) // 'WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP'
- *
- * @param {string | Uint8Array} input 输入
- * @param {Codec} codec 输出编解码器
+ * ```
  */
 export const sha384 = createHash(
   (M: Uint8Array) => {
@@ -167,15 +177,15 @@ export const sha384 = createHash(
 )
 
 /**
- * ### SHA-512
- *
  * @description
- * SHA-512 hash algorithm <br>
+ * SHA-512 hash algorithm
  * SHA-512 散列算法
  *
  * @example
+ * ```t
  * sha512('hello') // '9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043'
  * sha512('hello', B64) // 'm3HSJL1i83hdltRq0+o9czGb+8KJDKra4t/3JRlnPKcjI8PZm6XBHXx6zG4UuMXaDEZjR1wuXDre9G9zvN7AQw=='
+ * ```
  */
 export const sha512 = createHash(
   (M: Uint8Array) => {
@@ -204,15 +214,15 @@ export const sha512 = createHash(
 )
 
 /**
- * ### SHA-512/t
- *
  * @description
- * SHA-512/t hash algorithm is t-bit hash function base on SHA-512 <br>
+ * SHA-512/t hash algorithm is t-bit hash function base on SHA-512
  * SHA-512/t 散列算法 是基于 SHA-512 的 t 位散列函数
  *
  * @example
+ * ```t
  * sha512t(224)('hello') // 'fe8509ed1fb7dcefc27e6ac1a80eddbec4cb3d2c6fe565244374061c'
  * sha512t(224)('hello', B64) // '/oUJ7R+33O/CfmrBqA7dvsTLPSxv5WUkQ3QGHA=='
+ * ```
  *
  * @param {number} t 0 < t < 512 && t !== 384
  */

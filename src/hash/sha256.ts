@@ -14,7 +14,14 @@ const sigma1 = (x: number) => rotateR32(x, 17) ^ rotateR32(x, 19) ^ (x >>> 10)
 
 // * Algorithm
 
-/** SHA-224 & SHA-256 通用函数 */
+/**
+ * @description
+ * SHA-224 & SHA-256 common function
+ * SHA-224 & SHA-256 通用函数
+ *
+ * @param {Uint8Array} status - 工作变量
+ * @param {Uint8Array} M - 消息
+ */
 function sha224_256(status: Uint8Array, M: Uint8Array) {
   // * 初始化
   const statusView = new DataView(status.buffer)
@@ -99,18 +106,15 @@ function sha224_256(status: Uint8Array, M: Uint8Array) {
 }
 
 /**
- * ### SHA-224
- *
  * @description
- * SHA-224 hash algorithm is truncated versions of SHA-256 <br>
+ * SHA-224 hash algorithm is truncated versions of SHA-256
  * SHA-224 散列算法 是 SHA-256 的截断版本
  *
  * @example
+ * ```ts
  * sha224('hello') // 'ea09ae9cc6768c50fcee903ed054556e5bfc8347907f12598aa24193'
  * sha224('hello', B64) // '6gmunMZ2jFD87pA+0FRVblv8g0eQfxJZiqJBkw=='
- *
- * @param {string | Uint8Array} input 输入
- * @param {Codec} codec 输出编解码器
+ * ```
  */
 export const sha224 = createHash(
   (M: Uint8Array) => {
@@ -139,18 +143,15 @@ export const sha224 = createHash(
 )
 
 /**
- * ### SHA-256
- *
  * @description
- * SHA-256 hash algorithm <br>
+ * SHA-256 hash algorithm
  * SHA-256 散列算法
  *
  * @example
+ * ```ts
  * sha256('hello') // '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
  * sha256('hello', B64) // 'LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ='
- *
- * @param {string | Uint8Array} input 输入
- * @param {Codec} codec 输出编解码器
+ * ```
  */
 export const sha256 = createHash(
   (M: Uint8Array) => {
