@@ -12,7 +12,23 @@
     "url": "git+https://github.com/RSoraM/mima-kit.git"
   },
   "bugs": "https://github.com/RSoraM/mima-kit/issues",
-  "keywords": [],
+  "keywords": [
+    "cryptography",
+    "hmac",
+    "md5",
+    "sha1",
+    "sha224",
+    "sha256",
+    "sha384",
+    "sha512",
+    "sha512/t",
+    "sha3",
+    "shake128",
+    "shake256",
+    "cShake128",
+    "cShake256",
+    "sm3"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {

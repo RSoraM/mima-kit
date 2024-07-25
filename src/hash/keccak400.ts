@@ -198,7 +198,6 @@ export function Keccak_p_400(nr?: number) {
  *
  * @param {number} rByte - 吸收量的字节长度
  * @param {Keccak} f - Keccak 置换函数
- * @returns
  */
 export function Sponge_400(rByte: number, f: Keccak = Keccak_p_400()) {
   return Sponge(f, PERMUTATION.bByte, rByte)

@@ -23,7 +23,7 @@ export { Keccak_p_400, Sponge_400 } from './hash/keccak400'
 export { Keccak_p_800, Sponge_800 } from './hash/keccak800'
 export { Keccak_p_1600, Sponge_1600 } from './hash/keccak1600'
 export { sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from './hash/sha3'
-export { cShake128, cShake256 } from './hash/sha3Derived'
+export { cShake128, cShake256, kmac128, kmac256 } from './hash/sha3Derived'
 
 // * SM3
 export { sm3 } from './hash/sm3'
