@@ -6,17 +6,33 @@ import { PERMUTATION, Sponge_1600 } from './keccak1600'
 
 /**
  * @description
+ * SHA3 padding function interface
+ * SHA3 填充函数接口
+ *
+ * @param {number} rBit - 吸收量 bit
+ * @param {number} sigByte - 原始消息字节 byte
+ * @returns {Uint8Array} - 填充的内容
+ */
+interface Padding {
+  (rBit: number, sigByte: number): Uint8Array
+}
+
+/**
+ * @description
  * FIPS.202 B.2:
  *
  * SHA3 Padding
  * SHA3 填充函数
  *
- * 01 || pad10*1
+ * @example
+ * ```
+ * M || 01 || 10*1
+ * ```
  *
- * @param {number} rBit 吸收量(bit)
- * @param {number} sigByte 原始消息字节
+ * @param {number} rBit - 吸收量 bit
+ * @param {number} sigByte - 原始消息字节 byte
  */
-function sha3Padding(rBit: number, sigByte: number) {
+const sha3Padding: Padding = (rBit: number, sigByte: number) => {
   const rByte = rBit >> 3
   const q = rByte - (sigByte % rByte)
   const p = new Uint8Array(q)
@@ -38,10 +54,13 @@ function sha3Padding(rBit: number, sigByte: number) {
  * SHAKE Padding
  * SHAKE 填充函数
  *
- * 1111 || pad10*1
+ * @example
+ * ```
+ * M || 1111 || 10*1
+ * ```
  *
- * @param {number} rBit 吸收量(bit)
- * @param {number} sigByte 原始消息字节
+ * @param {number} rBit - 吸收量 bit
+ * @param {number} sigByte - 原始消息字节 byte
  */
 function shakePadding(rBit: number, sigByte: number) {
   const rByte = rBit >> 3
@@ -62,15 +81,15 @@ function shakePadding(rBit: number, sigByte: number) {
 
 /**
  * @description
- * 对于 SHA3 系列函数, Keccak-p 使用固定参数 Keccak-p(b:1600, nr:24).
- * SHA3 和 SHA3 XOF 函数的区别只有 c, d, padding.
- * 因此生成函数只需要提供 c, d, padding.
+ * `sha3` is a `Keccak[C]` wrapper. In the original definition, `Keccak[C]` uses a fixed permutation function `Keccak-p(b:1600, nr:24)`, and receives parameters: capacity `c`, output length `d` and main input `M`. In different `SHA3` derived algorithms, the input `M` will concatenate different bit, and perform `10*1` padding before operation, such as `M || 01 || 10*1`. For byte-aligned programming languages, it is very troublesome to implement this concatenation, so this wrapper receives function parameters: `padding` to handle algorithm padding.
  *
- * @param c 容量 bit
- * @param d 输出长度 bit
- * @param padding 填充函数
+ * `sha3` 是一个 `Keccak[C]` 包装器. 原定义中, `Keccak[C]` 使用固定置换函数 `Keccak-p(b:1600, nr:24)`, 并接收参数: 容量`c`, 输出长度`d` 和 主要输入`M`. 在不同的 `SHA3` 衍生算法中, 输入 `M` 会串接不同的比特位, 并在运算前进行 `10*1` 填充, 比如 `M || 01 || 10*1`. 对于字节对齐的编程语言来说, 实现这种串接非常麻烦, 所以这个包装器接收函数参数: `padding` 以处理算法填充.
+ *
+ * @param {number} c - 容量 bit
+ * @param {number} d - 输出长度 bit
+ * @param {Padding} padding - 填充函数
  */
-export function sha3(c: number, d: number, padding: typeof sha3Padding) {
+export function sha3(c: number, d: number, padding: Padding) {
   const r = PERMUTATION.b - c
   return (M: Uint8Array) => {
     /** Padded Message */
@@ -170,7 +189,7 @@ export const sha3_512 = createHash(
  * shake128(256)('hello', B64) // 'jrS2qTLygDNe4aJ5+MIIo0nnvGXa+DHTAhwhOCUpJGM='
  * ```
  *
- * @param {number} d 输出长度
+ * @param {number} d - 输出长度 bit
  */
 export function shake128(d: number) {
   return createHash(
@@ -194,7 +213,7 @@ export function shake128(d: number) {
  * shake256(512)('hello', B64) // 'EjQHWuSh53MWzy2AAJdFgaNDueu8p+PR24M5TDDyIWJvWU5PDeY5AjSaXqV4EhMhWBORn5Kk2G0SdGbj0H6L4w=='
  * ```
  *
- * @param {number} d 输出长度
+ * @param {number} d - 输出长度 bit
  */
 export function shake256(d: number) {
   return createHash(

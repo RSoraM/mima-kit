@@ -33,11 +33,8 @@ export interface KeccakPermutation {
  * @description
  * FIPS.202 3.2.5
  *
- * RC Generation Function, the implementation uses text-to-number conversion.
- * The performance is very poor, for known and unchanged parameters,
- * you should use pre-generated tables.
- * RC 生成函数, 底层实现使用文本转数字的方式.
- * 性能非常差, 对于已知不变的参数, 应使用预生成的表.
+ * RC Generation Function, the implementation uses text-to-number conversion. The performance is very poor, for known and unchanged parameters, you should use pre-generated tables.
+ * RC 生成函数, 底层实现使用文本转数字的方式. 性能非常差, 对于已知不变的参数, 应使用预生成的表.
  *
  * @param {KeccakPermutation} PERMUTATION - Keccak 置换描述
  * @param {number} nr - 指定轮数
@@ -85,11 +82,10 @@ export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint = fals
  * @description
  * FIPS.202 3.2.2
  *
- * Generate ρ(A) displacement table, for known and unchanged parameters,
- * you should use pre-generated tables.
+ * Generate ρ(A) displacement table, for known and unchanged parameters, you should use pre-generated tables.
  * 生成 ρ(A) 位移表, 对于已知不变的参数, 应使用预生成的表.
  *
- * @param w 工作字长
+ * @param {number} w - 工作字长
  */
 export function RGen(w: number) {
   const R = [
@@ -116,8 +112,7 @@ export interface Keccak {
 
 /**
  * @description
- * Sponge Construction, different from the the document, this the sponge function
- * does not include the padding function, please fill it in before using.
+ * Sponge Construction, different from the document, this sponge function does not include the padding function, please fill it in before using.
  * 海绵构造, 与文档不同, 该海绵函数不包含填充函数, 请在使用前填充.
  *
  * @param {Keccak} f - Keccak 置换函数
@@ -126,8 +121,8 @@ export interface Keccak {
  */
 export function Sponge(f: Keccak, bByte: number, rByte: number) {
   /**
-   * @param P 经过填充的消息
-   * @param d 输出长度
+   * @param {Uint8Array} P - 经过填充的消息
+   * @param {number} d - 输出长度 bit
    */
   return (P: Uint8Array, d: number) => {
     // n: 分块数

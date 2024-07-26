@@ -4,10 +4,22 @@ import { md5 } from '../src/hash/md5'
 import { sha1 } from '../src/hash/sha1'
 import { sha224, sha256 } from '../src/hash/sha256'
 import { sha384, sha512, sha512t } from '../src/hash/sha512'
-import { sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../src/hash/sha3'
-import { cShake128, cShake256, kmac128, kmac256 } from '../src/hash/sha3Derived'
+import * as sha3 from '../src/hash/sha3'
+import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import { hmac } from '../src/hash/hmac'
+
+const { sha3_224, sha3_256 } = sha3
+const { sha3_384, sha3_512 } = sha3
+const { shake128, shake256 } = sha3
+
+const { cShake128, cShake256 } = sha3Derived
+const { kmac128, kmac256 } = sha3Derived
+const { kmac128XOF, kmac256XOF } = sha3Derived
+const { tupleHash128, tupleHash256 } = sha3Derived
+const { tupleHash128XOF, tupleHash256XOF } = sha3Derived
+const { parallelHash128, parallelHash256 } = sha3Derived
+const { parallelHash128XOF, parallelHash256XOF } = sha3Derived
 
 describe('hash', () => {
   // * MD5
@@ -76,11 +88,25 @@ describe('hash', () => {
     expect(kmac128(256, '', 'password')('')).toMatchInlineSnapshot('"e726b86ee29b1a51867fa5aa58ae2078c24bf1176da85262db46d1d67fe92be2"')
     expect(kmac128(256, 'password')('')).toMatchInlineSnapshot(`"21cbb4034e42533b7666f5e6997a9e4eede3cadf017412b294b9af792ddab12a"`)
     expect(kmac128(256, 'password', 'custom')('meow, 喵， 🐱')).toMatchInlineSnapshot(`"ef74e577ff0eef49974b6c2a707067ac6d3fba7afeccc2ff3ea40935d0471635"`)
+    expect(kmac128XOF(256, 'password', 'custom')('meow, 喵， 🐱')).toMatchInlineSnapshot(`"8e8b4b4eacf9feee5bec9559a6091f48ee3c26de38adb4191e9eadf8f428f0fd"`)
 
     expect(kmac256(512)('')).toMatchInlineSnapshot('"2b70c18a81bb6446868dbc411e0dc1331c4399101d6b8b14ea16e951eee001033207bfe3bede15b946bfc209c62fc5d95e3e7b530b507319f24947d6ad7c18fe"')
     expect(kmac256(512, '', 'password')('')).toMatchInlineSnapshot('"fe840b8ef8dfcfb9b0f22adc45727bb77ac9adb60130367c03975f84e2aad82b18027c0c0df59d8fbcc1a219203e09d148cb527f971024ea60222bf4f134e3a4"')
     expect(kmac256(512, 'password')('')).toMatchInlineSnapshot('"84500199d4e0dda265fdd0e009eb658c9fee708e6a6af073ea078173d6298c2a507b9c7be0597ce2c839ded8556d4468c9c07b7c076aee66ae1454cc6a6b2477"')
     expect(kmac256(512, 'password', 'custom')('meow, 喵， 🐱')).toMatchInlineSnapshot(`"7ac4bd71ef93bfa57560f069ed832b785b9ddd855200974a9025240c44f39d8739c31c201f92919c075bcac16313761765c32a20b8a1dbae1cef32e015e3e7f5"`)
+    expect(kmac256XOF(512, 'password', 'custom')('meow, 喵， 🐱')).toMatchInlineSnapshot(`"16066139244a9b649547be5fa349a3f9ce568ab6dcb753b00573cca1d2f6b47e354e175520fff098c3124048f8524771518e4cae9de9f026c76b347dc79058f2"`)
+  })
+  it('tupleHash', () => {
+    expect(tupleHash128(256, 'custom')(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"3c981a838a10737fc32609fde65f87ad928d1321450279e6318f629ed3ef89de"`)
+    expect(tupleHash128XOF(256, 'custom')(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"506a35e6f751612bd496d6647c4f33f428f7670acd3dbe5417c2fc16dc9852c5"`)
+    expect(tupleHash256(512, 'custom')(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"9c30d7333705d6d5614a735bc2990328229b9b0d301d1645a931d3f33ba9f38cb6c1681196ae4107835823abc90bf06b1b113c85e000d808f0eef3a125a15dc0"`)
+    expect(tupleHash256XOF(512, 'custom')(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"7df7f72679ea7bc2b517c80a0d62d0635a343e1c40d96094da0cecd531e897a440faa28d4eff45cd46605cf050ea0a634e6d1cf5a63f56d3faf71e500e15dc98"`)
+  })
+  it('parallelHash', async () => {
+    expect(parallelHash128(1024, 256, 'custom')('meow, 喵, 🐱')).toMatchInlineSnapshot(`"e5c12db8d0dccc6c1c9a37f1055b14ff2d454013181d17c63fdfb84fbedb3c30"`)
+    expect(parallelHash128XOF(1024, 256, 'custom')('meow, 喵, 🐱')).toMatchInlineSnapshot(`"07ed9b4de2b5e9a6e8fe7c30db3dcc0433dae7f6e26adabc4657d03b6710b887"`)
+    expect(parallelHash256(1024, 512, 'custom')('meow, 喵, 🐱')).toMatchInlineSnapshot(`"1c17675efbc315f023c74bf6dc9a83bd9856af34be1de08a3189b8abd1cb8abdc332b6f5da859e69382f283e79ccf094e9fd8a12780995c22c1382d5d959d794"`)
+    expect(parallelHash256XOF(1024, 512, 'custom')('meow, 喵, 🐱')).toMatchInlineSnapshot(`"9f1d8327fb737c1f595deee995ce595b8d86eab66910f01d6b0c450c45274e630aa89fd76cb6101a2f391dcc0838077fe0c7ccc2a214250c91ae67fd431bf10d"`)
   })
   // * SM3
   it('sm3', () => {

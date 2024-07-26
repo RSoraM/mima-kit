@@ -16,6 +16,8 @@ interface AlgorithmDescription {
   DIGEST_SIZE: number
 }
 
+// * 散列函数包装器
+
 /**
  * @description
  * Digest function interface.
@@ -52,16 +54,11 @@ export interface Hash extends AlgorithmDescription {
  * Create a wrapper for the digest function.
  * 为散列函数创建一个包装.
  *
- * Users usually use `string` as input, but the algorithm is implemented
- * using `ArrayBuffer`. Asking users to convert data types is too verbose.
- * 用户调用时一般使用 `string` 作为输入, 但算法通过 `ArrayBuffer` 实现.
- * 让用户转换数据类型实在过于繁琐.
+ * Users usually use `string` as input, but the algorithm is implemented using `ArrayBuffer`. Asking users to convert data types is too verbose.
+ * 用户调用时一般使用 `string` 作为输入, 但算法通过 `ArrayBuffer` 实现. 让用户转换数据类型实在过于繁琐.
  *
- * In addition to being user-friendly, the wrapper function can also record
- * the original function and algorithm description information to implement
- * related extended algorithms such as `HMAC`.
- * 除了方便用户使用外, 包装函数还可以记录 原始函数 和 算法描述信息,
- * 以便实现 HMAC 等相关拓展算法.
+ * In addition to being user-friendly, the wrapper function can also record the original function and algorithm description information to implement related extended algorithms such as `HMAC`.
+ * 除了方便用户使用外, 包装函数还可以记录 原始函数 和 算法描述信息, 以便实现 `HMAC` 等相关拓展算法.
  *
  * @example
  * ```ts
@@ -76,6 +73,64 @@ export function createHash(digest: Digest, description: AlgorithmDescription): H
     (input: string | Uint8Array, codec: Codec = Hex) => {
       const M = typeof input == 'string' ? Utf8.parse(input) : input
       const status = digest(M)
+      return codec.stringify(status)
+    },
+    {
+      ...description,
+      digest,
+    },
+  )
+}
+
+// * 元组散列函数包装器
+
+/**
+ * @description
+ * Digest function interface.
+ * 元组散列函数的接口.
+ *
+ * @param {Uint8Array} M - 输入
+ * @returns {Uint8Array} - 输出
+ */
+type TupleDigest = (M: Uint8Array[]) => Uint8Array
+
+/**
+ * @description
+ * Hash algorithm interface.
+ * 元组散列算法的接口.
+ */
+export interface TupleHash extends AlgorithmDescription {
+  /**
+   * @description
+   * Hash function with automatic input conversion and optional output encoding.
+   * 自动转换输入且可自定义输出编码的元组散列函数.
+   *
+   * @param {Array<string | Uint8Array>} input - 输入
+   * @param {Codec} codec - 编解码器
+   */
+  (input: Array<string | Uint8Array>, codec?: Codec): string
+
+  digest: TupleDigest
+}
+
+/**
+ * @description
+ * Create a wrapper for the tuple digest function.
+ * 为元组散列函数创建一个包装.
+ *
+ * @example
+ * ```ts
+ * const hash = createTupleHash((M: Uint8Array[]) => Uint8Array, {...})
+ * ```
+ *
+ * @param {TupleDigest} digest - 散列函数
+ * @param {AlgorithmDescription} description - 算法描述
+ */
+export function createTupleHash(digest: TupleDigest, description: AlgorithmDescription): TupleHash {
+  return Object.assign(
+    (input: Array<string | Uint8Array>, codec: Codec = Hex) => {
+      input = input.map(s => typeof s === 'string' ? Utf8.parse(s) : s)
+      const status = digest(input as Uint8Array[])
       return codec.stringify(status)
     },
     {
