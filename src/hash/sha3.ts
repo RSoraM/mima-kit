@@ -7,6 +7,7 @@ import { PERMUTATION, Sponge_1600 } from './keccak1600'
 /**
  * @description
  * SHA3 padding function interface
+ *
  * SHA3 填充函数接口
  *
  * @param {number} rBit - 吸收量 bit
@@ -22,6 +23,7 @@ interface Padding {
  * FIPS.202 B.2:
  *
  * SHA3 Padding
+ *
  * SHA3 填充函数
  *
  * @example
@@ -52,6 +54,7 @@ const sha3Padding: Padding = (rBit: number, sigByte: number) => {
  * FIPS.202 B.2:
  *
  * SHAKE Padding
+ *
  * SHAKE 填充函数
  *
  * @example
@@ -101,6 +104,7 @@ export function sha3(c: number, d: number, padding: Padding) {
 /**
  * @description
  * SHA3-224 hash algorithm
+ *
  * SHA3-224 散列算法
  *
  * @example
@@ -121,6 +125,7 @@ export const sha3_224 = createHash(
 /**
  * @description
  * SHA3-256 hash algorithm
+ *
  * SHA3-256 散列算法
  *
  * @example
@@ -141,6 +146,7 @@ export const sha3_256 = createHash(
 /**
  * @description
  * SHA3-384 hash algorithm
+ *
  * SHA3-384 散列算法
  *
  * @example
@@ -161,6 +167,7 @@ export const sha3_384 = createHash(
 /**
  * @description
  * SHA3-512 hash algorithm
+ *
  * SHA3-512 散列算法
  *
  * @example
@@ -181,6 +188,7 @@ export const sha3_512 = createHash(
 /**
  * @description
  * SHAKE128 is one of the SHA3 OXF hash algorithm
+ *
  * SHAKE128 是 SHA3 XOF 散列算法之一
  *
  * @example
@@ -205,6 +213,7 @@ export function shake128(d: number) {
 /**
  * @description
  * SHAKE256 is one of the SHA3 OXF hash algorithm
+ *
  * SHAKE256 是 SHA3 XOF 散列算法之一
  *
  * @example

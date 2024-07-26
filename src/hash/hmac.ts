@@ -5,6 +5,7 @@ import { Utf8 } from '../core/codec'
 /**
  * @description
  * FIPS.198-1: The Keyed-Hash Message Authentication Code (HMAC).
+ *
  * FIPS.198-1: 散列消息认证码 (HMAC).
  *
  * @example

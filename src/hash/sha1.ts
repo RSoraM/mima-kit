@@ -33,6 +33,7 @@ function ft(x: number, y: number, z: number, t: number) {
 /**
  * @description
  * SHA-1 hash algorithm
+ *
  * SHA-1 散列算法
  *
  * @example

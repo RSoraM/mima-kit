@@ -1,6 +1,7 @@
 /**
  * @description
  * Codec interface provides two methods: parse and stringify.
+ *
  * 编解码器接口提供两个方法：parse 和 stringify.
  *
  * @example
@@ -13,6 +14,7 @@ export interface Codec {
   /**
    * @description
    * Parse encoded string to Uint8Array.
+   *
    * 将编码字符串解析为 Uint8Array.
    *
    * @param {string} input - 输入字符串
@@ -22,6 +24,7 @@ export interface Codec {
   /**
    * @description
    * Stringify Uint8Array to encoded string.
+   *
    * 将 Uint8Array 编码为字符串.
    *
    * @param input - 输入 Uint8Array
@@ -32,6 +35,7 @@ export interface Codec {
 /**
  * @description
  * Utf8 codec provides conversion between Utf8 string and Uint8Array.
+ *
  * Utf8 编解码器提供 UTF-8字符串 与 Uint8Array相互转换.
  *
  * @example
@@ -52,6 +56,7 @@ export const Utf8: Codec = {
 /**
  * @description
  * Hex codec provides conversion between Hex string and Uint8Array.
+ *
  * Hex 编解码器提供 HEX字符串 与 Uint8Array相互转换.
  *
  * @example
@@ -81,6 +86,7 @@ export const Hex: Codec = {
 /**
  * @description
  * B64 codec provides conversion between Base64 string and Uint8Array.
+ *
  * B64 编解码器提供 Base64字符串 与 Uint8Array相互转换.
  *
  * @example
@@ -101,6 +107,7 @@ export const B64: Codec = {
 /**
  * @description
  * B64url codec provides conversion between Base64url string and Uint8Array.
+ *
  * B64url 编解码器提供 Base64url字符串 与 Uint8Array相互转换.
  *
  * @example
@@ -121,6 +128,7 @@ export const B64url: Codec = {
 /**
  * @description
  * B64CommonParse can parse B64 or B64url string to Uint8Array.
+ *
  * B64CommonParse 可以将 B64 或者 B64url 字符串解析为 Uint8Array.
  *
  * @param {string} input - B64 或 B64url 字符串
@@ -146,6 +154,7 @@ function B64CommonParse(input: string, url: boolean) {
 /**
  * @description
  * B64CommonStringify can stringify Uint8Array to B64 or B64url string.
+ *
  * B64CommonStringify 可以将 Uint8Array 编码为 B64 或 B64url 字符串.
  *
  * @param {Uint8Array} input - Uint8Array

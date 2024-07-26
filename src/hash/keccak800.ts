@@ -15,7 +15,9 @@ const PERMUTATION: KeccakPermutation = {
 
 /**
  * FIPS.202 3.2.2
+ *
  * Algorithm 2: ρ(A) 位移表
+ *
  * 由 src/core/keccakUtils.ts 中的 RGen 函数生成
  */
 const R = [
@@ -28,7 +30,9 @@ const R = [
 
 /**
  * FIPS.202 3.2.5
+ *
  * RC 由 Algorithm 5: rc(t) 生成
+ *
  * 由 src/core/keccakUtils.ts 中的 RCGen 函数生成
  */
 const RC = [0x80000000, 0x41010000, 0x51010000, 0x00010001, 0xD1010000, 0x80000001, 0x81010001, 0x90010000, 0x51000000, 0x11000000, 0x90010001, 0x50000001, 0xD1010001, 0xD1000000, 0x91010000, 0xC0010000, 0x40010000, 0x01000000, 0x50010000, 0x50000001, 0x81010001, 0x01010000]
@@ -40,6 +44,7 @@ type StateArray800 = Uint32Array[]
 /**
  * @description
  * create a 5x5 State Array
+ *
  * 创建一个 5x5 State Array
  */
 function createStateArray(): StateArray800 {
@@ -49,6 +54,7 @@ function createStateArray(): StateArray800 {
 /**
  * @description
  * Converting State to State Arrays
+ *
  * 将状态转换为状态数组
  */
 function toStateArray(S: Uint8Array) {
@@ -67,6 +73,7 @@ function toStateArray(S: Uint8Array) {
 /**
  * @description
  * Converting State Arrays to State
+ *
  * 将状态数组转换为状态
  */
 function toState(A: StateArray800) {
@@ -161,6 +168,7 @@ function iota(A: StateArray800, RC: number) {
 /**
  * @description
  * Keccak-p[800] Permutation Function
+ *
  * Keccak-p[800] 置换函数
  *
  * @param {number} nr 轮数
@@ -174,6 +182,7 @@ export function Keccak_p_800(nr?: number) {
   /**
    * @description
    * Absorbing Function
+   *
    * 吸收函数
    *
    * @param {Uint8Array} S - 状态
@@ -194,6 +203,7 @@ export function Keccak_p_800(nr?: number) {
 /**
  * @description
  * Keccak-p[800] Sponge Construction
+ *
  * Keccak-p[800] 海绵构造
  *
  * @param {number} rByte - 吸收量的字节长度

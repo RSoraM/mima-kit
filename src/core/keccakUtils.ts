@@ -16,6 +16,7 @@
 /**
  * @description
  * Keccak Permutation Descration Interface
+ *
  * Keccak 置换描述接口
  */
 export interface KeccakPermutation {
@@ -34,6 +35,7 @@ export interface KeccakPermutation {
  * FIPS.202 3.2.5
  *
  * ! Note: RC Generation Function, the implementation uses text-to-number conversion. The performance is very poor, for known and unchanged parameters, you should use pre-generated tables.
+ *
  * ! Note: RC 生成函数, 底层实现使用文本转数字的方式. 性能非常差, 对于已知不变的参数, 应使用预生成的表.
  *
  * @param {KeccakPermutation} PERMUTATION - Keccak 置换描述
@@ -83,6 +85,7 @@ export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint = fals
  * FIPS.202 3.2.2
  *
  * ! Note: Generate ρ(A) displacement table, for known and unchanged parameters, you should use pre-generated tables.
+ *
  * ! Note: 生成 ρ(A) 位移表, 对于已知不变的参数, 应使用预生成的表.
  *
  * @param {number} w - 工作字长
@@ -104,6 +107,7 @@ export function RGen(w: number) {
 /**
  * @description
  * Keccak Permutation Function Interface
+ *
  * Keccak 置换函数接口
  */
 export interface Keccak {
@@ -113,6 +117,7 @@ export interface Keccak {
 /**
  * @description
  * Sponge Construction, different from the document, this sponge function does not include the padding function, please fill it in before using.
+ *
  * 海绵构造, 与文档不同, 该海绵函数不包含填充函数, 请在使用前填充.
  *
  * @param {Keccak} f - Keccak 置换函数

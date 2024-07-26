@@ -20,6 +20,7 @@ const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n)
 /**
  * @description
  * SHA-384 & SHA-512 & SHA-512/t common function
+ *
  * SHA-384 & SHA-512 & SHA-512/t 通用函数
  *
  * @param {Uint8Array} status - 工作变量
@@ -112,6 +113,7 @@ function sha384_512(status: Uint8Array, M: Uint8Array) {
 /**
  * @description
  * SHA-512/t IV generator
+ *
  * SHA-512/t IV 生成函数
  *
  * @example
@@ -149,6 +151,7 @@ function IVGen(t: number) {
 /**
  * @description
  * SHA-384 hash algorithm is truncated versions of SHA-512
+ *
  * SHA-384 散列算法 是 SHA-512 的截断版本
  *
  * @example
@@ -186,6 +189,7 @@ export const sha384 = createHash(
 /**
  * @description
  * SHA-512 hash algorithm
+ *
  * SHA-512 散列算法
  *
  * @example
@@ -223,6 +227,7 @@ export const sha512 = createHash(
 /**
  * @description
  * SHA-512/t hash algorithm is t-bit hash function base on SHA-512
+ *
  * SHA-512/t 散列算法 是基于 SHA-512 的 t 位散列函数
  *
  * @example

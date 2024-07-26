@@ -19,6 +19,7 @@ const sigma1 = (x: number) => rotateR32(x, 17) ^ rotateR32(x, 19) ^ (x >>> 10)
 /**
  * @description
  * SHA-224 & SHA-256 common function
+ *
  * SHA-224 & SHA-256 通用函数
  *
  * @param {Uint8Array} status - 工作变量
@@ -110,6 +111,7 @@ function sha224_256(status: Uint8Array, M: Uint8Array) {
 /**
  * @description
  * SHA-224 hash algorithm is truncated versions of SHA-256
+ *
  * SHA-224 散列算法 是 SHA-256 的截断版本
  *
  * @example
@@ -147,6 +149,7 @@ export const sha224 = createHash(
 /**
  * @description
  * SHA-256 hash algorithm
+ *
  * SHA-256 散列算法
  *
  * @example

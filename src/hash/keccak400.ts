@@ -15,7 +15,9 @@ const PERMUTATION: KeccakPermutation = {
 
 /**
  * FIPS.202 3.2.2
+ *
  * Algorithm 2: ρ(A) 位移表
+ *
  * 由 src/core/keccakUtils.ts 中的 RGen 函数生成
  */
 const R = [
@@ -28,7 +30,9 @@ const R = [
 
 /**
  * FIPS.202 3.2.5
+ *
  * RC 由 Algorithm 5: rc(t) 生成
+ *
  * 由 src/core/keccakUtils.ts 中的 RCGen 函数生成
  */
 const RC = [0x8000, 0x4101, 0x5101, 0x0001, 0xD101, 0x8000, 0x8101, 0x9001, 0x5100, 0x1100, 0x9001, 0x5000, 0xD101, 0xD100, 0x9101, 0xC001, 0x4001, 0x0100, 0x5001, 0x5000]
@@ -40,6 +44,7 @@ type StateArray400 = Uint16Array[]
 /**
  * @description
  * create a 5x5 State Array
+ *
  * 创建一个 5x5 State Array
  */
 function createStateArray(): StateArray400 {
@@ -49,6 +54,7 @@ function createStateArray(): StateArray400 {
 /**
  * @description
  * Converting State to State Arrays
+ *
  * 将状态转换为状态数组
  */
 function toStateArray(S: Uint8Array) {
@@ -67,6 +73,7 @@ function toStateArray(S: Uint8Array) {
 /**
  * @description
  * Converting State Arrays to State
+ *
  * 将状态数组转换为状态
  */
 function toState(A: StateArray400) {
@@ -161,6 +168,7 @@ function iota(A: StateArray400, RC: number) {
 /**
  * @description
  * Keccak-p[400] Permutation Function
+ *
  * Keccak-p[400] 置换函数
  *
  * @param {number} nr 轮数
@@ -194,6 +202,7 @@ export function Keccak_p_400(nr?: number) {
 /**
  * @description
  * Keccak-p[400] Sponge Construction
+ *
  * Keccak-p[400] 海绵构造
  *
  * @param {number} rByte - 吸收量的字节长度

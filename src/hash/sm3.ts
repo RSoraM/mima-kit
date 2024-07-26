@@ -20,6 +20,7 @@ const P1 = (X: number) => X ^ rotateL32(X, 15) ^ rotateL32(X, 23)
 /**
  * @description
  * SM3 hash algorithm
+ *
  * SM3 散列算法
  *
  * @example
