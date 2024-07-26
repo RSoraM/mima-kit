@@ -2,6 +2,7 @@ import { createHash } from '../core/hash'
 import { rotateL32 } from '../core/utils'
 
 // * Constants
+
 function K(t: number) {
   if (t < 20)
     return 0x5A827999
@@ -13,6 +14,7 @@ function K(t: number) {
 }
 
 // * Function
+
 const Ch = (x: number, y: number, z: number) => (x & y) ^ ((~x) & z)
 const Parity = (x: number, y: number, z: number) => x ^ y ^ z
 const Maj = (x: number, y: number, z: number) => (x & y) ^ (x & z) ^ (y & z)

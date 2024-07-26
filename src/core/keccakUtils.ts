@@ -33,8 +33,8 @@ export interface KeccakPermutation {
  * @description
  * FIPS.202 3.2.5
  *
- * RC Generation Function, the implementation uses text-to-number conversion. The performance is very poor, for known and unchanged parameters, you should use pre-generated tables.
- * RC 生成函数, 底层实现使用文本转数字的方式. 性能非常差, 对于已知不变的参数, 应使用预生成的表.
+ * ! Note: RC Generation Function, the implementation uses text-to-number conversion. The performance is very poor, for known and unchanged parameters, you should use pre-generated tables.
+ * ! Note: RC 生成函数, 底层实现使用文本转数字的方式. 性能非常差, 对于已知不变的参数, 应使用预生成的表.
  *
  * @param {KeccakPermutation} PERMUTATION - Keccak 置换描述
  * @param {number} nr - 指定轮数
@@ -82,8 +82,8 @@ export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint = fals
  * @description
  * FIPS.202 3.2.2
  *
- * Generate ρ(A) displacement table, for known and unchanged parameters, you should use pre-generated tables.
- * 生成 ρ(A) 位移表, 对于已知不变的参数, 应使用预生成的表.
+ * ! Note: Generate ρ(A) displacement table, for known and unchanged parameters, you should use pre-generated tables.
+ * ! Note: 生成 ρ(A) 位移表, 对于已知不变的参数, 应使用预生成的表.
  *
  * @param {number} w - 工作字长
  */

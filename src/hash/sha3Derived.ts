@@ -261,8 +261,8 @@ export function cShake256(d: number, N: string | Uint8Array = '', S: string | Ui
  * kmac128(256, 'password')('hello', B64) // '0RS1iNpDN8gEVYBvPUYXaMJ5Mby2l3wl1GEft46V2gQ='
  * ```
  *
- * @param {string | Uint8Array} K - key
  * @param {number} d - 输出长度 bit
+ * @param {string | Uint8Array} K - key
  * @param {string | Uint8Array} S - customization
  */
 export function kmac128(d: number, K: string | Uint8Array = '', S: string | Uint8Array = '') {
@@ -297,8 +297,8 @@ export function kmac128(d: number, K: string | Uint8Array = '', S: string | Uint
  * kmac128(256, 'password')('hello', B64) // 'Qw52C8guzyN68VFBQI+2jdxQem3Mzg3kePI/a9q6YO1ghVLs3DcfW/NEXS8rVBEoE2IbdDaVjgCHclISUZ+KdQ=='
  * ```
  *
- * @param {string | Uint8Array} K - key
  * @param {number} d - 输出长度 bit
+ * @param {string | Uint8Array} K - key
  * @param {string | Uint8Array} S - customization
  */
 export function kmac256(d: number, K: string | Uint8Array = '', S: string | Uint8Array = '') {
@@ -333,8 +333,8 @@ export function kmac256(d: number, K: string | Uint8Array = '', S: string | Uint
  * kmac128(256, 'password')('hello', B64) // '0RS1iNpDN8gEVYBvPUYXaMJ5Mby2l3wl1GEft46V2gQ='
  * ```
  *
- * @param {string | Uint8Array} K - key
  * @param {number} d - 输出长度 bit
+ * @param {string | Uint8Array} K - key
  * @param {string | Uint8Array} S - customization
  */
 export function kmac128XOF(d: number, K: string | Uint8Array = '', S: string | Uint8Array = '') {
@@ -369,8 +369,8 @@ export function kmac128XOF(d: number, K: string | Uint8Array = '', S: string | U
  * kmac128(256, 'password')('hello', B64) // 'Qw52C8guzyN68VFBQI+2jdxQem3Mzg3kePI/a9q6YO1ghVLs3DcfW/NEXS8rVBEoE2IbdDaVjgCHclISUZ+KdQ=='
  * ```
  *
- * @param {string | Uint8Array} K - key
  * @param {number} d - 输出长度 bit
+ * @param {string | Uint8Array} K - key
  * @param {string | Uint8Array} S - customization
  */
 export function kmac256XOF(d: number, K: string | Uint8Array = '', S: string | Uint8Array = '') {

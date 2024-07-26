@@ -14,7 +14,8 @@
   "bugs": "https://github.com/RSoraM/mima-kit/issues",
   "keywords": [
     "cryptography",
-    "hmac",
+    "hash",
+    "sm3",
     "md5",
     "sha1",
     "sha224",
@@ -27,7 +28,10 @@
     "shake256",
     "cShake128",
     "cShake256",
-    "sm3"
+    "tupleHash",
+    "parallelHash",
+    "hmac",
+    "kmac"
   ],
   "sideEffects": false,
   "exports": {
