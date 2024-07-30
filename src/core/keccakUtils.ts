@@ -1,6 +1,8 @@
+import { joinBuffer } from './utils'
+
 // FIPS.202 3.1
 //
-// Keccak 置换组合
+// Keccak 配置预设
 //
 // w = b / 25
 // l = log2(w)
@@ -15,11 +17,11 @@
 
 /**
  * @description
- * Keccak Permutation Descration Interface
+ * `Keccak` Config Descration Interface
  *
- * Keccak 置换描述接口
+ * `Keccak` 配置描述接口
  */
-export interface KeccakPermutation {
+export interface KeccakConfig {
   b: number
   bByte: number
   w: number
@@ -28,7 +30,7 @@ export interface KeccakPermutation {
   nr: number
 }
 
-// * Permutation Utils
+// * Keccak Utils
 
 /**
  * @description
@@ -38,13 +40,13 @@ export interface KeccakPermutation {
  *
  * ! Note: RC 生成函数, 底层实现使用文本转数字的方式. 性能非常差, 对于已知不变的参数, 应使用预生成的表.
  *
- * @param {KeccakPermutation} PERMUTATION - Keccak 置换描述
+ * @param {KeccakConfig} PERMUTATION - `Keccak` 配置描述
  * @param {number} nr - 指定轮数
  * @param {boolean} bigint - 是否返回 BigInt
  */
-export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint?: false): number[]
-export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint?: true): bigint[]
-export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint = false) {
+export function RCGen(PERMUTATION: KeccakConfig, nr?: number, bigint?: false): number[]
+export function RCGen(PERMUTATION: KeccakConfig, nr?: number, bigint?: true): bigint[]
+export function RCGen(PERMUTATION: KeccakConfig, nr?: number, bigint = false) {
   const RCTable = []
 
   nr = nr || PERMUTATION.nr
@@ -88,7 +90,7 @@ export function RCGen(PERMUTATION: KeccakPermutation, nr?: number, bigint = fals
  *
  * ! Note: 生成 ρ(A) 位移表, 对于已知不变的参数, 应使用预生成的表.
  *
- * @param {number} w - 工作字长
+ * @param {number} w - 工作字长度
  */
 export function RGen(w: number) {
   const R = [
@@ -106,33 +108,38 @@ export function RGen(w: number) {
 
 /**
  * @description
- * Keccak Permutation Function Interface
+ * `Keccak-p` Function Interface
  *
- * Keccak 置换函数接口
+ * `Keccak-p` 函数接口
+ *
+ * The `Keccak-p[b, nr]` in the specification document is more like a constructor. But since the parameter `b` will affect the data structure used by the implementation, and the parameter `b` only comes from 7 kinds of `Keccak` Config, multiple versions of the `Keccak-p` function are implemented by fixing the parameter `b`.
+ *
+ * 规范文档中 `Keccak-p[b, nr]` 更像是一个构造函数. 但由于参数 `b` 会影响实现使用的数据结构, 且参数 `b` 只来自 7 种 `Keccak` 配置, 所以实现时将 `b` 作为固定参数, 实现多个版本的 `Keccak-p` 函数.
  */
-export interface Keccak {
+export interface Keccak_p {
   (S: Uint8Array): Uint8Array
 }
 
 /**
  * @description
- * Sponge Construction, different from the document, this sponge function does not include the padding function, please fill it in before using.
+ * Different from the specification document, this sponge construction does not include the padding function, please pad it before use.
  *
- * 海绵构造, 与文档不同, 该海绵函数不包含填充函数, 请在使用前填充.
+ * 与规范文档不同, 该海绵构造不包含填充函数, 请在使用前填充.
  *
- * @param {Keccak} f - Keccak 置换函数
- * @param {number} bByte - 状态的字节长度
- * @param {number} rByte - 吸收量的字节长度
+ * @param {Keccak_p} f - `Keccak-p` 函数
+ * @param {number} bByte - 状态区块 byte
+ * @param {number} rByte - 处理速率 byte
+ * @param {number} dByte - 输出长度 byte
  */
-export function Sponge(f: Keccak, bByte: number, rByte: number) {
+export function Sponge(f: Keccak_p, bByte: number, rByte: number, dByte: number) {
   /**
    * @param {Uint8Array} P - 经过填充的消息
-   * @param {number} d - 输出长度 bit
    */
-  return (P: Uint8Array, d: number) => {
+  return (P: Uint8Array) => {
     // n: 分块数
     const blockTotal = Math.ceil(P.byteLength / rByte)
 
+    // * 吸收
     let S = new Uint8Array(bByte)
     for (let i = 0; i < blockTotal; i++) {
       const Pi = P.slice(i * rByte, (i + 1) * rByte)
@@ -140,17 +147,16 @@ export function Sponge(f: Keccak, bByte: number, rByte: number) {
       S = f(S)
     }
 
-    let Z = S.slice(0, rByte)
-
-    const dByte = d >> 3
-    while (Z.byteLength < dByte) {
-      const temp = new Uint8Array(Z.byteLength + rByte)
-      temp.set(Z, 0)
+    // * 挤出
+    const z = [S.slice(0, rByte)]
+    let zByte = rByte
+    while (zByte < dByte) {
       S = f(S)
-      temp.set(S.slice(0, rByte), Z.byteLength)
-      Z = temp
+      z.push(S.slice(0, rByte))
+      zByte += rByte
     }
 
-    return Z.slice(0, dByte)
+    // * 截断输出
+    return joinBuffer(...z).slice(0, dByte)
   }
 }

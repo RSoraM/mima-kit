@@ -1,7 +1,7 @@
 import { Utf8 } from '../core/codec'
 import { createHash, createTupleHash } from '../core/hash'
 import { joinBuffer } from '../core/utils'
-import { sha3, shake128, shake256 } from './sha3'
+import { Keccak_c, shake128, shake256 } from './sha3'
 
 // * Encode and Padding Function
 
@@ -91,6 +91,10 @@ function rightEncode(x: number | bigint): Uint8Array {
  *
  * 字符编码
  *
+ * Unlike the specification document, this implementation does not perform concatenation operations, but returns an array, and the concatenation operation is performed externally. See `bytepad` function for details.
+ *
+ * 与规范文档不同, 这个实现不会进行串接操作, 而是返回一个数组, 串接操作在外部进行. 详细见 `bytepad` 函数.
+ *
  * @example
  * ```ts
  * encodeString(K) // [left_encode(len(K)), K]
@@ -107,13 +111,13 @@ function encodeString(input: string | Uint8Array) {
  * @description
  * SP.800-185 2.3.3:
  *
- * The bytePad is used by many algorithms which involves many concatenation operations, but for programming implementation, each concatenation means creating a Uint8Array for merging. Frequent creation of Uint8Array may cause performance issues.
+ * The `bytePad` is used by many algorithms which involves many concatenation operations, but for `Javascript` implementation, each concatenation means creating a `Uint8Array` for merging. Frequent creation of `Uint8Array` may cause performance issues.
  *
- * 在算法中 bytePad 涉及很多串接操作, 但对编程实现来说, 每次串接都意味着创建 Uint8Array 进行合并. 频繁地创建 Uint8Array 有可能导致性能问题.
+ * 在算法中 `bytePad` 涉及很多串接操作, 但对 `Javascript` 实现来说, 每次串接都意味着创建 `Uint8Array` 进行合并. 频繁地创建 `Uint8Array` 有可能导致性能问题.
  *
- * This is an optimized implementation. The input X is changed to an array, and the final return is also an array. The merge operation is moved to the outside.
+ * This is an optimized implementation. The input `X` is changed to an array, and the final return is also an array. The merge operation is moved to the outside.
  *
- * 这是一个优化后的实现. 将输入 X 改为数组, 最后也返回数组, 将合并操作移动到外部.
+ * 这是一个优化后的实现. 将输入 `X` 改为数组, 最后也返回数组, 将合并操作移动到外部.
  *
  * @example
  * ```ts
@@ -148,21 +152,20 @@ function bytepad(X: Uint8Array[], w: number): Uint8Array[] {
 
 /**
  * @description
- * cSHAKE Padding
+ * `cSHAKE` Padding
  *
- * cSHAKE 填充函数
+ * `cSHAKE` 填充函数
  *
  * @example
  * ```
  * M || 00 || 10*1
  * ```
  *
- * @param {number} rBit - 吸收量(bit)
- * @param {number} sigByte - 原始消息字节
+ * @param {number} rByte - 处理速率
+ * @param {number} sigBytes - 消息字节数
  */
-function cShakePadding(rBit: number, sigByte: number) {
-  const rByte = rBit >> 3
-  const q = rByte - (sigByte % rByte)
+function cShakePadding(rByte: number, sigBytes: number) {
+  const q = rByte - (sigBytes % rByte)
   const p = new Uint8Array(q)
 
   if (q === 1) {
@@ -179,9 +182,9 @@ function cShakePadding(rBit: number, sigByte: number) {
 
 /**
  * @description
- * cSHAKE128 is a customizable variant of SHAKE128
+ * `cSHAKE128` is a customizable variant of `SHAKE128`
  *
- * cSHAKE128 是 SHAKE128 的可定制变体
+ * `cSHAKE128` 是 `SHAKE128` 的可定制变体
  *
  * @example
  * ```ts
@@ -205,7 +208,7 @@ export function cShake128(d: number, N: string | Uint8Array = '', S: string | Ui
     (M: Uint8Array) => {
       const P = bytepad([...encodeString(N), ...encodeString(S)], 168)
       P.push(M)
-      return sha3(256, d, cShakePadding)(joinBuffer(...P))
+      return Keccak_c(256, d, cShakePadding)(joinBuffer(...P))
     },
     {
       ALGORITHM: `cSHAKE128/${d}`,
@@ -217,9 +220,9 @@ export function cShake128(d: number, N: string | Uint8Array = '', S: string | Ui
 
 /**
  * @description
- * cSHAKE256 is a customizable variant of SHAKE256
+ * `cSHAKE256` is a customizable variant of `SHAKE256`
  *
- * cSHAKE256 是 SHAKE256 的可定制变体
+ * `cSHAKE256` 是 `SHAKE256` 的可定制变体
  *
  * @example
  * ```ts
@@ -243,7 +246,7 @@ export function cShake256(d: number, N: string | Uint8Array = '', S: string | Ui
     (M: Uint8Array) => {
       const P = bytepad([...encodeString(N), ...encodeString(S)], 136)
       P.push(M)
-      return sha3(512, d, cShakePadding)(joinBuffer(...P))
+      return Keccak_c(512, d, cShakePadding)(joinBuffer(...P))
     },
     {
       ALGORITHM: `cSHAKE256/${d}`,
@@ -257,13 +260,13 @@ export function cShake256(d: number, N: string | Uint8Array = '', S: string | Ui
 
 /**
  * @description
- * The KECCAK Message Authentication Code (KMAC) algorithm
+ * The Keccak Message Authentication Code (KMAC) algorithm
  *
- * KECCAK 消息认证码 (KMAC) 算法
+ * Keccak 消息认证码 (KMAC) 算法
  *
- * KMAC128 is a variant of KMAC, build from cSHAKE128
+ * `KMAC128` is a variant of `KMAC`, build from `cSHAKE128`
  *
- * KMAC128 是 KMAC 的变体, 由 cSHAKE128 构建
+ * `KMAC128` 是 `KMAC` 的变体, 由 `cSHAKE128` 构建
  *
  * @example
  * ```ts
@@ -283,7 +286,7 @@ export function kmac128(d: number, K: string | Uint8Array = '', S: string | Uint
       X.push(M)
       X.push(rightEncode(d))
 
-      return sha3(256, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `KMAC128/${d}`,
@@ -295,13 +298,13 @@ export function kmac128(d: number, K: string | Uint8Array = '', S: string | Uint
 
 /**
  * @description
- * The KECCAK Message Authentication Code (KMAC) algorithm
+ * The Keccak Message Authentication Code (KMAC) algorithm
  *
- * KECCAK 消息认证码 (KMAC) 算法
+ * Keccak 消息认证码 (KMAC) 算法
  *
- * KMAC256 is a variant of KMAC, build from cSHAKE256
+ * `KMAC256` is a variant of `KMAC`, build from `cSHAKE256`
  *
- * KMAC256 是 KMAC 的变体, 由 cSHAKE256 构建
+ * `KMAC256` 是 `KMAC` 的变体, 由 `cSHAKE256` 构建
  *
  * @example
  * ```ts
@@ -321,7 +324,7 @@ export function kmac256(d: number, K: string | Uint8Array = '', S: string | Uint
       X.push(M)
       X.push(rightEncode(d))
 
-      return sha3(512, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `KMAC256/${d}`,
@@ -333,13 +336,13 @@ export function kmac256(d: number, K: string | Uint8Array = '', S: string | Uint
 
 /**
  * @description
- * KMAC with Arbitrary-Length Output
+ * `KMAC` with Arbitrary-Length Output
  *
- * 可变长度输出的 KMAC
+ * 可变长度输出的 `KMAC`
  *
- * KMAC128XOF is a XOF mode of KMAC128, build from cSHAKE128
+ * `KMAC128XOF` is a XOF mode of `KMAC128`, build from `cSHAKE128`
  *
- * KMAC128XOF 是 KMAC128 的 XOF 模式, 由 cSHAKE128 构建
+ * `KMAC128XOF` 是 `KMAC128` 的 XOF 模式, 由 `cSHAKE128` 构建
  *
  * @example
  * ```ts
@@ -359,7 +362,7 @@ export function kmac128XOF(d: number, K: string | Uint8Array = '', S: string | U
       X.push(M)
       X.push(rightEncode(0))
 
-      return sha3(256, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `KMAC128XOF/${d}`,
@@ -371,13 +374,13 @@ export function kmac128XOF(d: number, K: string | Uint8Array = '', S: string | U
 
 /**
  * @description
- * KMAC with Arbitrary-Length Output
+ * `KMAC` with Arbitrary-Length Output
  *
- * 可变长度输出的 KMAC
+ * 可变长度输出的 `KMAC`
  *
- * KMAC256XOF is a XOF mode of KMAC256, build from cSHAKE256
+ * `KMAC256XOF` is a XOF mode of `KMAC256`, build from `cSHAKE256`
  *
- * KMAC256XOF 是 KMAC256 的 XOF 模式, 由 cSHAKE256 构建
+ * `KMAC256XOF` 是 `KMAC256` 的 XOF 模式, 由 `cSHAKE256` 构建
  *
  * @example
  * ```ts
@@ -397,7 +400,7 @@ export function kmac256XOF(d: number, K: string | Uint8Array = '', S: string | U
       X.push(M)
       X.push(rightEncode(0))
 
-      return sha3(512, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `KMAC256XOF/${d}`,
@@ -411,9 +414,9 @@ export function kmac256XOF(d: number, K: string | Uint8Array = '', S: string | U
 
 /**
  * @description
- * TupleHash is a SHA-3-derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
+ * `TupleHash` is a `SHA3` derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
  *
- * TupleHash 是一个具有可变长度输出的 SHA-3 派生哈希函数, 旨在以一种明确的方式简单地哈希输入字符串的元组, 这些字符串中的任何一个或全部都可以是空字符串.
+ * `TupleHash` 是一个具有可变长度输出的 `SHA3` 派生散列函数, 旨在以一种明确的方式简单地散列输入字符串的元组, 这些字符串中的任何一个或全部都可以是空字符串.
  *
  * @param {number} d - 输出长度 bit
  * @param {string | Uint8Array} S - customization
@@ -425,7 +428,7 @@ export function tupleHash128(d: number, S: string | Uint8Array = '') {
       M.forEach(m => X.push(...encodeString(m)))
       X.push(rightEncode(d))
 
-      return sha3(256, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `TupleHash128/${d}`,
@@ -437,9 +440,9 @@ export function tupleHash128(d: number, S: string | Uint8Array = '') {
 
 /**
  * @description
- * TupleHash is a SHA-3-derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
+ * `TupleHash` is a `SHA3` derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
  *
- * TupleHash 是一个具有可变长度输出的 SHA-3 派生哈希函数, 旨在以一种明确的方式简单地哈希输入字符串的元组, 这些字符串中的任何一个或全部都可以是空字符串.
+ * `TupleHash` 是一个具有可变长度输出的 `SHA3` 派生散列函数, 旨在以一种明确的方式简单地散列输入字符串的元组, 这些字符串中的任何一个或全部都可以是空字符串.
  *
  * @param {number} d - 输出长度 bit
  * @param {string | Uint8Array} S - customization
@@ -451,7 +454,7 @@ export function tupleHash256(d: number, S: string | Uint8Array = '') {
       M.forEach(m => X.push(...encodeString(m)))
       X.push(rightEncode(d))
 
-      return sha3(512, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `TupleHash256/${d}`,
@@ -463,9 +466,9 @@ export function tupleHash256(d: number, S: string | Uint8Array = '') {
 
 /**
  * @description
- * TupleHash with Arbitrary-Length Output
+ * `TupleHash` with Arbitrary-Length Output
  *
- * 可变长度输出的 TupleHash
+ * 可变长度输出的 `TupleHash`
  *
  * @param {number} d - 输出长度 bit
  * @param {string | Uint8Array} S - customization
@@ -477,7 +480,7 @@ export function tupleHash128XOF(d: number, S: string | Uint8Array = '') {
       M.forEach(m => X.push(...encodeString(m)))
       X.push(rightEncode(0))
 
-      return sha3(256, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `TupleHash128XOF/${d}`,
@@ -489,9 +492,9 @@ export function tupleHash128XOF(d: number, S: string | Uint8Array = '') {
 
 /**
  * @description
- * TupleHash with Arbitrary-Length Output
+ * `TupleHash` with Arbitrary-Length Output
  *
- * 可变长度输出的 TupleHash
+ * 可变长度输出的 `TupleHash`
  *
  * @param {number} d - 输出长度 bit
  * @param {string | Uint8Array} S - customization
@@ -503,7 +506,7 @@ export function tupleHash256XOF(d: number, S: string | Uint8Array = '') {
       M.forEach(m => X.push(...encodeString(m)))
       X.push(rightEncode(0))
 
-      return sha3(512, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `TupleHash256XOF/${d}`,
@@ -522,15 +525,15 @@ export function tupleHash256XOF(d: number, S: string | Uint8Array = '') {
 
 /**
  * @description
- * The purpose of ParallelHash is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
+ * The purpose of `ParallelHash` is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
  *
- * ParallelHash 的目的是利用现代处理器中可用的并行性, 支持对非常长的字符串进行高效哈希.
+ * `ParallelHash` 的目的是利用现代处理器中可用的并行性, 支持对非常长的字符串进行高效散列.
  *
- * ! Note: This ParallelHash does not actually perform parallel computation, because writing multi-threaded in JavaScript is not easy.
+ * ! Note: This `ParallelHash` does not actually perform parallel computation, because writing multi-threaded in `JavaScript` is not easy.
  *
- * ! 注意: 此 ParallelHash 实际上并不执行并行计算, 因为在 JavaScript 写多线程并不轻松.
+ * ! 注意: 此 `ParallelHash` 实际上并不执行并行计算, 因为在 `JavaScript` 写多线程并不轻松.
  *
- * @param {number} b - 分块大小 bit
+ * @param {number} b - 状态大小 bit
  * @param {number} d - 输出长度 bit
  * @param {string | Uint8Array} S - customization
  */
@@ -550,7 +553,7 @@ export function parallelHash128(b: number, d: number, S: string | Uint8Array = '
       X.push(rightEncode(n))
       X.push(rightEncode(d))
 
-      return sha3(256, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `ParallelHash128/${d}`,
@@ -562,15 +565,15 @@ export function parallelHash128(b: number, d: number, S: string | Uint8Array = '
 
 /**
  * @description
- * The purpose of ParallelHash is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
+ * The purpose of `ParallelHash` is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
  *
- * ParallelHash 的目的是利用现代处理器中可用的并行性, 支持对非常长的字符串进行高效哈希.
+ * `ParallelHash` 的目的是利用现代处理器中可用的并行性, 支持对非常长的字符串进行高效散列.
  *
- * ! Note: This ParallelHash does not actually perform parallel computation, because writing multi-threaded in JavaScript is not easy.
+ * ! Note: This `ParallelHash` does not actually perform parallel computation, because writing multi-threaded in `JavaScript` is not easy.
  *
- * ! 注意: 此 ParallelHash 实际上并不执行并行计算, 因为在 JavaScript 写多线程并不轻松.
+ * ! 注意: 此 `ParallelHash` 实际上并不执行并行计算, 因为在 `JavaScript` 写多线程并不轻松.
  *
- * @param {number} b - 分块大小 bit
+ * @param {number} b - 状态大小 bit
  * @param {number} d - 输出长度 bit
  * @param {string | Uint8Array} S - customization
  */
@@ -590,7 +593,7 @@ export function parallelHash256(b: number, d: number, S: string | Uint8Array = '
       X.push(rightEncode(n))
       X.push(rightEncode(d))
 
-      return sha3(512, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `ParallelHash256/${d}`,
@@ -602,15 +605,15 @@ export function parallelHash256(b: number, d: number, S: string | Uint8Array = '
 
 /**
  * @description
- * ParallelHash with Arbitrary-Length Output
+ * `ParallelHash` with Arbitrary-Length Output
  *
- * 可变长度输出的 ParallelHash
+ * 可变长度输出的 `ParallelHash`
  *
- * ! Note: This ParallelHash does not actually perform parallel computation, because writing multi-threaded in JavaScript is not easy.
+ * ! Note: This `ParallelHash` does not actually perform parallel computation, because writing multi-threaded in `JavaScript` is not easy.
  *
- * ! 注意: 此 ParallelHash 实际上并不执行并行计算, 因为在 JavaScript 写多线程并不轻松.
+ * ! 注意: 此 `ParallelHash` 实际上并不执行并行计算, 因为在 `JavaScript` 写多线程并不轻松.
  *
- * @param {number} b - 分块大小 bit
+ * @param {number} b - 状态大小 bit
  * @param {number} d - 输出长度 bit
  * @param {string | Uint8Array} S - customization
  */
@@ -630,7 +633,7 @@ export function parallelHash128XOF(b: number, d: number, S: string | Uint8Array 
       X.push(rightEncode(n))
       X.push(rightEncode(0))
 
-      return sha3(256, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `ParallelHash128XOF`,
@@ -642,15 +645,15 @@ export function parallelHash128XOF(b: number, d: number, S: string | Uint8Array 
 
 /**
  * @description
- * ParallelHash with Arbitrary-Length Output
+ * `ParallelHash` with Arbitrary-Length Output
  *
- * 可变长度输出的 ParallelHash
+ * 可变长度输出的 `ParallelHash`
  *
- * ! Note: This ParallelHash does not actually perform parallel computation, because writing multi-threaded in JavaScript is not easy.
+ * ! Note: This `ParallelHash` does not actually perform parallel computation, because writing multi-threaded in `JavaScript` is not easy.
  *
- * ! 注意: 此 ParallelHash 实际上并不执行并行计算, 因为在 JavaScript 写多线程并不轻松.
+ * ! 注意: 此 `ParallelHash` 实际上并不执行并行计算, 因为在 `JavaScript` 写多线程并不轻松.
  *
- * @param {number} b - 分块大小 bit
+ * @param {number} b - 状态大小 bit
  * @param {number} d - 输出长度 bit
  * @param {string | Uint8Array} S - customization
  */
@@ -670,7 +673,7 @@ export function parallelHash256XOF(b: number, d: number, S: string | Uint8Array 
       X.push(rightEncode(n))
       X.push(rightEncode(0))
 
-      return sha3(512, d, cShakePadding)(joinBuffer(...X))
+      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
     },
     {
       ALGORITHM: `ParallelHash256XOF`,

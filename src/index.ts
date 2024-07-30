@@ -4,7 +4,7 @@ export { Utf8, Hex, B64, B64url } from './core/codec'
 
 // * Hash Utils
 export type { Hash, TupleHash } from './core/hash'
-export type { Keccak, KeccakPermutation } from './core/keccakUtils'
+export type { Keccak_p, KeccakConfig } from './core/keccakUtils'
 
 // * MD5
 export { md5 } from './hash/md5'

@@ -6,37 +6,36 @@ import { PERMUTATION, Sponge_1600 } from './keccak1600'
 
 /**
  * @description
- * SHA3 padding function interface
+ * `SHA3` padding function interface
  *
- * SHA3 填充函数接口
+ * `SHA3` 填充函数接口
  *
- * @param {number} rBit - 吸收量 bit
- * @param {number} sigByte - 原始消息字节 byte
+ * @param {number} rByte - 处理速率
+ * @param {number} sigBytes - 消息字节数
  * @returns {Uint8Array} - 填充的内容
  */
 interface Padding {
-  (rBit: number, sigByte: number): Uint8Array
+  (rByte: number, sigBytes: number): Uint8Array
 }
 
 /**
  * @description
  * FIPS.202 B.2:
  *
- * SHA3 Padding
+ * `SHA3` Padding
  *
- * SHA3 填充函数
+ * `SHA3` 填充函数
  *
  * @example
  * ```
  * M || 01 || 10*1
  * ```
  *
- * @param {number} rBit - 吸收量 bit
- * @param {number} sigByte - 原始消息字节 byte
+ * @param {number} rByte - 处理速率
+ * @param {number} sigBytes - 消息字节数
  */
-const sha3Padding: Padding = (rBit: number, sigByte: number) => {
-  const rByte = rBit >> 3
-  const q = rByte - (sigByte % rByte)
+const sha3Padding: Padding = (rByte: number, sigBytes: number) => {
+  const q = rByte - (sigBytes % rByte)
   const p = new Uint8Array(q)
 
   if (q === 1) {
@@ -53,21 +52,20 @@ const sha3Padding: Padding = (rBit: number, sigByte: number) => {
  * @description
  * FIPS.202 B.2:
  *
- * SHAKE Padding
+ * `SHAKE` Padding
  *
- * SHAKE 填充函数
+ * `SHAKE` 填充函数
  *
  * @example
  * ```
  * M || 1111 || 10*1
  * ```
  *
- * @param {number} rBit - 吸收量 bit
- * @param {number} sigByte - 原始消息字节 byte
+ * @param {number} rByte - 处理速率
+ * @param {number} sigBytes - 消息字节数
  */
-function shakePadding(rBit: number, sigByte: number) {
-  const rByte = rBit >> 3
-  const q = rByte - (sigByte % rByte)
+function shakePadding(rByte: number, sigBytes: number) {
+  const q = rByte - (sigBytes % rByte)
   const p = new Uint8Array(q)
 
   if (q === 1) {
@@ -84,28 +82,33 @@ function shakePadding(rBit: number, sigByte: number) {
 
 /**
  * @description
- * `sha3` is a `Keccak[C]` wrapper. In the original definition, `Keccak[C]` uses a fixed permutation function `Keccak-p(b:1600, nr:24)`, and receives parameters: capacity `c`, output length `d` and main input `M`. In different `SHA3` derived algorithms, the input `M` will concatenate different bit, and perform `10*1` padding before operation, such as `M || 01 || 10*1`. For byte-aligned programming languages, it is very troublesome to implement this concatenation, so this wrapper receives function parameters: `padding` to handle algorithm padding.
+ * In the specification document, `Keccak[C]` is a specific configuration of `Keccak`. In different `SHA3` derivative algorithms, the input `M` will concatenate different bits, and perform `10*1` padding in the sponge function, such as `M || 01 || 10*1`. For byte-aligned programming languages, it is very difficult to implement this concatenation, so an additional `padding` function needs to be passed in to handle the padding of different algorithms.
  *
- * `sha3` 是一个 `Keccak[C]` 包装器. 原定义中, `Keccak[C]` 使用固定置换函数 `Keccak-p(b:1600, nr:24)`, 并接收参数: 容量`c`, 输出长度`d` 和 主要输入`M`. 在不同的 `SHA3` 衍生算法中, 输入 `M` 会串接不同的比特位, 并在运算前进行 `10*1` 填充, 比如 `M || 01 || 10*1`. 对于字节对齐的编程语言来说, 实现这种串接非常麻烦, 所以这个包装器接收函数参数: `padding` 以处理算法填充.
+ * 在规范文档中, `Keccak[C]` 是 `Keccak` 的一种特定配置, 在不同的 `SHA3` 衍生算法中, 输入 `M` 会串接不同的比特位, 并在海绵函数中进行 `10*1` 填充, 比如 `M || 01 || 10*1`. 对于字节对齐的编程语言来说, 实现这种串接非常麻烦, 所以这里需要传入一个额外的 `padding` 函数, 以处理不同算法的填充.
  *
- * @param {number} c - 容量 bit
+ * In other programming languages, `capacity c` and `rate r` may be equivalent as parameters. But from the perspective of `Javascript` implementation, we only need the parameter `rate r`, because the `capacity c` will not be used in the entire algorithm process. The only function of `capacity c` is to calculate the `rate r`. However, the algorithm description of `SHA3` in the specification document is based on `capacity c`, so here we follow the description of the specification document.
+ *
+ * 在别的编程语言中, `安全容量 c` 和 `处理速率 r` 作为参数可能是等效的. 但从 `Javascript` 实现的角度来说, 其实我们只需要参数 `处理速率 r`, 因为整个算法过程都不会用到 `安全容量 c`. `安全容量 c` 的唯一作用就是计算出 `处理速率 r`. 但规范文档中 `SHA3` 的算法描述都是以 `安全容量 c` 为基准的, 所以这里遵循规范文档的描述.
+ *
+ * @param {number} c - 安全容量 bit
  * @param {number} d - 输出长度 bit
  * @param {Padding} padding - 填充函数
  */
-export function sha3(c: number, d: number, padding: Padding) {
+export function Keccak_c(c: number, d: number, padding: Padding) {
   const r = PERMUTATION.b - c
+  const rByte = r >> 3
   return (M: Uint8Array) => {
     /** Padded Message */
-    const P = joinBuffer(M, padding(r, M.byteLength))
-    return Sponge_1600(r >> 3)(P, d)
+    const P = joinBuffer(M, padding(rByte, M.byteLength))
+    return Sponge_1600(rByte, d >> 3)(P)
   }
 }
 
 /**
  * @description
- * SHA3-224 hash algorithm
+ * `SHA3-224` hash algorithm
  *
- * SHA3-224 散列算法
+ * `SHA3-224` 散列算法
  *
  * @example
  * ```ts
@@ -114,7 +117,7 @@ export function sha3(c: number, d: number, padding: Padding) {
  * ```
  */
 export const sha3_224 = createHash(
-  (M: Uint8Array) => sha3(448, 224, sha3Padding)(M),
+  (M: Uint8Array) => Keccak_c(448, 224, sha3Padding)(M),
   {
     ALGORITHM: 'SHA3-224',
     BLOCK_SIZE: 144,
@@ -124,9 +127,9 @@ export const sha3_224 = createHash(
 
 /**
  * @description
- * SHA3-256 hash algorithm
+ * `SHA3-256` hash algorithm
  *
- * SHA3-256 散列算法
+ * `SHA3-256` 散列算法
  *
  * @example
  * ```ts
@@ -135,7 +138,7 @@ export const sha3_224 = createHash(
  * ```
  */
 export const sha3_256 = createHash(
-  (M: Uint8Array) => sha3(512, 256, sha3Padding)(M),
+  (M: Uint8Array) => Keccak_c(512, 256, sha3Padding)(M),
   {
     ALGORITHM: 'SHA3-256',
     BLOCK_SIZE: 136,
@@ -145,9 +148,9 @@ export const sha3_256 = createHash(
 
 /**
  * @description
- * SHA3-384 hash algorithm
+ * `SHA3-384` hash algorithm
  *
- * SHA3-384 散列算法
+ * `SHA3-384` 散列算法
  *
  * @example
  * ```ts
@@ -156,7 +159,7 @@ export const sha3_256 = createHash(
  * ```
  */
 export const sha3_384 = createHash(
-  (M: Uint8Array) => sha3(768, 384, sha3Padding)(M),
+  (M: Uint8Array) => Keccak_c(768, 384, sha3Padding)(M),
   {
     ALGORITHM: 'SHA3-384',
     BLOCK_SIZE: 104,
@@ -166,9 +169,9 @@ export const sha3_384 = createHash(
 
 /**
  * @description
- * SHA3-512 hash algorithm
+ * `SHA3-512` hash algorithm
  *
- * SHA3-512 散列算法
+ * `SHA3-512` 散列算法
  *
  * @example
  * ```ts
@@ -177,7 +180,7 @@ export const sha3_384 = createHash(
  * ```
  */
 export const sha3_512 = createHash(
-  (M: Uint8Array) => sha3(1024, 512, sha3Padding)(M),
+  (M: Uint8Array) => Keccak_c(1024, 512, sha3Padding)(M),
   {
     ALGORITHM: 'SHA3-512',
     BLOCK_SIZE: 72,
@@ -187,9 +190,9 @@ export const sha3_512 = createHash(
 
 /**
  * @description
- * SHAKE128 is one of the SHA3 OXF hash algorithm
+ * `SHAKE128` is one of the `SHA3` OXF hash algorithm
  *
- * SHAKE128 是 SHA3 XOF 散列算法之一
+ * `SHAKE128` 是 `SHA3` XOF 散列算法之一
  *
  * @example
  * ```ts
@@ -201,7 +204,7 @@ export const sha3_512 = createHash(
  */
 export function shake128(d: number) {
   return createHash(
-    (M: Uint8Array) => sha3(256, d, shakePadding)(M),
+    (M: Uint8Array) => Keccak_c(256, d, shakePadding)(M),
     {
       ALGORITHM: `SHAKE128/${d}`,
       BLOCK_SIZE: 168,
@@ -212,9 +215,9 @@ export function shake128(d: number) {
 
 /**
  * @description
- * SHAKE256 is one of the SHA3 OXF hash algorithm
+ * `SHAKE256` is one of the `SHA3` OXF hash algorithm
  *
- * SHAKE256 是 SHA3 XOF 散列算法之一
+ * `SHAKE256` 是 `SHA3` XOF 散列算法之一
  *
  * @example
  * ```ts
@@ -226,7 +229,7 @@ export function shake128(d: number) {
  */
 export function shake256(d: number) {
   return createHash(
-    (M: Uint8Array) => sha3(512, d, shakePadding)(M),
+    (M: Uint8Array) => Keccak_c(512, d, shakePadding)(M),
     {
       ALGORITHM: `SHAKE256/${d}`,
       BLOCK_SIZE: 136,

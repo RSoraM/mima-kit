@@ -45,8 +45,8 @@ export function rotateR64(x: bigint, n: bigint) {
  * 合并多个 ArrayBuffer
  */
 export function joinBuffer(...buffers: ArrayBuffer[]) {
-  const sigByte = buffers.reduce((acc, cur) => acc + cur.byteLength, 0)
-  const result = new Uint8Array(sigByte)
+  const byteTotal = buffers.reduce((acc, cur) => acc + cur.byteLength, 0)
+  const result = new Uint8Array(byteTotal)
   let offset = 0
   for (const buffer of buffers) {
     result.set(new Uint8Array(buffer), offset)
