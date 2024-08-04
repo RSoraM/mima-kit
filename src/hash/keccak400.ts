@@ -133,7 +133,7 @@ function pi(A: StateArray400) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[y][(2 * x + 3 * y) % 5] = A[x][y]
+      _A[x][y] = A[(x + 3 * y) % 5][x]
     }
   }
   return _A

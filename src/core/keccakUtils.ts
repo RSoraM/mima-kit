@@ -30,6 +30,20 @@ export interface KeccakConfig {
   nr: number
 }
 
+/**
+ * @description
+ * `Keccak-p` Function Interface
+ *
+ * `Keccak-p` 函数接口
+ *
+ * The `Keccak-p[b, nr]` in the specification document is more like a constructor. But since the parameter `b` will affect the data structure used by the implementation, and the parameter `b` only comes from 7 kinds of `Keccak` Config, multiple versions of the `Keccak-p` function are implemented by fixing the parameter `b`.
+ *
+ * 规范文档中 `Keccak-p[b, nr]` 更像是一个构造函数. 但由于参数 `b` 会影响实现使用的数据结构, 且参数 `b` 只来自 7 种 `Keccak` 配置, 所以实现时将 `b` 作为固定参数, 实现多个版本的 `Keccak-p` 函数.
+ */
+export interface Keccak_p {
+  (S: Uint8Array): Uint8Array
+}
+
 // * Keccak Utils
 
 /**
@@ -108,20 +122,6 @@ export function RGen(w: number) {
 
 /**
  * @description
- * `Keccak-p` Function Interface
- *
- * `Keccak-p` 函数接口
- *
- * The `Keccak-p[b, nr]` in the specification document is more like a constructor. But since the parameter `b` will affect the data structure used by the implementation, and the parameter `b` only comes from 7 kinds of `Keccak` Config, multiple versions of the `Keccak-p` function are implemented by fixing the parameter `b`.
- *
- * 规范文档中 `Keccak-p[b, nr]` 更像是一个构造函数. 但由于参数 `b` 会影响实现使用的数据结构, 且参数 `b` 只来自 7 种 `Keccak` 配置, 所以实现时将 `b` 作为固定参数, 实现多个版本的 `Keccak-p` 函数.
- */
-export interface Keccak_p {
-  (S: Uint8Array): Uint8Array
-}
-
-/**
- * @description
  * Different from the specification document, this sponge construction does not include the padding function, please pad it before use.
  *
  * 与规范文档不同, 该海绵构造不包含填充函数, 请在使用前填充.
@@ -136,11 +136,10 @@ export function Sponge(f: Keccak_p, bByte: number, rByte: number, dByte: number)
    * @param {Uint8Array} P - 经过填充的消息
    */
   return (P: Uint8Array) => {
-    // n: 分块数
-    const blockTotal = Math.ceil(P.byteLength / rByte)
+    let S = new Uint8Array(bByte)
 
     // * 吸收
-    let S = new Uint8Array(bByte)
+    const blockTotal = P.byteLength / rByte
     for (let i = 0; i < blockTotal; i++) {
       const Pi = P.slice(i * rByte, (i + 1) * rByte)
       S.forEach((byte, index) => S[index] = byte ^ Pi[index])
