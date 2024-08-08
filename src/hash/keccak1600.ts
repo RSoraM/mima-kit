@@ -74,7 +74,7 @@ type StateArray1600 = BigUint64Array[]
  * @description
  * create a 5x5 `State Array`
  *
- * 创建一个 5x5 `状态数组`
+ * 创建一个 5x5 `状态矩阵`
  */
 function createStateArray(): StateArray1600 {
   return Array.from({ length: 5 }).map(() => new BigUint64Array(5))
@@ -84,7 +84,7 @@ function createStateArray(): StateArray1600 {
  * @description
  * Converting `State` to `State Arrays`
  *
- * 将 `状态` 转换为 `状态数组`
+ * 将 `状态` 转换为 `状态矩阵`
  */
 function toStateArray(S: Uint8Array) {
   const A = createStateArray()
@@ -103,7 +103,7 @@ function toStateArray(S: Uint8Array) {
  * @description
  * Converting `State Arrays` to `State`
  *
- * 将 `状态数组` 转换为 `状态`
+ * 将 `状态矩阵` 转换为 `状态`
  */
 function toState(A: StateArray1600) {
   const S = new Uint8Array(PERMUTATION.bByte)
