@@ -30,6 +30,7 @@ export interface Codec {
    * @param input - 输入 Uint8Array
    */
   stringify: (input: Uint8Array) => string
+  FORMAT: string
 }
 
 /**
@@ -51,6 +52,7 @@ export const Utf8: Codec = {
   stringify(input) {
     return new TextDecoder('utf-8').decode(input)
   },
+  FORMAT: 'utf-8',
 }
 
 /**
@@ -81,6 +83,7 @@ export const Hex: Codec = {
     }
     return result
   },
+  FORMAT: 'hex',
 }
 
 /**
@@ -102,6 +105,7 @@ export const B64: Codec = {
   stringify(input) {
     return B64CommonStringify(input, false)
   },
+  FORMAT: 'base64',
 }
 
 /**
@@ -123,6 +127,7 @@ export const B64url: Codec = {
   stringify(input) {
     return B64.stringify(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   },
+  FORMAT: 'base64url',
 }
 
 /**

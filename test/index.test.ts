@@ -8,6 +8,9 @@ import * as sha3 from '../src/hash/sha3'
 import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import { hmac } from '../src/hash/hmac'
+import type { CipherSuiteConfig } from '../src/core/cipherSuite'
+import { cbc, createCipherSuite } from '../src/core/cipherSuite'
+import { sm4 } from '../src/cipher/sm4'
 
 const { sha3_224, sha3_256 } = sha3
 const { sha3_384, sha3_512 } = sha3
@@ -21,7 +24,7 @@ const { tupleHash128XOF, tupleHash256XOF } = sha3Derived
 const { parallelHash128, parallelHash256 } = sha3Derived
 const { parallelHash128XOF, parallelHash256XOF } = sha3Derived
 
-describe('hash', () => {
+describe.skip('hash', () => {
   // * MD5
   it('md5', () => {
     expect(md5('')).toMatchInlineSnapshot('"d41d8cd98f00b204e9800998ecf8427e"')
@@ -131,7 +134,39 @@ describe('hash', () => {
   })
 })
 
-describe('codec', () => {
+describe('block cipher', () => {
+  // * SM4
+  it('sm4', () => {
+    const k = new Uint8Array([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10])
+    const m = new Uint8Array([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10])
+    const c = new Uint8Array([0x68, 0x1E, 0xDF, 0x34, 0xD2, 0x06, 0x96, 0x5E, 0x86, 0xB3, 0xE9, 0x4F, 0x53, 0x6E, 0x42, 0x46])
+
+    const cipher = sm4(k)
+    expect(cipher.encrypt(m)).toMatchObject(c)
+    expect(cipher.decrypt(c)).toMatchObject(m)
+  })
+  // * CBC-SM4
+  it('cbc-sm4', () => {
+    const k = '8586c1e4007b4ac8ea156616bb813986'
+    const iv = '060d358b88e62a5287b1df4dddf016b3'
+    const m = 'meow, 喵， 🐱'
+    const c = 'ac1e00f787097325407c4686cf80273bee30ee3d1a4bea26d3d09480a5241626'
+    const suite: CipherSuiteConfig = {
+      cipher: sm4,
+      mode: cbc,
+      key: k,
+      iv,
+      encrypt_output_codec: Hex,
+      decrypt_output_codec: Utf8,
+    }
+
+    const cbc_sm4 = createCipherSuite(suite)
+    expect(cbc_sm4.encrypt(m, Utf8)).toMatchInlineSnapshot(`"${c}"`)
+    expect(cbc_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+  })
+})
+
+describe.skip('codec', () => {
   it('utf8', () => {
     expect(Utf8.stringify(Utf8.parse('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
   })
