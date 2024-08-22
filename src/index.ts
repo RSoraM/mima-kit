@@ -1,6 +1,6 @@
 // * Codec
 export type { Codec } from './core/codec'
-export { Utf8, Hex, B64, B64url } from './core/codec'
+export { UTF8, HEX, B64, B64URL } from './core/codec'
 
 // * Hash Utils
 export type { Hash, TupleHash } from './core/hash'

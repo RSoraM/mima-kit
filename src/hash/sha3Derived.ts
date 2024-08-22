@@ -1,4 +1,4 @@
-import { Utf8 } from '../core/codec'
+import { UTF8 } from '../core/codec'
 import { createHash, createTupleHash } from '../core/hash'
 import { joinBuffer } from '../core/utils'
 import { Keccak_c, shake128, shake256 } from './sha3'
@@ -103,7 +103,7 @@ function rightEncode(x: number | bigint): Uint8Array {
  * @param {string | Uint8Array} input - 输入
  */
 function encodeString(input: string | Uint8Array) {
-  input = typeof input === 'string' ? Utf8.parse(input) : input
+  input = typeof input === 'string' ? UTF8.parse(input) : input
   return [leftEncode(input.byteLength << 3), input]
 }
 
@@ -197,8 +197,8 @@ function cShakePadding(rByte: number, sigBytes: number) {
  * @param {string | Uint8Array} S - customization
  */
 export function cShake128(d: number, N: string | Uint8Array = '', S: string | Uint8Array = '') {
-  N = typeof N === 'string' ? Utf8.parse(N) : N
-  S = typeof S === 'string' ? Utf8.parse(S) : S
+  N = typeof N === 'string' ? UTF8.parse(N) : N
+  S = typeof S === 'string' ? UTF8.parse(S) : S
 
   if (N.byteLength === 0 && S.byteLength === 0) {
     return shake128(d)
@@ -235,8 +235,8 @@ export function cShake128(d: number, N: string | Uint8Array = '', S: string | Ui
  * @param {string | Uint8Array} S - customization
  */
 export function cShake256(d: number, N: string | Uint8Array = '', S: string | Uint8Array = '') {
-  N = typeof N === 'string' ? Utf8.parse(N) : N
-  S = typeof S === 'string' ? Utf8.parse(S) : S
+  N = typeof N === 'string' ? UTF8.parse(N) : N
+  S = typeof S === 'string' ? UTF8.parse(S) : S
 
   if (N.byteLength === 0 && S.byteLength === 0) {
     return shake256(d)

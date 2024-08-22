@@ -1,6 +1,6 @@
 import { createHash } from '../core/hash'
 import { rotateR64 } from '../core/utils'
-import { Utf8 } from '../core/codec'
+import { UTF8 } from '../core/codec'
 
 // * Constants
 
@@ -145,7 +145,7 @@ function IVGen(t: number) {
   statusView.setBigUint64(48, 0x1F83D9ABFB41BD6Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
   statusView.setBigUint64(56, 0x5BE0CD19137E2179n ^ 0xA5A5A5A5A5A5A5A5n, false)
 
-  return sha384_512(status, Utf8.parse(`SHA-512/${t}`))
+  return sha384_512(status, UTF8.parse(`SHA-512/${t}`))
 }
 
 /**

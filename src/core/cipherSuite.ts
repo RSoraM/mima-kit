@@ -1,5 +1,5 @@
 import type { Codec } from './codec'
-import { Hex } from './codec'
+import { HEX } from './codec'
 import { joinBuffer } from './utils'
 
 // * 分组加密算法包装器
@@ -49,15 +49,15 @@ interface BlockCipher extends CipherDescription {
  */
 export function createBlockCipher(Cipher: Cipher, description: CipherDescription): BlockCipher {
   return Object.assign(
-    (K: string | Uint8Array, KCodec = Hex) => {
+    (K: string | Uint8Array, KCodec = HEX) => {
       K = typeof K === 'string' ? KCodec.parse(K) : K
       const cipher = Cipher(K)
       return {
-        encrypt: (M: string | Uint8Array, MCodec = Hex) => {
+        encrypt: (M: string | Uint8Array, MCodec = HEX) => {
           M = typeof M === 'string' ? MCodec.parse(M) : M
           return cipher.encrypt(M)
         },
-        decrypt: (C: string | Uint8Array, CCodec = Hex) => {
+        decrypt: (C: string | Uint8Array, CCodec = HEX) => {
           C = typeof C === 'string' ? CCodec.parse(C) : C
           return cipher.decrypt(C)
         },
@@ -97,7 +97,7 @@ interface OperationMode extends ModeDescription {
  */
 export function createOperationMode(mode: Mode, description: ModeDescription): OperationMode {
   return Object.assign(
-    (cipher: ReturnType<BlockCipher>, padding: Padding, iv?: string | Uint8Array, ivCodec: Codec = Hex) => {
+    (cipher: ReturnType<BlockCipher>, padding: Padding, iv?: string | Uint8Array, ivCodec: Codec = HEX) => {
       iv = typeof iv === 'string' ? ivCodec.parse(iv) : iv
       return mode(cipher, padding, iv)
     },
@@ -373,18 +373,18 @@ interface CipherSuite extends CipherSuiteDescription {
  * @param {CipherSuiteConfig} suite - 加密套件参数
  */
 export function createCipherSuite(suite: CipherSuiteConfig): CipherSuite {
-  const { cipher, key, key_codec: keyCodec = Hex } = suite
-  const { mode, iv, iv_codec: ivCodec = Hex, padding = PKCS7 } = suite
+  const { cipher, key, key_codec: keyCodec = HEX } = suite
+  const { mode, iv, iv_codec: ivCodec = HEX, padding = PKCS7 } = suite
   const { encrypt_output_codec, decrypt_output_codec } = suite
 
   const c = cipher(key, keyCodec)
   const m = mode(c, padding, iv, ivCodec)
   return {
-    encrypt: (M: string | Uint8Array, codec: Codec = Hex) => {
+    encrypt: (M: string | Uint8Array, codec: Codec = HEX) => {
       M = typeof M === 'string' ? codec.parse(M) : M
       return encrypt_output_codec ? encrypt_output_codec.stringify(m.encrypt(M)) : m.encrypt(M)
     },
-    decrypt: (C: string | Uint8Array, codec: Codec = Hex) => {
+    decrypt: (C: string | Uint8Array, codec: Codec = HEX) => {
       C = typeof C === 'string' ? codec.parse(C) : C
       return decrypt_output_codec ? decrypt_output_codec.stringify(m.decrypt(C)) : m.decrypt(C)
     },

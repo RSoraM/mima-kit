@@ -1,6 +1,6 @@
 import type { Hash } from '../core/hash'
 import { createHash } from '../core/hash'
-import { Utf8 } from '../core/codec'
+import { UTF8 } from '../core/codec'
 
 /**
  * @description
@@ -23,7 +23,7 @@ export function hmac(hash: Hash, key: string | Uint8Array) {
 
   // * 密钥处理
   const K0 = new Uint8Array(BLOCK_SIZE)
-  const K = typeof key === 'string' ? Utf8.parse(key) : key
+  const K = typeof key === 'string' ? UTF8.parse(key) : key
   K0.set(K.byteLength > BLOCK_SIZE ? hash.digest(K) : K)
 
   const iPad = K0.map(byte => (byte ^ 0x36))
