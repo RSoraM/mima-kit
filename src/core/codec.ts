@@ -46,10 +46,10 @@ export interface Codec {
  * ```
  */
 export const UTF8: Codec = {
-  parse(input) {
+  parse(input: string) {
     return new TextEncoder().encode(input)
   },
-  stringify(input) {
+  stringify(input: Uint8Array) {
     return new TextDecoder('utf-8').decode(input)
   },
   FORMAT: 'utf-8',
@@ -68,14 +68,14 @@ export const UTF8: Codec = {
  * ```
  */
 export const HEX: Codec = {
-  parse(input) {
+  parse(input: string) {
     const arr = input.match(/[\da-f]{2}/gi)
     if (arr == null) {
       return new Uint8Array()
     }
     return new Uint8Array(arr.map(h => Number.parseInt(h, 16)))
   },
-  stringify(input) {
+  stringify(input: Uint8Array) {
     const view = new DataView(input.buffer)
     let result = ''
     for (let i = 0; i < view.byteLength; i++) {
@@ -99,10 +99,10 @@ export const HEX: Codec = {
  * ```
  */
 export const B64: Codec = {
-  parse(input) {
+  parse(input: string) {
     return B64CommonParse(input, false)
   },
-  stringify(input) {
+  stringify(input: Uint8Array) {
     return B64CommonStringify(input, false)
   },
   FORMAT: 'base64',
@@ -121,10 +121,10 @@ export const B64: Codec = {
  * ```
  */
 export const B64URL: Codec = {
-  parse(input) {
+  parse(input: string) {
     return B64CommonParse(input, true)
   },
-  stringify(input) {
+  stringify(input: Uint8Array) {
     return B64.stringify(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   },
   FORMAT: 'base64url',
@@ -191,4 +191,91 @@ function B64CommonStringify(input: Uint8Array, url: boolean) {
     result += url ? '' : '=='
   }
   return result
+}
+
+/**
+ * @description
+ * Core Socialist Values codec
+ *
+ * 社会主义核心价值观编解码器
+ */
+export const CSV: Codec = {
+  parse(input: string) {
+    const coreValueMap = new Map<string, number>()
+    coreValueMap.set('富强', 0)
+    coreValueMap.set('民主', 1)
+    coreValueMap.set('文明', 2)
+    coreValueMap.set('和谐', 3)
+    coreValueMap.set('自由', 4)
+    coreValueMap.set('平等', 5)
+    coreValueMap.set('公正', 6)
+    coreValueMap.set('法治', 7)
+    coreValueMap.set('爱国', 8)
+    coreValueMap.set('敬业', 9)
+    coreValueMap.set('诚信', 10)
+    coreValueMap.set('友善', 11)
+
+    const from = (value: string) => {
+      const nibble = coreValueMap.get(value)
+      if (nibble === undefined) {
+        throw new Error('你竟然在社会主义核心价值观里夹带私货！')
+      }
+      return nibble
+    }
+
+    const coreValues = input.match(/(\S){2}/g)
+    if (coreValues == null) {
+      return new Uint8Array()
+    }
+
+    let h = 0
+    let l = 0
+    let count = 0
+    const result: number[] = []
+    for (let i = 0; i < coreValues.length; i++) {
+      const isHigh = count % 2 === 0
+
+      let nibble = from(coreValues[i])
+      if (nibble === 10 || nibble === 11) {
+        i++
+        if (i === coreValues.length) {
+          throw new Error('社会主义核心价值观不完整！')
+        }
+        nibble = nibble === 10
+          ? 10 + from(coreValues[i])
+          : 6 + from(coreValues[i])
+      }
+      isHigh ? h = nibble : l = nibble
+
+      if (!isHigh) {
+        result.push(((h << 4) | l) & 0xFF)
+      }
+      count++
+    }
+
+    return new Uint8Array(result)
+  },
+  stringify(input: Uint8Array) {
+    const rand = () => Math.random() >= 0.5
+    const map = ['富强', '民主', '文明', '和谐', '自由', '平等', '公正', '法治', '爱国', '敬业', '诚信', '友善']
+
+    let result = ''
+    input.forEach((byte) => {
+      const h = (byte >> 4) & 0xF
+      const l = byte & 0xF
+      h < 10
+        ? result += map[h]
+        : rand()
+          ? result += map[10] + map[h - 10]
+          : result += map[11] + map[h - 6]
+      l < 10
+        ? result += map[l]
+        : rand()
+          ? result += map[10] + map[l - 10]
+          : result += map[11] + map[l - 6]
+    })
+
+    return result
+  },
+  FORMAT: 'core-socialist-values',
 }
