@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { B64, B64URL, HEX, UTF8 } from '../src/core/codec'
+import { B64, B64URL, CSV, HEX, UTF8 } from '../src/core/codec'
 import { md5 } from '../src/hash/md5'
 import { sha1 } from '../src/hash/sha1'
 import { sha224, sha256 } from '../src/hash/sha256'
@@ -7,6 +7,7 @@ import { sha384, sha512, sha512t } from '../src/hash/sha512'
 import * as sha3 from '../src/hash/sha3'
 import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
+import type { HMACScheme } from '../src/hash/hmac'
 import { hmac } from '../src/hash/hmac'
 import type { CipherSuiteConfig } from '../src/core/cipherSuite'
 import { cbc, createCipherSuite } from '../src/core/cipherSuite'
@@ -24,7 +25,7 @@ const { tupleHash128XOF, tupleHash256XOF } = sha3Derived
 const { parallelHash128, parallelHash256 } = sha3Derived
 const { parallelHash128XOF, parallelHash256XOF } = sha3Derived
 
-describe.skip('hash', () => {
+describe('hash', () => {
   // * MD5
   it('md5', () => {
     expect(md5('')).toMatchInlineSnapshot('"d41d8cd98f00b204e9800998ecf8427e"')
@@ -79,37 +80,37 @@ describe.skip('hash', () => {
   // * SHA-3 Derived
   it('cShake', () => {
     expect(cShake128(256)('')).toMatchInlineSnapshot('"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26"')
-    expect(cShake128(256, 'fn', 'password')('')).toMatchInlineSnapshot('"8949abe9aa6f75cc32d7ae0668798a5491530d2dad1c85a3fea68689fc20cb0e"')
-    expect(cShake128(256, 'meow', 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"c6c729b124020e81cec50c281b2fa863ae613ee5c5f0432b4f43fedb29364c7a"')
+    expect(cShake128(256, { N: 'fn', S: 'password' })('')).toMatchInlineSnapshot('"8949abe9aa6f75cc32d7ae0668798a5491530d2dad1c85a3fea68689fc20cb0e"')
+    expect(cShake128(256, { N: 'meow', S: 'password' })('meow, 喵， 🐱')).toMatchInlineSnapshot('"c6c729b124020e81cec50c281b2fa863ae613ee5c5f0432b4f43fedb29364c7a"')
 
     expect(cShake256(512)('')).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
-    expect(cShake256(512, 'fn', 'password')('')).toMatchInlineSnapshot('"1ff1d7cc4b14a1d86eb1d763501705199ae4208ca3ebd83809f95189c9b08a1fdf6d9b182f14541888b3b0ba7023dc53a7f8025de2eed1b8dacc95edf9c13b91"')
-    expect(cShake256(512, 'meow', 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"6ba1b872ade77effc824d222654c841d8a99369b533e540007ac3383693d3ff68687892dbd2cc2ea3c8ae61578a6c3c0c7a89235db524db223ff7770293724a3"')
+    expect(cShake256(512, { N: 'fn', S: 'password' })('')).toMatchInlineSnapshot('"1ff1d7cc4b14a1d86eb1d763501705199ae4208ca3ebd83809f95189c9b08a1fdf6d9b182f14541888b3b0ba7023dc53a7f8025de2eed1b8dacc95edf9c13b91"')
+    expect(cShake256(512, { N: 'meow', S: 'password' })('meow, 喵， 🐱')).toMatchInlineSnapshot('"6ba1b872ade77effc824d222654c841d8a99369b533e540007ac3383693d3ff68687892dbd2cc2ea3c8ae61578a6c3c0c7a89235db524db223ff7770293724a3"')
   })
   it('kmac', () => {
     expect(kmac128(256)('')).toMatchInlineSnapshot('"5c135c615152fb4d9784dd1155f9b6034e013fd77165c327dfa4d36701983ef7"')
-    expect(kmac128(256, '', 'password')('')).toMatchInlineSnapshot('"e726b86ee29b1a51867fa5aa58ae2078c24bf1176da85262db46d1d67fe92be2"')
-    expect(kmac128(256, 'password')('')).toMatchInlineSnapshot(`"21cbb4034e42533b7666f5e6997a9e4eede3cadf017412b294b9af792ddab12a"`)
-    expect(kmac128(256, 'password', 'custom')('meow, 喵， 🐱')).toMatchInlineSnapshot(`"ef74e577ff0eef49974b6c2a707067ac6d3fba7afeccc2ff3ea40935d0471635"`)
-    expect(kmac128XOF(256, 'password', 'custom')('meow, 喵， 🐱')).toMatchInlineSnapshot(`"8e8b4b4eacf9feee5bec9559a6091f48ee3c26de38adb4191e9eadf8f428f0fd"`)
+    expect(kmac128(256, { S: 'password' })('')).toMatchInlineSnapshot('"e726b86ee29b1a51867fa5aa58ae2078c24bf1176da85262db46d1d67fe92be2"')
+    expect(kmac128(256, { K: 'password' })('')).toMatchInlineSnapshot(`"21cbb4034e42533b7666f5e6997a9e4eede3cadf017412b294b9af792ddab12a"`)
+    expect(kmac128(256, { K: 'password', S: 'custom' })('meow, 喵， 🐱')).toMatchInlineSnapshot(`"ef74e577ff0eef49974b6c2a707067ac6d3fba7afeccc2ff3ea40935d0471635"`)
+    expect(kmac128XOF(256, { K: 'password', S: 'custom' })('meow, 喵， 🐱')).toMatchInlineSnapshot(`"8e8b4b4eacf9feee5bec9559a6091f48ee3c26de38adb4191e9eadf8f428f0fd"`)
 
     expect(kmac256(512)('')).toMatchInlineSnapshot('"2b70c18a81bb6446868dbc411e0dc1331c4399101d6b8b14ea16e951eee001033207bfe3bede15b946bfc209c62fc5d95e3e7b530b507319f24947d6ad7c18fe"')
-    expect(kmac256(512, '', 'password')('')).toMatchInlineSnapshot('"fe840b8ef8dfcfb9b0f22adc45727bb77ac9adb60130367c03975f84e2aad82b18027c0c0df59d8fbcc1a219203e09d148cb527f971024ea60222bf4f134e3a4"')
-    expect(kmac256(512, 'password')('')).toMatchInlineSnapshot('"84500199d4e0dda265fdd0e009eb658c9fee708e6a6af073ea078173d6298c2a507b9c7be0597ce2c839ded8556d4468c9c07b7c076aee66ae1454cc6a6b2477"')
-    expect(kmac256(512, 'password', 'custom')('meow, 喵， 🐱')).toMatchInlineSnapshot(`"7ac4bd71ef93bfa57560f069ed832b785b9ddd855200974a9025240c44f39d8739c31c201f92919c075bcac16313761765c32a20b8a1dbae1cef32e015e3e7f5"`)
-    expect(kmac256XOF(512, 'password', 'custom')('meow, 喵， 🐱')).toMatchInlineSnapshot(`"16066139244a9b649547be5fa349a3f9ce568ab6dcb753b00573cca1d2f6b47e354e175520fff098c3124048f8524771518e4cae9de9f026c76b347dc79058f2"`)
+    expect(kmac256(512, { S: 'password' })('')).toMatchInlineSnapshot('"fe840b8ef8dfcfb9b0f22adc45727bb77ac9adb60130367c03975f84e2aad82b18027c0c0df59d8fbcc1a219203e09d148cb527f971024ea60222bf4f134e3a4"')
+    expect(kmac256(512, { K: 'password' })('')).toMatchInlineSnapshot('"84500199d4e0dda265fdd0e009eb658c9fee708e6a6af073ea078173d6298c2a507b9c7be0597ce2c839ded8556d4468c9c07b7c076aee66ae1454cc6a6b2477"')
+    expect(kmac256(512, { K: 'password', S: 'custom' })('meow, 喵， 🐱')).toMatchInlineSnapshot(`"7ac4bd71ef93bfa57560f069ed832b785b9ddd855200974a9025240c44f39d8739c31c201f92919c075bcac16313761765c32a20b8a1dbae1cef32e015e3e7f5"`)
+    expect(kmac256XOF(512, { K: 'password', S: 'custom' })('meow, 喵， 🐱')).toMatchInlineSnapshot(`"16066139244a9b649547be5fa349a3f9ce568ab6dcb753b00573cca1d2f6b47e354e175520fff098c3124048f8524771518e4cae9de9f026c76b347dc79058f2"`)
   })
   it('tupleHash', () => {
-    expect(tupleHash128(256, 'custom')(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"3c981a838a10737fc32609fde65f87ad928d1321450279e6318f629ed3ef89de"`)
-    expect(tupleHash128XOF(256, 'custom')(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"506a35e6f751612bd496d6647c4f33f428f7670acd3dbe5417c2fc16dc9852c5"`)
-    expect(tupleHash256(512, 'custom')(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"9c30d7333705d6d5614a735bc2990328229b9b0d301d1645a931d3f33ba9f38cb6c1681196ae4107835823abc90bf06b1b113c85e000d808f0eef3a125a15dc0"`)
-    expect(tupleHash256XOF(512, 'custom')(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"7df7f72679ea7bc2b517c80a0d62d0635a343e1c40d96094da0cecd531e897a440faa28d4eff45cd46605cf050ea0a634e6d1cf5a63f56d3faf71e500e15dc98"`)
+    expect(tupleHash128(256, { S: 'custom' })(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"3c981a838a10737fc32609fde65f87ad928d1321450279e6318f629ed3ef89de"`)
+    expect(tupleHash128XOF(256, { S: 'custom' })(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"506a35e6f751612bd496d6647c4f33f428f7670acd3dbe5417c2fc16dc9852c5"`)
+    expect(tupleHash256(512, { S: 'custom' })(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"9c30d7333705d6d5614a735bc2990328229b9b0d301d1645a931d3f33ba9f38cb6c1681196ae4107835823abc90bf06b1b113c85e000d808f0eef3a125a15dc0"`)
+    expect(tupleHash256XOF(512, { S: 'custom' })(['meow', '喵', '🐱'])).toMatchInlineSnapshot(`"7df7f72679ea7bc2b517c80a0d62d0635a343e1c40d96094da0cecd531e897a440faa28d4eff45cd46605cf050ea0a634e6d1cf5a63f56d3faf71e500e15dc98"`)
   })
   it('parallelHash', async () => {
-    expect(parallelHash128(1024, 256, 'custom')('meow, 喵, 🐱')).toMatchInlineSnapshot(`"e5c12db8d0dccc6c1c9a37f1055b14ff2d454013181d17c63fdfb84fbedb3c30"`)
-    expect(parallelHash128XOF(1024, 256, 'custom')('meow, 喵, 🐱')).toMatchInlineSnapshot(`"07ed9b4de2b5e9a6e8fe7c30db3dcc0433dae7f6e26adabc4657d03b6710b887"`)
-    expect(parallelHash256(1024, 512, 'custom')('meow, 喵, 🐱')).toMatchInlineSnapshot(`"1c17675efbc315f023c74bf6dc9a83bd9856af34be1de08a3189b8abd1cb8abdc332b6f5da859e69382f283e79ccf094e9fd8a12780995c22c1382d5d959d794"`)
-    expect(parallelHash256XOF(1024, 512, 'custom')('meow, 喵, 🐱')).toMatchInlineSnapshot(`"9f1d8327fb737c1f595deee995ce595b8d86eab66910f01d6b0c450c45274e630aa89fd76cb6101a2f391dcc0838077fe0c7ccc2a214250c91ae67fd431bf10d"`)
+    expect(parallelHash128(1024, 256, { S: 'custom' })('meow, 喵, 🐱')).toMatchInlineSnapshot(`"e5c12db8d0dccc6c1c9a37f1055b14ff2d454013181d17c63fdfb84fbedb3c30"`)
+    expect(parallelHash128XOF(1024, 256, { S: 'custom' })('meow, 喵, 🐱')).toMatchInlineSnapshot(`"07ed9b4de2b5e9a6e8fe7c30db3dcc0433dae7f6e26adabc4657d03b6710b887"`)
+    expect(parallelHash256(1024, 512, { S: 'custom' })('meow, 喵, 🐱')).toMatchInlineSnapshot(`"1c17675efbc315f023c74bf6dc9a83bd9856af34be1de08a3189b8abd1cb8abdc332b6f5da859e69382f283e79ccf094e9fd8a12780995c22c1382d5d959d794"`)
+    expect(parallelHash256XOF(1024, 512, { S: 'custom' })('meow, 喵, 🐱')).toMatchInlineSnapshot(`"9f1d8327fb737c1f595deee995ce595b8d86eab66910f01d6b0c450c45274e630aa89fd76cb6101a2f391dcc0838077fe0c7ccc2a214250c91ae67fd431bf10d"`)
   })
   // * SM3
   it('sm3', () => {
@@ -118,19 +119,31 @@ describe.skip('hash', () => {
   })
   // * HMAC
   it('hmac', () => {
-    expect(hmac(sha224, 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"796dac904862fc0cde2f6321a8dd9fc4f9e95af33430380ed5f21581"')
-    expect(hmac(sha224, 'password')('meow, 喵， 🐱', B64)).toMatchInlineSnapshot('"eW2skEhi/AzeL2MhqN2fxPnpWvM0MDgO1fIVgQ=="')
-
-    expect(hmac(sha256, 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"d1460c736797bff7d4ff11940451421e7f693a7d1d7b10e2a2c163f11a9ca53c"')
-    expect(hmac(sha256, 'password')('meow, 喵， 🐱', B64)).toMatchInlineSnapshot('"0UYMc2eXv/fU/xGUBFFCHn9pOn0dexDiosFj8RqcpTw="')
-    expect(hmac(sha256, 'password')(
+    const hmac_sha256_scheme: HMACScheme = {
+      hash: sha256,
+      key: 'password',
+    }
+    const hmac_sha256 = hmac(hmac_sha256_scheme)
+    expect(hmac_sha256('meow, 喵， 🐱')).toMatchInlineSnapshot('"d1460c736797bff7d4ff11940451421e7f693a7d1d7b10e2a2c163f11a9ca53c"')
+    expect(hmac_sha256('meow, 喵， 🐱', B64)).toMatchInlineSnapshot('"0UYMc2eXv/fU/xGUBFFCHn9pOn0dexDiosFj8RqcpTw="')
+    expect(hmac_sha256(
       'xqxokmcswidaxxhpihnxorkqijxcuimukvkfpajpmxpgvvsoalctwhduvnatkhswijvngzpfwyxyycaxxiggtxhfucubguovxpwenosdnanqhefmqypqcehjmqxhnonipdlkfqufitmznkaautleeeestcwhvtdwmnfqsvjbxvsocmvshdqufdaxmvrjafpqcxwiczgoyhzgmxttlvydtnltebuqrwwoftgwokpuvnyccmeewauzvnixzpdksdlrqvdxthtyarobmwbyymqdnqaekczrhdupfcbtvzvdathjgrcytefgplbjfenjnzwohktafimwixswiggnidoatbeejlweuznphnxyhbbbwnubzuvwgjcdhhxszhnjulsavzfkkcbmjfgwiedqqzlhtjfcjeulcbjsaagglvmplprxqwhpxnyqfgtcqxghvbcahhguenbbzaaodqhlexgwpohwzmvcovmsksmvgkmbtfkomztnaabjzngbwujqbpuopytsotzyooikasrwftsjzkavfzhikvicsghrrmxeskcjrnhvlwaikwdjpdytnbfebliygpjzhsgcidtoyihtwlbwgrpngigonpjzbvuyyseibdgwgfefobvnduwympccyfevseqtbhwmbknldvzlkskbrxuxjdocpazjizixmthntuclfigpraiekufbpfgsfpytegmwdqvtxgxygcytxwjvjildrrqhfpittjnlydthgoysgfkpbypnbtagmpdyzmodogrxoxqiicjhzlmfqavbhtopxnmhdzzcukcqywzcyajckxqljnqzpsqkfenboayiqbfbqbjtiyxbxwzbirpbeikuyyhwbbrirzfbrbvkjpsftokpiezyiroxycqdjkrgssakuwrvuqqppecvwnufvapbgmblxleesdncjlhlqjiszvcxevtcnhgjdeoimdrziqjbmdqjiaoryodxepmweypxwwjczzkdnzmwbpmmpicihclwgxaxvrwfvsyawelwhwjzqeilmgykdyxzbtbnwlzyhyzsyolbwjujxlbilcjtgqqzrirznypkzwavchlwjzbjfmijoxacbdowbjbmifwctonqmxqvgsgmqnqraoqxezdkcqnmnpojxuktqopsuocsiqfjvtolsnflouvicscngescvvtoskngblqjwbxcczqgxfhjhajqhifylpuksaafoialypdgnywpevcmmepvopdircucjaylvecunojfyngozadyysfetqfutropvlewfkmpnefyttwogjevmriqbaxpddnajhhoxjvbbcnidkqlrtpgngqzxwcxfwjpldxwyoeuocafvhiooyhsdvpdahrivovnmzwgkbgorgcmatpkepzczorvfhmcnqazvykpxxwxjuxydtilfsrkxubzjcweqfywabddkuiqupungujxvjxlyifvfudnbnwahjpnyfnnjsmcebnoqxpqvxysygyrynxjuktjeojgklxbmxlulqrlfmiyjzvhkxikzesoxalpgxjwyhlxflyhzufoiskghnzrzcunmhhcdpmudbfipxdjaivyhamnxrseyoskjnnhpzpjkrqltrbcbnaodiiigfyxugifgujnqxhgumegxeyaonanmzcnjkidmnacxjzncfgpcagfbwcukjvusgtclkeouoqwpngtixbpixrdtlkxjysslzmorfbnnbmnehokdtqiwxmppmimfowmigausofrjflkotlhdszumlrtjrxkxlndzanfoalhvibkitklnrshlhpjzofjztsxmdfexhunxlkdpuhttxrppnflqsvwepneyvskubezsvnzwgsshclwgizsckghlxeyffkczxyrqdjtdrqasxybrdntputkarkxrqsdvueefrdctnltnnlmdedkqimqdvflnfqrlydsxzmriaydhirlyccpbtwhfxcraofzyrydpedrrirgfnbadexjbwuiufsozncrlgqqtuiwtaxscljvbfbpbpefzvecuoqc',
     )).toMatchInlineSnapshot('"6298a318f4926c6dab11ce985146d60fec36b6c10f863bbff67d0c301e0fb140"')
 
-    expect(hmac(sm3, 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"c8e111cdad100b08d04315081893bd5ac0b75180c492abe2fadcfbe027924904"')
-    expect(hmac(sm3, 'password')('meow, 喵， 🐱', B64)).toMatchInlineSnapshot('"yOERza0QCwjQQxUIGJO9WsC3UYDEkqvi+tz74CeSSQQ="')
+    const hmac_sm3_scheme: HMACScheme = {
+      hash: sm3,
+      key: 'password',
+    }
+    const hmac_sm3 = hmac(hmac_sm3_scheme)
+    expect(hmac_sm3('meow, 喵， 🐱')).toMatchInlineSnapshot('"c8e111cdad100b08d04315081893bd5ac0b75180c492abe2fadcfbe027924904"')
+    expect(hmac_sm3('meow, 喵， 🐱', B64)).toMatchInlineSnapshot('"yOERza0QCwjQQxUIGJO9WsC3UYDEkqvi+tz74CeSSQQ="')
 
-    expect(hmac(sha3_256, 'password')('meow, 喵， 🐱')).toMatchInlineSnapshot('"969bdb3d05db27ee7df5ba69b6e2e2bf5d7abb3b13e8c181d6418d6f0403f3f0"')
+    const hmac_sha3_scheme: HMACScheme = {
+      hash: sha3_256,
+      key: 'password',
+    }
+    const hmac_sha3 = hmac(hmac_sha3_scheme)
+    expect(hmac_sha3('meow, 喵， 🐱')).toMatchInlineSnapshot('"969bdb3d05db27ee7df5ba69b6e2e2bf5d7abb3b13e8c181d6418d6f0403f3f0"')
   })
 })
 
@@ -166,7 +179,7 @@ describe('block cipher', () => {
   })
 })
 
-describe.skip('codec', () => {
+describe('codec', () => {
   it('utf8', () => {
     expect(UTF8.stringify(UTF8.parse('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
   })
@@ -186,5 +199,9 @@ describe.skip('codec', () => {
     expect(B64URL.stringify(UTF8.parse('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"Y2F0LCDnjKssIPCfkLE"`)
     expect(UTF8.stringify(B64URL.parse('Y2F0LCDnjKssIPCfkLE'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
     expect(UTF8.stringify(B64URL.parse('5Zug5Li677yMQmFzZTY0IOWwhuS4ieS4quWtl-iKgui9rOWMluaIkOWbm-S4quWtl-iKgu-8jOWboOatpCBCYXNlNjQg57yW56CB5ZCO55qE5paH5pys77yM5Lya5q-U5Y6f5paH5pys5aSn5Ye65LiJ5YiG5LmL5LiA5bem5Y-z44CC'))).toMatchInlineSnapshot(`"因为，Base64 将三个字节转化成四个字节，因此 Base64 编码后的文本，会比原文本大出三分之一左右。"`)
+  })
+  it('csv', () => {
+    expect(CSV.stringify(UTF8.parse('cat'))).toMatchInlineSnapshot(`"公正和谐公正民主法治自由"`)
+    expect(UTF8.stringify(CSV.parse('公正和谐公正民主法治自由文明友善公正文明富强诚信自由法治爱国诚信文明诚信富强诚信民主文明友善公正文明富强诚信平等富强敬业友善敬业敬业富强友善平等民主'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
   })
 })

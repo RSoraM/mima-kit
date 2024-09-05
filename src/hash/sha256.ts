@@ -17,24 +17,21 @@ const sigma1 = (x: number) => rotateR32(x, 17) ^ rotateR32(x, 19) ^ (x >>> 10)
 // * Algorithm
 
 /**
- * @description
- * SHA-224 & SHA-256 common function
- *
- * SHA-224 & SHA-256 通用函数
- *
- * @param {Uint8Array} status - 工作变量
+ * @param {Uint8Array} state - 初始状态
  * @param {Uint8Array} M - 消息
  */
-function sha224_256(status: Uint8Array, M: Uint8Array) {
+function digest(state: Uint8Array, M: Uint8Array) {
   // * 初始化
-  const statusView = new DataView(status.buffer)
+  state = state.slice(0)
+  const stateView = new DataView(state.buffer)
 
   const sigBytes = M.byteLength
   const BLOCK_SIZE = 64
   const BLOCK_TOTAL = Math.ceil((sigBytes + 9) / BLOCK_SIZE)
   const BITS_TOTAL = BigInt(sigBytes) << 3n
-  if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFn)
+  if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFn) {
     throw new Error('Message is too long')
+  }
 
   // * 填充
   const P = new Uint8Array(BLOCK_TOTAL * BLOCK_SIZE)
@@ -44,8 +41,8 @@ function sha224_256(status: Uint8Array, M: Uint8Array) {
   P[sigBytes] = 0x80
 
   // appending length
-  const dataView = new DataView(P.buffer)
-  dataView.setBigUint64(P.byteLength - 8, BITS_TOTAL, false)
+  const PView = new DataView(P.buffer)
+  PView.setBigUint64(P.byteLength - 8, BITS_TOTAL, false)
 
   // * 分块处理
   for (let i = 0; i < BLOCK_TOTAL; i++) {
@@ -53,15 +50,15 @@ function sha224_256(status: Uint8Array, M: Uint8Array) {
     const currentBlock = P.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
     const view = new DataView(currentBlock.buffer)
 
-    // 初始化工作变量
-    const h0 = statusView.getUint32(0, false)
-    const h1 = statusView.getUint32(4, false)
-    const h2 = statusView.getUint32(8, false)
-    const h3 = statusView.getUint32(12, false)
-    const h4 = statusView.getUint32(16, false)
-    const h5 = statusView.getUint32(20, false)
-    const h6 = statusView.getUint32(24, false)
-    const h7 = statusView.getUint32(28, false)
+    // 准备状态字
+    const h0 = stateView.getUint32(0, false)
+    const h1 = stateView.getUint32(4, false)
+    const h2 = stateView.getUint32(8, false)
+    const h3 = stateView.getUint32(12, false)
+    const h4 = stateView.getUint32(16, false)
+    const h5 = stateView.getUint32(20, false)
+    const h6 = stateView.getUint32(24, false)
+    const h7 = stateView.getUint32(28, false)
     let a = h0
     let b = h1
     let c = h2
@@ -93,19 +90,51 @@ function sha224_256(status: Uint8Array, M: Uint8Array) {
       a = T1 + T2
     }
 
-    // 更新工作变量
-    statusView.setUint32(0, h0 + a, false)
-    statusView.setUint32(4, h1 + b, false)
-    statusView.setUint32(8, h2 + c, false)
-    statusView.setUint32(12, h3 + d, false)
-    statusView.setUint32(16, h4 + e, false)
-    statusView.setUint32(20, h5 + f, false)
-    statusView.setUint32(24, h6 + g, false)
-    statusView.setUint32(28, h7 + h, false)
+    // 更新状态字
+    stateView.setUint32(0, h0 + a, false)
+    stateView.setUint32(4, h1 + b, false)
+    stateView.setUint32(8, h2 + c, false)
+    stateView.setUint32(12, h3 + d, false)
+    stateView.setUint32(16, h4 + e, false)
+    stateView.setUint32(20, h5 + f, false)
+    stateView.setUint32(24, h6 + g, false)
+    stateView.setUint32(28, h7 + h, false)
   }
 
-  // 返回工作变量
-  return status
+  // * 返回状态
+  return state
+}
+
+function sha224Digest(M: Uint8Array) {
+  // * 初始化 SHA-224 状态
+  const state = new Uint8Array(32)
+  const stateView = new DataView(state.buffer)
+  stateView.setUint32(0, 0xC1059ED8, false)
+  stateView.setUint32(4, 0x367CD507, false)
+  stateView.setUint32(8, 0x3070DD17, false)
+  stateView.setUint32(12, 0xF70E5939, false)
+  stateView.setUint32(16, 0xFFC00B31, false)
+  stateView.setUint32(20, 0x68581511, false)
+  stateView.setUint32(24, 0x64F98FA7, false)
+  stateView.setUint32(28, 0xBEFA4FA4, false)
+
+  return digest(state, M).slice(0, 28)
+}
+
+function sha256Digest(M: Uint8Array) {
+  // * 初始化 SHA-256 状态
+  const state = new Uint8Array(32)
+  const stateView = new DataView(state.buffer)
+  stateView.setUint32(0, 0x6A09E667, false)
+  stateView.setUint32(4, 0xBB67AE85, false)
+  stateView.setUint32(8, 0x3C6EF372, false)
+  stateView.setUint32(12, 0xA54FF53A, false)
+  stateView.setUint32(16, 0x510E527F, false)
+  stateView.setUint32(20, 0x9B05688C, false)
+  stateView.setUint32(24, 0x1F83D9AB, false)
+  stateView.setUint32(28, 0x5BE0CD19, false)
+
+  return digest(state, M)
 }
 
 /**
@@ -121,23 +150,8 @@ function sha224_256(status: Uint8Array, M: Uint8Array) {
  * ```
  */
 export const sha224 = createHash(
-  (M: Uint8Array) => {
-    // * 初始化
-    const status = new Uint8Array(32)
-    const statusView = new DataView(status.buffer)
-    statusView.setUint32(0, 0xC1059ED8, false)
-    statusView.setUint32(4, 0x367CD507, false)
-    statusView.setUint32(8, 0x3070DD17, false)
-    statusView.setUint32(12, 0xF70E5939, false)
-    statusView.setUint32(16, 0xFFC00B31, false)
-    statusView.setUint32(20, 0x68581511, false)
-    statusView.setUint32(24, 0x64F98FA7, false)
-    statusView.setUint32(28, 0xBEFA4FA4, false)
-
-    sha224_256(status, M)
-
-    // * 截断输出
-    return status.slice(0, 28)
+  {
+    digest: sha224Digest,
   },
   {
     ALGORITHM: 'SHA-224',
@@ -159,23 +173,8 @@ export const sha224 = createHash(
  * ```
  */
 export const sha256 = createHash(
-  (M: Uint8Array) => {
-    // * 初始化
-    const status = new Uint8Array(32)
-    const statusView = new DataView(status.buffer)
-    statusView.setUint32(0, 0x6A09E667, false)
-    statusView.setUint32(4, 0xBB67AE85, false)
-    statusView.setUint32(8, 0x3C6EF372, false)
-    statusView.setUint32(12, 0xA54FF53A, false)
-    statusView.setUint32(16, 0x510E527F, false)
-    statusView.setUint32(20, 0x9B05688C, false)
-    statusView.setUint32(24, 0x1F83D9AB, false)
-    statusView.setUint32(28, 0x5BE0CD19, false)
-
-    sha224_256(status, M)
-
-    // * 截断输出
-    return status
+  {
+    digest: sha256Digest,
   },
   {
     ALGORITHM: 'SHA-256',

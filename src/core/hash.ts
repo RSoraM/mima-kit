@@ -1,138 +1,157 @@
 import type { Codec } from './codec'
 import { HEX, UTF8 } from './codec'
 
-// * 散列函数包装器
+export type Digest = (M: Uint8Array) => Uint8Array
+export type TupleDigest = (M: Uint8Array[]) => Uint8Array
 
-/**
- * @description
- * Digest function interface
- *
- * 散列函数的接口
- */
-interface Digest {
-  (M: Uint8Array): Uint8Array
+// * 散列算法包装器
+
+export interface HashScheme {
+  digest: Digest
+  /**
+   * @default UTF8
+   */
+  INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  OUTPUT_CODEC?: Codec
 }
 
-/**
- * @description
- * Hash algorithm description interface
- *
- * 散列算法的描述接口
- *
- * @property {string} ALGORITHM - 算法名称
- * @property {number} BLOCK_SIZE - 分块大小
- * @property {number} DIGEST_SIZE - 摘要大小
- */
-interface HashDescription {
+export interface HashDescription {
+  /**
+   * Algorithm name
+   *
+   * 算法名称
+   */
   ALGORITHM: string
+  /**
+   * Block size (byte)
+   *
+   * 分块大小 (byte)
+   */
   BLOCK_SIZE: number
+  /**
+   * Digest size (byte)
+   *
+   * 摘要大小 (byte)
+   */
   DIGEST_SIZE: number
 }
 
 /**
  * @description
- * Hash algorithm interface
+ * Hash algorithm
  *
- * 散列算法的接口
+ * 散列算法
  */
 export interface Hash extends HashDescription {
-  /**
-   * @param {string | Uint8Array} M - 输入
-   * @param {Codec} codec - 输出编解码器(default: Hex)
-   */
-  (M: string | Uint8Array, codec?: Codec): string
   digest: Digest
+  (M: string | Uint8Array, codec?: Codec): string
+  INPUT_CODEC: Codec
+  OUTPUT_CODEC: Codec
 }
 
 /**
  * @description
- * Create a wrapper for the digest function
+ * Create a hash algorithm based on the scheme
  *
- * 为散列函数创建一个包装
+ * 根据方案创建散列算法
  *
- * The wrapper function records the description of the digest function for the implementation of related extended algorithms such as `HMAC`.
+ * Request hash algorithm description to implement extended algorithms such as `HMAC`
  *
- * 包装函数记录了散列函数的描述信息, 以便实现 `HMAC` 等相关拓展算法.
+ * 提供散列算法描述, 以实现 `HMAC` 等拓展算法.
  *
  * @example
  * ```ts
- * const hash = createHash((M: Uint8Array) => Uint8Array, {...})
+ * const scheme: HashScheme = { ... }
+ * const description: HashDescription = { ... }
+ * const hash = createHash(scheme, description)
  * ```
  *
- * @param {Digest} digest - 散列函数
+ * @param {HashScheme} scheme - 散列方案
  * @param {HashDescription} description - 算法描述
  */
-export function createHash(digest: Digest, description: HashDescription): Hash {
-  return Object.assign(
-    (M: string | Uint8Array, codec: Codec = HEX) => {
-      M = typeof M == 'string' ? UTF8.parse(M) : M
+export function createHash(scheme: HashScheme, description: HashDescription): Hash {
+  const { digest, INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = scheme
+  const _description = {
+    digest,
+    INPUT_CODEC,
+    OUTPUT_CODEC,
+    ...description,
+  }
+
+  return Object.freeze(Object.assign(
+    (M: string | Uint8Array, codec?: Codec) => {
+      M = typeof M === 'string' ? INPUT_CODEC.parse(M) : M
       const status = digest(M)
+      codec = codec || OUTPUT_CODEC
       return codec.stringify(status)
     },
-    {
-      ...description,
-      digest,
-    },
-  )
+    _description,
+  ))
 }
 
 // * 元组散列函数包装器
 
-/**
- * @description
- * Digest function interface
- *
- * 元组散列函数的接口
- *
- * @param {Uint8Array} M - 输入
- */
-type TupleDigest = (M: Uint8Array[]) => Uint8Array
-
-/**
- * @description
- * Hash algorithm interface
- *
- * 元组散列算法的接口
- */
-export interface TupleHash extends HashDescription {
-  /**
-   * @description
-   * Hash function with automatic input conversion and optional output encoding
-   *
-   * 自动转换输入且可自定义输出编码的元组散列函数
-   *
-   * @param {Array<string | Uint8Array>} input - 输入
-   * @param {Codec} codec - 输出编解码器
-   */
-  (input: Array<string | Uint8Array>, codec?: Codec): string
-
+export interface TupleHashScheme {
   digest: TupleDigest
+  /**
+   * @default UTF8
+   */
+  INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  OUTPUT_CODEC?: Codec
+}
+
+export interface TupleHashDescription extends HashDescription { }
+
+/**
+ * @description
+ * Tuple Hash algorithm
+ *
+ * 元组散列算法
+ */
+export interface TupleHash extends TupleHashDescription {
+  digest: TupleDigest
+  (M: Array<string | Uint8Array>, codec?: Codec): string
+  INPUT_CODEC: Codec
+  OUTPUT_CODEC: Codec
 }
 
 /**
  * @description
- * Create a wrapper for the tuple digest function
+ * Create a tuple hash algorithm based on the scheme
  *
- * 为元组散列函数创建一个包装
+ * 根据方案创建元组散列算法
  *
  * @example
  * ```ts
- * const hash = createTupleHash((M: Uint8Array[]) => Uint8Array, {...})
+ * const scheme: TupleHashScheme = { ... }
+ * const description: TupleHashDescription = { ... }
+ * const tupleHash = createTupleHash(scheme, description)
  * ```
  *
- * @param {TupleDigest} digest - 散列函数
- * @param {HashDescription} description - 算法描述
+ * @param {TupleHashScheme} scheme - 元组散列方案
+ * @param {TupleHashDescription} description - 算法描述
  */
-export function createTupleHash(digest: TupleDigest, description: HashDescription): TupleHash {
-  return Object.assign(
-    (input: Array<string | Uint8Array>, codec: Codec = HEX) => {
-      input = input.map(s => typeof s === 'string' ? UTF8.parse(s) : s)
-      const status = digest(input as Uint8Array[])
+export function createTupleHash(scheme: TupleHashScheme, description: TupleHashDescription): TupleHash {
+  const { digest, INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = scheme
+  const _description = {
+    digest,
+    INPUT_CODEC,
+    OUTPUT_CODEC,
+    ...description,
+  }
+
+  return Object.freeze(Object.assign(
+    (M: Array<string | Uint8Array>, codec?: Codec) => {
+      const status = digest(M.map(s => typeof s === 'string' ? INPUT_CODEC.parse(s) : s))
+      codec = codec || OUTPUT_CODEC
       return codec.stringify(status)
     },
-    {
-      ...description,
-      digest,
-    },
-  )
+    _description,
+  ))
 }

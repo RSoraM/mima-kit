@@ -15,101 +15,6 @@ const Sigma1 = (x: bigint) => rotateR64(x, 14n) ^ rotateR64(x, 18n) ^ rotateR64(
 const sigma0 = (x: bigint) => rotateR64(x, 1n) ^ rotateR64(x, 8n) ^ (x >> 7n)
 const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n)
 
-// * Algorithm
-
-/**
- * @description
- * SHA-384 & SHA-512 & SHA-512/t common function
- *
- * SHA-384 & SHA-512 & SHA-512/t 通用函数
- *
- * @param {Uint8Array} status - 工作变量
- * @param {Uint8Array} M - 消息
- */
-function sha384_512(status: Uint8Array, M: Uint8Array) {
-  // * 初始化
-  const statusView = new DataView(status.buffer)
-
-  const sigBytes = M.byteLength
-  const BLOCK_SIZE = 128
-  const BLOCK_TOTAL = Math.ceil((sigBytes + 17) / BLOCK_SIZE)
-  const BITS_TOTAL = BigInt(sigBytes) << 3n
-  if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn)
-    throw new Error('Message is too long')
-
-  // * 填充
-  const P = new Uint8Array(BLOCK_TOTAL * BLOCK_SIZE)
-  P.set(M)
-
-  // appending the bit '1' to the message
-  P[sigBytes] = 0x80
-
-  // appending length
-  const dataView = new DataView(P.buffer)
-  dataView.setBigUint64(P.byteLength - 16, BITS_TOTAL >> 32n, false)
-  dataView.setBigUint64(P.byteLength - 8, BITS_TOTAL & 0xFFFFFFFFFFFFFFFFn, false)
-
-  // * 分块处理
-  for (let i = 0; i < BLOCK_TOTAL; i++) {
-    // 获取当前块
-    const currentBlock = P.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
-    const view = new DataView(currentBlock.buffer)
-
-    // 初始化工作变量
-    const h0 = statusView.getBigUint64(0, false)
-    const h1 = statusView.getBigUint64(8, false)
-    const h2 = statusView.getBigUint64(16, false)
-    const h3 = statusView.getBigUint64(24, false)
-    const h4 = statusView.getBigUint64(32, false)
-    const h5 = statusView.getBigUint64(40, false)
-    const h6 = statusView.getBigUint64(48, false)
-    const h7 = statusView.getBigUint64(56, false)
-    let a = h0
-    let b = h1
-    let c = h2
-    let d = h3
-    let e = h4
-    let f = h5
-    let g = h6
-    let h = h7
-
-    // 合并执行 扩展 & 压缩
-    const W = new BigUint64Array(80)
-    for (let i = 0; i < W.length; i++) {
-      // 扩展
-      if (i < 16)
-        W[i] = view.getBigUint64(i << 3, false)
-      else
-        W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
-
-      // 压缩
-      const T1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i]
-      const T2 = Sigma0(a) + Maj(a, b, c)
-      h = g
-      g = f
-      f = e
-      e = (d + T1) & 0xFFFFFFFFFFFFFFFFn
-      d = c
-      c = b
-      b = a
-      a = (T1 + T2) & 0xFFFFFFFFFFFFFFFFn
-    }
-
-    // 更新工作变量
-    statusView.setBigUint64(0, h0 + a, false)
-    statusView.setBigUint64(8, h1 + b, false)
-    statusView.setBigUint64(16, h2 + c, false)
-    statusView.setBigUint64(24, h3 + d, false)
-    statusView.setBigUint64(32, h4 + e, false)
-    statusView.setBigUint64(40, h5 + f, false)
-    statusView.setBigUint64(48, h6 + g, false)
-    statusView.setBigUint64(56, h7 + h, false)
-  }
-
-  // 返回工作变量
-  return status
-}
-
 /**
  * @description
  * SHA-512/t IV generator
@@ -134,18 +39,141 @@ function IVGen(t: number) {
     throw new Error('t must not be 384')
   }
 
-  const status = new Uint8Array(64)
-  const statusView = new DataView(status.buffer)
-  statusView.setBigUint64(0, 0x6A09E667F3BCC908n ^ 0xA5A5A5A5A5A5A5A5n, false)
-  statusView.setBigUint64(8, 0xBB67AE8584CAA73Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
-  statusView.setBigUint64(16, 0x3C6EF372FE94F82Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
-  statusView.setBigUint64(24, 0xA54FF53A5F1D36F1n ^ 0xA5A5A5A5A5A5A5A5n, false)
-  statusView.setBigUint64(32, 0x510E527FADE682D1n ^ 0xA5A5A5A5A5A5A5A5n, false)
-  statusView.setBigUint64(40, 0x9B05688C2B3E6C1Fn ^ 0xA5A5A5A5A5A5A5A5n, false)
-  statusView.setBigUint64(48, 0x1F83D9ABFB41BD6Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
-  statusView.setBigUint64(56, 0x5BE0CD19137E2179n ^ 0xA5A5A5A5A5A5A5A5n, false)
+  const state = new Uint8Array(64)
+  const stateView = new DataView(state.buffer)
+  stateView.setBigUint64(0, 0x6A09E667F3BCC908n ^ 0xA5A5A5A5A5A5A5A5n, false)
+  stateView.setBigUint64(8, 0xBB67AE8584CAA73Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
+  stateView.setBigUint64(16, 0x3C6EF372FE94F82Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
+  stateView.setBigUint64(24, 0xA54FF53A5F1D36F1n ^ 0xA5A5A5A5A5A5A5A5n, false)
+  stateView.setBigUint64(32, 0x510E527FADE682D1n ^ 0xA5A5A5A5A5A5A5A5n, false)
+  stateView.setBigUint64(40, 0x9B05688C2B3E6C1Fn ^ 0xA5A5A5A5A5A5A5A5n, false)
+  stateView.setBigUint64(48, 0x1F83D9ABFB41BD6Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
+  stateView.setBigUint64(56, 0x5BE0CD19137E2179n ^ 0xA5A5A5A5A5A5A5A5n, false)
 
-  return sha384_512(status, UTF8.parse(`SHA-512/${t}`))
+  return digest(state, UTF8.parse(`SHA-512/${t}`))
+}
+
+// * Algorithm
+
+/**
+ * @param {Uint8Array} state - 初始状态
+ * @param {Uint8Array} M - 消息
+ */
+function digest(state: Uint8Array, M: Uint8Array) {
+  // * 初始化
+  state = state.slice(0)
+  const stateView = new DataView(state.buffer)
+
+  const sigBytes = M.byteLength
+  const BLOCK_SIZE = 128
+  const BLOCK_TOTAL = Math.ceil((sigBytes + 17) / BLOCK_SIZE)
+  const BITS_TOTAL = BigInt(sigBytes) << 3n
+  if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn)
+    throw new Error('Message is too long')
+
+  // * 填充
+  const P = new Uint8Array(BLOCK_TOTAL * BLOCK_SIZE)
+  P.set(M)
+
+  // appending the bit '1' to the message
+  P[sigBytes] = 0x80
+
+  // appending length
+  const PView = new DataView(P.buffer)
+  PView.setBigUint64(P.byteLength - 16, BITS_TOTAL >> 32n, false)
+  PView.setBigUint64(P.byteLength - 8, BITS_TOTAL & 0xFFFFFFFFFFFFFFFFn, false)
+
+  // * 分块处理
+  for (let i = 0; i < BLOCK_TOTAL; i++) {
+    // 获取当前块
+    const currentBlock = P.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
+    const view = new DataView(currentBlock.buffer)
+
+    // 准备状态字
+    const H0 = stateView.getBigUint64(0, false)
+    const H1 = stateView.getBigUint64(8, false)
+    const H2 = stateView.getBigUint64(16, false)
+    const H3 = stateView.getBigUint64(24, false)
+    const H4 = stateView.getBigUint64(32, false)
+    const H5 = stateView.getBigUint64(40, false)
+    const H6 = stateView.getBigUint64(48, false)
+    const H7 = stateView.getBigUint64(56, false)
+    let a = H0
+    let b = H1
+    let c = H2
+    let d = H3
+    let e = H4
+    let f = H5
+    let g = H6
+    let h = H7
+
+    // 合并执行 扩展 & 压缩
+    const W = new BigUint64Array(80)
+    for (let i = 0; i < W.length; i++) {
+      // 扩展
+      if (i < 16)
+        W[i] = view.getBigUint64(i << 3, false)
+      else
+        W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
+
+      // 压缩
+      const T1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i]
+      const T2 = Sigma0(a) + Maj(a, b, c)
+      h = g
+      g = f
+      f = e
+      e = (d + T1) & 0xFFFFFFFFFFFFFFFFn
+      d = c
+      c = b
+      b = a
+      a = (T1 + T2) & 0xFFFFFFFFFFFFFFFFn
+    }
+
+    // 更新状态字
+    stateView.setBigUint64(0, H0 + a, false)
+    stateView.setBigUint64(8, H1 + b, false)
+    stateView.setBigUint64(16, H2 + c, false)
+    stateView.setBigUint64(24, H3 + d, false)
+    stateView.setBigUint64(32, H4 + e, false)
+    stateView.setBigUint64(40, H5 + f, false)
+    stateView.setBigUint64(48, H6 + g, false)
+    stateView.setBigUint64(56, H7 + h, false)
+  }
+
+  // * 返回状态
+  return state
+}
+
+function sha384Digest(M: Uint8Array) {
+  // * 初始化 SHA-384 状态
+  const state = new Uint8Array(64)
+  const stateView = new DataView(state.buffer)
+  stateView.setBigUint64(0, 0xCBBB9D5DC1059ED8n, false)
+  stateView.setBigUint64(8, 0x629A292A367CD507n, false)
+  stateView.setBigUint64(16, 0x9159015A3070DD17n, false)
+  stateView.setBigUint64(24, 0x152FECD8F70E5939n, false)
+  stateView.setBigUint64(32, 0x67332667FFC00B31n, false)
+  stateView.setBigUint64(40, 0x8EB44A8768581511n, false)
+  stateView.setBigUint64(48, 0xDB0C2E0D64F98FA7n, false)
+  stateView.setBigUint64(56, 0x47B5481DBEFA4FA4n, false)
+
+  return digest(state, M).slice(0, 48)
+}
+
+function sha512Digest(M: Uint8Array) {
+  // * 初始化 SHA-512 状态
+  const state = new Uint8Array(64)
+  const stateView = new DataView(state.buffer)
+  stateView.setBigUint64(0, 0x6A09E667F3BCC908n, false)
+  stateView.setBigUint64(8, 0xBB67AE8584CAA73Bn, false)
+  stateView.setBigUint64(16, 0x3C6EF372FE94F82Bn, false)
+  stateView.setBigUint64(24, 0xA54FF53A5F1D36F1n, false)
+  stateView.setBigUint64(32, 0x510E527FADE682D1n, false)
+  stateView.setBigUint64(40, 0x9B05688C2B3E6C1Fn, false)
+  stateView.setBigUint64(48, 0x1F83D9ABFB41BD6Bn, false)
+  stateView.setBigUint64(56, 0x5BE0CD19137E2179n, false)
+
+  return digest(state, M)
 }
 
 /**
@@ -161,23 +189,8 @@ function IVGen(t: number) {
  * ```
  */
 export const sha384 = createHash(
-  (M: Uint8Array) => {
-    // * 初始化
-    const status = new Uint8Array(64)
-    const statusView = new DataView(status.buffer)
-    statusView.setBigUint64(0, 0xCBBB9D5DC1059ED8n, false)
-    statusView.setBigUint64(8, 0x629A292A367CD507n, false)
-    statusView.setBigUint64(16, 0x9159015A3070DD17n, false)
-    statusView.setBigUint64(24, 0x152FECD8F70E5939n, false)
-    statusView.setBigUint64(32, 0x67332667FFC00B31n, false)
-    statusView.setBigUint64(40, 0x8EB44A8768581511n, false)
-    statusView.setBigUint64(48, 0xDB0C2E0D64F98FA7n, false)
-    statusView.setBigUint64(56, 0x47B5481DBEFA4FA4n, false)
-
-    sha384_512(status, M)
-
-    // * 截断输出
-    return status.slice(0, 48)
+  {
+    digest: sha384Digest,
   },
   {
     ALGORITHM: 'SHA-384',
@@ -199,23 +212,8 @@ export const sha384 = createHash(
  * ```
  */
 export const sha512 = createHash(
-  (M: Uint8Array) => {
-    // * 初始化
-    const status = new Uint8Array(64)
-    const statusView = new DataView(status.buffer)
-    statusView.setBigUint64(0, 0x6A09E667F3BCC908n, false)
-    statusView.setBigUint64(8, 0xBB67AE8584CAA73Bn, false)
-    statusView.setBigUint64(16, 0x3C6EF372FE94F82Bn, false)
-    statusView.setBigUint64(24, 0xA54FF53A5F1D36F1n, false)
-    statusView.setBigUint64(32, 0x510E527FADE682D1n, false)
-    statusView.setBigUint64(40, 0x9B05688C2B3E6C1Fn, false)
-    statusView.setBigUint64(48, 0x1F83D9ABFB41BD6Bn, false)
-    statusView.setBigUint64(56, 0x5BE0CD19137E2179n, false)
-
-    sha384_512(status, M)
-
-    // * 截断输出
-    return status
+  {
+    digest: sha512Digest,
   },
   {
     ALGORITHM: 'SHA-512',
@@ -239,12 +237,13 @@ export const sha512 = createHash(
  * @param {number} t - 截断长度 bit
  */
 export function sha512t(t: number) {
-  // * 初始化
+  // * 初始化 SHA-512/t 状态
   const status = IVGen(t)
 
-  // * 返回散列函数
   return createHash(
-    (M: Uint8Array) => sha384_512(status.slice(0), M).slice(0, t >> 3),
+    {
+      digest: (M: Uint8Array) => digest(status, M).slice(0, t >> 3),
+    },
     {
       ALGORITHM: `SHA-512/${t}`,
       BLOCK_SIZE: 128,

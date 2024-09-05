@@ -1,4 +1,5 @@
-import { UTF8 } from '../core/codec'
+import type { Codec } from '../core/codec'
+import { HEX, UTF8 } from '../core/codec'
 import { createHash, createTupleHash } from '../core/hash'
 import { joinBuffer } from '../core/utils'
 import { Keccak_c, shake128, shake256 } from './sha3'
@@ -180,6 +181,41 @@ function cShakePadding(rByte: number, sigBytes: number) {
 
 // * cSHAKE
 
+export interface cSHAKEConfig {
+  /**
+   * function-name
+   *
+   * 函数名称
+   *
+   * @default ''
+   */
+  N?: string | Uint8Array
+  /**
+   * @default UTF8
+   */
+  N_CODEC?: Codec
+  /**
+   * customization
+   *
+   * 自定义参数
+   *
+   * @default ''
+   */
+  S?: string | Uint8Array
+  /**
+   * @default UTF8
+   */
+  S_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  OUTPUT_CODEC?: Codec
+}
+
 /**
  * @description
  * `cSHAKE128` is a customizable variant of `SHAKE128`
@@ -188,27 +224,50 @@ function cShakePadding(rByte: number, sigBytes: number) {
  *
  * @example
  * ```ts
- * cSHAKE128(256, '', 'password')('hello') // 'd3ff6985c8016860b2e459d92968e8eee9a3843b5bf0658f5a9a2a7e34894380'
- * cSHAKE128(256, '', 'password')('hello', B64) // '0/9phcgBaGCy5FnZKWjo7umjhDtb8GWPWpoqfjSJQ4A='
+ * const config: cSHAKEConfig = {
+ *   S: 'password',
+ * }
+ * cSHAKE128(256, config)('hello')
+ * cSHAKE128(256, config)('hello', B64)
  * ```
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} N - function-name
- * @param {string | Uint8Array} S - customization
+ * @param {cSHAKEConfig} config - 配置
  */
-export function cShake128(d: number, N: string | Uint8Array = '', S: string | Uint8Array = '') {
-  N = typeof N === 'string' ? UTF8.parse(N) : N
-  S = typeof S === 'string' ? UTF8.parse(S) : S
+export function cShake128(d: number, config: cSHAKEConfig = {}) {
+  let { N = new Uint8Array(), S = new Uint8Array() } = config
+  const { N_CODEC = UTF8, S_CODEC = UTF8 } = config
+  N = typeof N === 'string' ? N_CODEC.parse(N) : N
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
+
+  const INPUT_CODEC = config.INPUT_CODEC || UTF8
+  const OUTPUT_CODEC = config.OUTPUT_CODEC || HEX
+  const _description = {
+    ALGORITHM: `cSHAKE128/${d}`,
+    BLOCK_SIZE: 168,
+    DIGEST_SIZE: d >> 3,
+  }
 
   if (N.byteLength === 0 && S.byteLength === 0) {
-    return shake128(d)
+    return createHash(
+      {
+        digest: shake128(d).digest,
+        INPUT_CODEC,
+        OUTPUT_CODEC,
+      },
+      _description,
+    )
   }
 
   return createHash(
-    (M: Uint8Array) => {
-      const P = bytepad([...encodeString(N), ...encodeString(S)], 168)
-      P.push(M)
-      return Keccak_c(256, d, cShakePadding)(joinBuffer(...P))
+    {
+      digest: (M: Uint8Array) => {
+        const P = bytepad([...encodeString(N), ...encodeString(S)], 168)
+        P.push(M)
+        return Keccak_c(256, d, cShakePadding)(joinBuffer(...P))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `cSHAKE128/${d}`,
@@ -226,27 +285,50 @@ export function cShake128(d: number, N: string | Uint8Array = '', S: string | Ui
  *
  * @example
  * ```ts
- * cSHAKE256(512, '', 'password')('hello') // 'bf2fffa507ad934fcf169ec14f478e3b1227058e7154314fbadbf318b71bbf1d01b97559dbd43d80b448a24e4f79c7072806107d2ff59b832fb1b6cd215149f7'
- * cSHAKE256(512, '', 'password')('hello', B64) // 'vy//pQetk0/PFp7BT0eOOxInBY5xVDFPutvzGLcbvx0BuXVZ29Q9gLRIok5PeccHKAYQfS/1m4MvsbbNIVFJ9w=='
+ * const config: cSHAKEConfig = {
+ *   S: 'password',
+ * }
+ * cSHAKE256(512, config)('hello')
+ * cSHAKE256(512, config)('hello', B64)
  * ```
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} N - function-name
- * @param {string | Uint8Array} S - customization
+ * @param {cSHAKEConfig} config - 配置
  */
-export function cShake256(d: number, N: string | Uint8Array = '', S: string | Uint8Array = '') {
-  N = typeof N === 'string' ? UTF8.parse(N) : N
-  S = typeof S === 'string' ? UTF8.parse(S) : S
+export function cShake256(d: number, config: cSHAKEConfig = {}) {
+  let { N = new Uint8Array(), S = new Uint8Array() } = config
+  const { N_CODEC = UTF8, S_CODEC = UTF8 } = config
+  N = typeof N === 'string' ? N_CODEC.parse(N) : N
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
+
+  const INPUT_CODEC = config.INPUT_CODEC || UTF8
+  const OUTPUT_CODEC = config.OUTPUT_CODEC || HEX
+  const _description = {
+    ALGORITHM: `cSHAKE256/${d}`,
+    BLOCK_SIZE: 136,
+    DIGEST_SIZE: d >> 3,
+  }
 
   if (N.byteLength === 0 && S.byteLength === 0) {
-    return shake256(d)
+    return createHash(
+      {
+        digest: shake256(d).digest,
+        INPUT_CODEC,
+        OUTPUT_CODEC,
+      },
+      _description,
+    )
   }
 
   return createHash(
-    (M: Uint8Array) => {
-      const P = bytepad([...encodeString(N), ...encodeString(S)], 136)
-      P.push(M)
-      return Keccak_c(512, d, cShakePadding)(joinBuffer(...P))
+    {
+      digest: (M: Uint8Array) => {
+        const P = bytepad([...encodeString(N), ...encodeString(S)], 136)
+        P.push(M)
+        return Keccak_c(512, d, cShakePadding)(joinBuffer(...P))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `cSHAKE256/${d}`,
@@ -257,6 +339,41 @@ export function cShake256(d: number, N: string | Uint8Array = '', S: string | Ui
 }
 
 // * KMAC
+
+export interface KMACConfig {
+  /**
+   * key
+   *
+   * 密钥
+   *
+   * @default ''
+   */
+  K?: string | Uint8Array
+  /**
+   * @default UTF8
+   */
+  K_CODEC?: Codec
+  /**
+   * customization
+   *
+   * 自定义参数
+   *
+   * @default ''
+   */
+  S?: string | Uint8Array
+  /**
+   * @default UTF8
+   */
+  S_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  OUTPUT_CODEC?: Codec
+}
 
 /**
  * @description
@@ -270,23 +387,37 @@ export function cShake256(d: number, N: string | Uint8Array = '', S: string | Ui
  *
  * @example
  * ```ts
- * kmac128(256, 'password')('hello') // 'd114b588da4337c80455806f3d461768c27931bcb6977c25d4611fb78e95da04'
- * kmac128(256, 'password')('hello', B64) // '0RS1iNpDN8gEVYBvPUYXaMJ5Mby2l3wl1GEft46V2gQ='
+ * const config: KMACConfig = {
+ *   K: 'password',
+ * }
+ * kmac128(256, config)('hello')
+ * kmac128(256, config)('hello', B64)
  * ```
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} K - key
- * @param {string | Uint8Array} S - customization
+ * @param {KMACConfig} config - 配置
  */
-export function kmac128(d: number, K: string | Uint8Array = '', S: string | Uint8Array = '') {
-  return createHash(
-    (M: Uint8Array) => {
-      const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 168)
-      X.push(...bytepad(encodeString(K), 168))
-      X.push(M)
-      X.push(rightEncode(d))
+export function kmac128(d: number, config: KMACConfig = {}) {
+  let { K = new Uint8Array(), S = new Uint8Array() } = config
+  const { K_CODEC = UTF8, S_CODEC = UTF8 } = config
+  K = typeof K === 'string' ? K_CODEC.parse(K) : K
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
 
-      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+  const INPUT_CODEC = config.INPUT_CODEC || UTF8
+  const OUTPUT_CODEC = config.OUTPUT_CODEC || HEX
+
+  return createHash(
+    {
+      digest: (M: Uint8Array) => {
+        const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 168)
+        X.push(...bytepad(encodeString(K), 168))
+        X.push(M)
+        X.push(rightEncode(d))
+
+        return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `KMAC128/${d}`,
@@ -308,23 +439,37 @@ export function kmac128(d: number, K: string | Uint8Array = '', S: string | Uint
  *
  * @example
  * ```ts
- * kmac128(256, 'password')('hello') // '430e760bc82ecf237af15141408fb68ddc507a6dccce0de478f23f6bdaba60ed608552ecdc371f5bf3445d2f2b54112813621b7436958e0087725212519f8a75'
- * kmac128(256, 'password')('hello', B64) // 'Qw52C8guzyN68VFBQI+2jdxQem3Mzg3kePI/a9q6YO1ghVLs3DcfW/NEXS8rVBEoE2IbdDaVjgCHclISUZ+KdQ=='
+ * const config: KMACConfig = {
+ *   K: 'password
+ * }
+ * kmac128(256, config)('hello')
+ * kmac128(256, config)('hello', B64)
  * ```
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} K - key
- * @param {string | Uint8Array} S - customization
+ * @param {KMACConfig} config - 配置
  */
-export function kmac256(d: number, K: string | Uint8Array = '', S: string | Uint8Array = '') {
-  return createHash(
-    (M: Uint8Array) => {
-      const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 136)
-      X.push(...bytepad(encodeString(K), 136))
-      X.push(M)
-      X.push(rightEncode(d))
+export function kmac256(d: number, config: KMACConfig = {}) {
+  let { K = new Uint8Array(), S = new Uint8Array() } = config
+  const { K_CODEC = UTF8, S_CODEC = UTF8 } = config
+  K = typeof K === 'string' ? K_CODEC.parse(K) : K
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
 
-      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+  const INPUT_CODEC = config.INPUT_CODEC || UTF8
+  const OUTPUT_CODEC = config.OUTPUT_CODEC || HEX
+
+  return createHash(
+    {
+      digest: (M: Uint8Array) => {
+        const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 136)
+        X.push(...bytepad(encodeString(K), 136))
+        X.push(M)
+        X.push(rightEncode(d))
+
+        return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `KMAC256/${d}`,
@@ -346,23 +491,37 @@ export function kmac256(d: number, K: string | Uint8Array = '', S: string | Uint
  *
  * @example
  * ```ts
- * kmac128(256, 'password')('hello') // 'd114b588da4337c80455806f3d461768c27931bcb6977c25d4611fb78e95da04'
- * kmac128(256, 'password')('hello', B64) // '0RS1iNpDN8gEVYBvPUYXaMJ5Mby2l3wl1GEft46V2gQ='
+ * const config: KMACConfig = {
+ *   K: 'password
+ * }
+ * kmac128(256, config)('hello')
+ * kmac128(256, config)('hello', B64)
  * ```
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} K - key
- * @param {string | Uint8Array} S - customization
+ * @param {KMACConfig} config - 配置
  */
-export function kmac128XOF(d: number, K: string | Uint8Array = '', S: string | Uint8Array = '') {
-  return createHash(
-    (M: Uint8Array) => {
-      const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 168)
-      X.push(...bytepad(encodeString(K), 168))
-      X.push(M)
-      X.push(rightEncode(0))
+export function kmac128XOF(d: number, config: KMACConfig = {}) {
+  let { K = new Uint8Array(), S = new Uint8Array() } = config
+  const { K_CODEC = UTF8, S_CODEC = UTF8 } = config
+  K = typeof K === 'string' ? K_CODEC.parse(K) : K
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
 
-      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+  const INPUT_CODEC = config.INPUT_CODEC || UTF8
+  const OUTPUT_CODEC = config.OUTPUT_CODEC || HEX
+
+  return createHash(
+    {
+      digest: (M: Uint8Array) => {
+        const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 168)
+        X.push(...bytepad(encodeString(K), 168))
+        X.push(M)
+        X.push(rightEncode(0))
+
+        return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `KMAC128XOF/${d}`,
@@ -384,23 +543,37 @@ export function kmac128XOF(d: number, K: string | Uint8Array = '', S: string | U
  *
  * @example
  * ```ts
- * kmac128(256, 'password')('hello') // '430e760bc82ecf237af15141408fb68ddc507a6dccce0de478f23f6bdaba60ed608552ecdc371f5bf3445d2f2b54112813621b7436958e0087725212519f8a75'
- * kmac128(256, 'password')('hello', B64) // 'Qw52C8guzyN68VFBQI+2jdxQem3Mzg3kePI/a9q6YO1ghVLs3DcfW/NEXS8rVBEoE2IbdDaVjgCHclISUZ+KdQ=='
+ * const config: KMACConfig = {
+ *   K: 'password
+ * }
+ * kmac128(256, config)('hello')
+ * kmac128(256, config)('hello', B64)
  * ```
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} K - key
- * @param {string | Uint8Array} S - customization
+ * @param {KMACConfig} config - 配置
  */
-export function kmac256XOF(d: number, K: string | Uint8Array = '', S: string | Uint8Array = '') {
-  return createHash(
-    (M: Uint8Array) => {
-      const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 136)
-      X.push(...bytepad(encodeString(K), 136))
-      X.push(M)
-      X.push(rightEncode(0))
+export function kmac256XOF(d: number, config: KMACConfig = {}) {
+  let { K = new Uint8Array(), S = new Uint8Array() } = config
+  const { K_CODEC = UTF8, S_CODEC = UTF8 } = config
+  K = typeof K === 'string' ? K_CODEC.parse(K) : K
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
 
-      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+  const INPUT_CODEC = config.INPUT_CODEC || UTF8
+  const OUTPUT_CODEC = config.OUTPUT_CODEC || HEX
+
+  return createHash(
+    {
+      digest: (M: Uint8Array) => {
+        const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 136)
+        X.push(...bytepad(encodeString(K), 136))
+        X.push(M)
+        X.push(rightEncode(0))
+
+        return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `KMAC256XOF/${d}`,
@@ -412,6 +585,29 @@ export function kmac256XOF(d: number, K: string | Uint8Array = '', S: string | U
 
 // * TupleHash
 
+export interface TupleHashConfig {
+  /**
+   * customization
+   *
+   * 自定义参数
+   *
+   * @default ''
+   */
+  S?: string | Uint8Array
+  /**
+   * @default UTF8
+   */
+  S_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  OUTPUT_CODEC?: Codec
+}
+
 /**
  * @description
  * `TupleHash` is a `SHA3` derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
@@ -419,16 +615,26 @@ export function kmac256XOF(d: number, K: string | Uint8Array = '', S: string | U
  * `TupleHash` 是一个具有可变长度输出的 `SHA3` 派生散列函数, 旨在以一种明确的方式简单地散列输入字符串的元组, 这些字符串中的任何一个或全部都可以是空字符串.
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} S - customization
+ * @param {TupleHashConfig} config - 配置
  */
-export function tupleHash128(d: number, S: string | Uint8Array = '') {
-  return createTupleHash(
-    (M: Uint8Array[]) => {
-      const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 168)
-      M.forEach(m => X.push(...encodeString(m)))
-      X.push(rightEncode(d))
+export function tupleHash128(d: number, config: TupleHashConfig = {}) {
+  let { S = new Uint8Array() } = config
+  const { S_CODEC = UTF8 } = config
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
 
-      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+  const { INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = config
+
+  return createTupleHash(
+    {
+      digest: (M: Uint8Array[]) => {
+        const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 168)
+        M.forEach(m => X.push(...encodeString(m)))
+        X.push(rightEncode(d))
+
+        return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `TupleHash128/${d}`,
@@ -445,16 +651,26 @@ export function tupleHash128(d: number, S: string | Uint8Array = '') {
  * `TupleHash` 是一个具有可变长度输出的 `SHA3` 派生散列函数, 旨在以一种明确的方式简单地散列输入字符串的元组, 这些字符串中的任何一个或全部都可以是空字符串.
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} S - customization
+ * @param {TupleHashConfig} config - 配置
  */
-export function tupleHash256(d: number, S: string | Uint8Array = '') {
-  return createTupleHash(
-    (M: Uint8Array[]) => {
-      const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 136)
-      M.forEach(m => X.push(...encodeString(m)))
-      X.push(rightEncode(d))
+export function tupleHash256(d: number, config: TupleHashConfig = {}) {
+  let { S = new Uint8Array() } = config
+  const { S_CODEC = UTF8 } = config
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
 
-      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+  const { INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = config
+
+  return createTupleHash(
+    {
+      digest: (M: Uint8Array[]) => {
+        const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 136)
+        M.forEach(m => X.push(...encodeString(m)))
+        X.push(rightEncode(d))
+
+        return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `TupleHash256/${d}`,
@@ -471,16 +687,26 @@ export function tupleHash256(d: number, S: string | Uint8Array = '') {
  * 可变长度输出的 `TupleHash`
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} S - customization
+ * @param {TupleHashConfig} config - 配置
  */
-export function tupleHash128XOF(d: number, S: string | Uint8Array = '') {
-  return createTupleHash(
-    (M: Uint8Array[]) => {
-      const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 168)
-      M.forEach(m => X.push(...encodeString(m)))
-      X.push(rightEncode(0))
+export function tupleHash128XOF(d: number, config: TupleHashConfig = {}) {
+  let { S = new Uint8Array() } = config
+  const { S_CODEC = UTF8 } = config
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
 
-      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+  const { INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = config
+
+  return createTupleHash(
+    {
+      digest: (M: Uint8Array[]) => {
+        const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 168)
+        M.forEach(m => X.push(...encodeString(m)))
+        X.push(rightEncode(0))
+
+        return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `TupleHash128XOF/${d}`,
@@ -497,16 +723,26 @@ export function tupleHash128XOF(d: number, S: string | Uint8Array = '') {
  * 可变长度输出的 `TupleHash`
  *
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} S - customization
+ * @param {TupleHashConfig} config - 配置
  */
-export function tupleHash256XOF(d: number, S: string | Uint8Array = '') {
-  return createTupleHash(
-    (M: Uint8Array[]) => {
-      const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 136)
-      M.forEach(m => X.push(...encodeString(m)))
-      X.push(rightEncode(0))
+export function tupleHash256XOF(d: number, config: TupleHashConfig = {}) {
+  let { S = new Uint8Array() } = config
+  const { S_CODEC = UTF8 } = config
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
 
-      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+  const { INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = config
+
+  return createTupleHash(
+    {
+      digest: (M: Uint8Array[]) => {
+        const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 136)
+        M.forEach(m => X.push(...encodeString(m)))
+        X.push(rightEncode(0))
+
+        return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `TupleHash256XOF/${d}`,
@@ -523,37 +759,45 @@ export function tupleHash256XOF(d: number, S: string | Uint8Array = '') {
 
 // TODO 计划引入 `multithreading` 依赖, 实现真正的并行计算
 
+export interface ParallelHashConfig extends TupleHashConfig { }
+
 /**
  * @description
  * The purpose of `ParallelHash` is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
  *
  * `ParallelHash` 的目的是利用现代处理器中可用的并行性, 支持对非常长的字符串进行高效散列.
  *
- * ! Note: This `ParallelHash` does not actually perform parallel computation, because writing multi-threaded in `JavaScript` is not easy.
- *
- * ! 注意: 此 `ParallelHash` 实际上并不执行并行计算, 因为在 `JavaScript` 写多线程并不轻松.
- *
  * @param {number} b - 状态大小 bit
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} S - customization
+ * @param {ParallelHashConfig} config - 配置
  */
-export function parallelHash128(b: number, d: number, S: string | Uint8Array = '') {
+export function parallelHash128(b: number, d: number, config: ParallelHashConfig = {}) {
+  let { S = new Uint8Array() } = config
+  const { S_CODEC = UTF8 } = config
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
+
+  const { INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = config
+
   const bByte = b >> 3
   return createHash(
-    (M: Uint8Array) => {
-      const n = Math.ceil(M.byteLength / bByte)
-      const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], 168)
-      X.push(leftEncode(b))
+    {
+      digest: (M: Uint8Array) => {
+        const n = Math.ceil(M.byteLength / bByte)
+        const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], 168)
+        X.push(leftEncode(b))
 
-      for (let i = 0; i < n; i++) {
-        const B = M.slice(i * (b << 3), (i + 1) * (b << 3))
-        X.push(shake128(256).digest(B))
-      }
+        for (let i = 0; i < n; i++) {
+          const B = M.slice(i * (b << 3), (i + 1) * (b << 3))
+          X.push(shake128(256).digest(B))
+        }
 
-      X.push(rightEncode(n))
-      X.push(rightEncode(d))
+        X.push(rightEncode(n))
+        X.push(rightEncode(d))
 
-      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+        return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `ParallelHash128/${d}`,
@@ -569,31 +813,37 @@ export function parallelHash128(b: number, d: number, S: string | Uint8Array = '
  *
  * `ParallelHash` 的目的是利用现代处理器中可用的并行性, 支持对非常长的字符串进行高效散列.
  *
- * ! Note: This `ParallelHash` does not actually perform parallel computation, because writing multi-threaded in `JavaScript` is not easy.
- *
- * ! 注意: 此 `ParallelHash` 实际上并不执行并行计算, 因为在 `JavaScript` 写多线程并不轻松.
- *
  * @param {number} b - 状态大小 bit
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} S - customization
+ * @param {ParallelHashConfig} config - 配置
  */
-export function parallelHash256(b: number, d: number, S: string | Uint8Array = '') {
+export function parallelHash256(b: number, d: number, config: ParallelHashConfig = {}) {
+  let { S = new Uint8Array() } = config
+  const { S_CODEC = UTF8 } = config
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
+
+  const { INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = config
+
   const bByte = b >> 3
   return createHash(
-    (M: Uint8Array) => {
-      const n = Math.ceil(M.byteLength / bByte)
-      const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], 136)
-      X.push(leftEncode(b))
+    {
+      digest: (M: Uint8Array) => {
+        const n = Math.ceil(M.byteLength / bByte)
+        const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], 136)
+        X.push(leftEncode(b))
 
-      for (let i = 0; i < n; i++) {
-        const B = M.slice(i * (b << 3), (i + 1) * (b << 3))
-        X.push(shake256(512).digest(B))
-      }
+        for (let i = 0; i < n; i++) {
+          const B = M.slice(i * (b << 3), (i + 1) * (b << 3))
+          X.push(shake256(512).digest(B))
+        }
 
-      X.push(rightEncode(n))
-      X.push(rightEncode(d))
+        X.push(rightEncode(n))
+        X.push(rightEncode(d))
 
-      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+        return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `ParallelHash256/${d}`,
@@ -609,31 +859,37 @@ export function parallelHash256(b: number, d: number, S: string | Uint8Array = '
  *
  * 可变长度输出的 `ParallelHash`
  *
- * ! Note: This `ParallelHash` does not actually perform parallel computation, because writing multi-threaded in `JavaScript` is not easy.
- *
- * ! 注意: 此 `ParallelHash` 实际上并不执行并行计算, 因为在 `JavaScript` 写多线程并不轻松.
- *
  * @param {number} b - 状态大小 bit
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} S - customization
+ * @param {ParallelHashConfig} config - 配置
  */
-export function parallelHash128XOF(b: number, d: number, S: string | Uint8Array = '') {
+export function parallelHash128XOF(b: number, d: number, config: ParallelHashConfig = {}) {
+  let { S = new Uint8Array() } = config
+  const { S_CODEC = UTF8 } = config
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
+
+  const { INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = config
+
   const bByte = b >> 3
   return createHash(
-    (M: Uint8Array) => {
-      const n = Math.ceil(M.byteLength / bByte)
-      const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], 168)
-      X.push(leftEncode(b))
+    {
+      digest: (M: Uint8Array) => {
+        const n = Math.ceil(M.byteLength / bByte)
+        const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], 168)
+        X.push(leftEncode(b))
 
-      for (let i = 0; i < n; i++) {
-        const B = M.slice(i * (b << 3), (i + 1) * (b << 3))
-        X.push(shake128(256).digest(B))
-      }
+        for (let i = 0; i < n; i++) {
+          const B = M.slice(i * (b << 3), (i + 1) * (b << 3))
+          X.push(shake128(256).digest(B))
+        }
 
-      X.push(rightEncode(n))
-      X.push(rightEncode(0))
+        X.push(rightEncode(n))
+        X.push(rightEncode(0))
 
-      return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+        return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `ParallelHash128XOF`,
@@ -649,31 +905,37 @@ export function parallelHash128XOF(b: number, d: number, S: string | Uint8Array 
  *
  * 可变长度输出的 `ParallelHash`
  *
- * ! Note: This `ParallelHash` does not actually perform parallel computation, because writing multi-threaded in `JavaScript` is not easy.
- *
- * ! 注意: 此 `ParallelHash` 实际上并不执行并行计算, 因为在 `JavaScript` 写多线程并不轻松.
- *
  * @param {number} b - 状态大小 bit
  * @param {number} d - 输出长度 bit
- * @param {string | Uint8Array} S - customization
+ * @param {ParallelHashConfig} config - 配置
  */
-export function parallelHash256XOF(b: number, d: number, S: string | Uint8Array = '') {
+export function parallelHash256XOF(b: number, d: number, config: ParallelHashConfig = {}) {
+  let { S = new Uint8Array() } = config
+  const { S_CODEC = UTF8 } = config
+  S = typeof S === 'string' ? S_CODEC.parse(S) : S
+
+  const { INPUT_CODEC = UTF8, OUTPUT_CODEC = HEX } = config
+
   const bByte = b >> 3
   return createHash(
-    (M: Uint8Array) => {
-      const n = Math.ceil(M.byteLength / bByte)
-      const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], 136)
-      X.push(leftEncode(b))
+    {
+      digest: (M: Uint8Array) => {
+        const n = Math.ceil(M.byteLength / bByte)
+        const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], 136)
+        X.push(leftEncode(b))
 
-      for (let i = 0; i < n; i++) {
-        const B = M.slice(i * (b << 3), (i + 1) * (b << 3))
-        X.push(shake256(512).digest(B))
-      }
+        for (let i = 0; i < n; i++) {
+          const B = M.slice(i * (b << 3), (i + 1) * (b << 3))
+          X.push(shake256(512).digest(B))
+        }
 
-      X.push(rightEncode(n))
-      X.push(rightEncode(0))
+        X.push(rightEncode(n))
+        X.push(rightEncode(0))
 
-      return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+        return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+      },
+      INPUT_CODEC,
+      OUTPUT_CODEC,
     },
     {
       ALGORITHM: `ParallelHash256XOF`,

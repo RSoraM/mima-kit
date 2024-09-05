@@ -3,8 +3,7 @@ export type { Codec } from './core/codec'
 export { UTF8, HEX, B64, B64URL } from './core/codec'
 
 // * Hash Utils
-export type { Hash, TupleHash } from './core/hash'
-export type { Keccak_p, KeccakConfig } from './core/keccakUtils'
+export { createHash, createTupleHash } from './core/hash'
 
 // * MD5
 export { md5 } from './hash/md5'
@@ -27,12 +26,12 @@ export { sha3_384, sha3_512 } from './hash/sha3'
 export { shake128, shake256 } from './hash/sha3'
 
 export { cShake128, cShake256 } from './hash/sha3Derived'
-export { kmac128, kmac256 } from './hash/sha3Derived'
-export { kmac128XOF, kmac256XOF } from './hash/sha3Derived'
-export { tupleHash128, tupleHash256 } from './hash/sha3Derived'
-export { tupleHash128XOF, tupleHash256XOF } from './hash/sha3Derived'
-export { parallelHash128, parallelHash256 } from './hash/sha3Derived'
-export { parallelHash128XOF, parallelHash256XOF } from './hash/sha3Derived'
+export { kmac128, kmac128XOF } from './hash/sha3Derived'
+export { kmac256, kmac256XOF } from './hash/sha3Derived'
+export { tupleHash128, tupleHash128XOF } from './hash/sha3Derived'
+export { tupleHash256, tupleHash256XOF } from './hash/sha3Derived'
+export { parallelHash128, parallelHash128XOF } from './hash/sha3Derived'
+export { parallelHash256, parallelHash256XOF } from './hash/sha3Derived'
 
 // * SM3
 export { sm3 } from './hash/sm3'

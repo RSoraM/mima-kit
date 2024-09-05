@@ -117,7 +117,9 @@ export function Keccak_c(c: number, d: number, padding: Padding) {
  * ```
  */
 export const sha3_224 = createHash(
-  (M: Uint8Array) => Keccak_c(448, 224, sha3Padding)(M),
+  {
+    digest: (M: Uint8Array) => Keccak_c(448, 224, sha3Padding)(M),
+  },
   {
     ALGORITHM: 'SHA3-224',
     BLOCK_SIZE: 144,
@@ -138,7 +140,9 @@ export const sha3_224 = createHash(
  * ```
  */
 export const sha3_256 = createHash(
-  (M: Uint8Array) => Keccak_c(512, 256, sha3Padding)(M),
+  {
+    digest: (M: Uint8Array) => Keccak_c(512, 256, sha3Padding)(M),
+  },
   {
     ALGORITHM: 'SHA3-256',
     BLOCK_SIZE: 136,
@@ -159,7 +163,9 @@ export const sha3_256 = createHash(
  * ```
  */
 export const sha3_384 = createHash(
-  (M: Uint8Array) => Keccak_c(768, 384, sha3Padding)(M),
+  {
+    digest: (M: Uint8Array) => Keccak_c(768, 384, sha3Padding)(M),
+  },
   {
     ALGORITHM: 'SHA3-384',
     BLOCK_SIZE: 104,
@@ -180,7 +186,9 @@ export const sha3_384 = createHash(
  * ```
  */
 export const sha3_512 = createHash(
-  (M: Uint8Array) => Keccak_c(1024, 512, sha3Padding)(M),
+  {
+    digest: (M: Uint8Array) => Keccak_c(1024, 512, sha3Padding)(M),
+  },
   {
     ALGORITHM: 'SHA3-512',
     BLOCK_SIZE: 72,
@@ -204,7 +212,9 @@ export const sha3_512 = createHash(
  */
 export function shake128(d: number) {
   return createHash(
-    (M: Uint8Array) => Keccak_c(256, d, shakePadding)(M),
+    {
+      digest: (M: Uint8Array) => Keccak_c(256, d, shakePadding)(M),
+    },
     {
       ALGORITHM: `SHAKE128/${d}`,
       BLOCK_SIZE: 168,
@@ -229,7 +239,9 @@ export function shake128(d: number) {
  */
 export function shake256(d: number) {
   return createHash(
-    (M: Uint8Array) => Keccak_c(512, d, shakePadding)(M),
+    {
+      digest: (M: Uint8Array) => Keccak_c(512, d, shakePadding)(M),
+    },
     {
       ALGORITHM: `SHAKE256/${d}`,
       BLOCK_SIZE: 136,
