@@ -10,7 +10,6 @@ export default antfu(
   {
     rules: {
       // overrides
-      'style/semi': 'error',
     },
   },
 )
