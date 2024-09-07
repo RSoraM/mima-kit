@@ -1,11 +1,11 @@
 import { defineConfig } from 'vitest/config'
-import vue from '@vitejs/plugin-vue'
+// import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
-  plugins: [vue()],
+  // plugins: [vue()],
   test: {
     browser: {
-      enabled: true,
+      enabled: false,
       name: 'chrome',
       provider: 'preview',
     },
