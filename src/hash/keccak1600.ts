@@ -1,6 +1,6 @@
-import { rotateL64 } from '../core/utils'
 import type { KeccakConfig, Keccak_p } from '../core/keccakUtils'
 import { RCGen, Sponge } from '../core/keccakUtils'
+import { KitError, rotateL64 } from '../core/utils'
 
 // * Constants
 
@@ -223,7 +223,7 @@ export function Keccak_p_1600(nr?: number) {
    */
   return (S: Uint8Array) => {
     if (S.byteLength !== PERMUTATION.bByte) {
-      throw new Error('Invalid state size')
+      throw new KitError('Invalid state size')
     }
 
     let A = toStateArray(S)

@@ -1,3 +1,5 @@
+import { KitError } from './utils'
+
 /**
  * @description
  * Codec interface provides two methods: parse and stringify
@@ -218,7 +220,7 @@ export const CSV: Codec = {
     const from = (value: string) => {
       const nibble = coreValueMap.get(value)
       if (nibble === undefined) {
-        throw new Error('你竟然在社会主义核心价值观里夹带私货！')
+        throw new KitError('你竟然在社会主义核心价值观里夹带私货！')
       }
       return nibble
     }
@@ -239,7 +241,7 @@ export const CSV: Codec = {
       if (nibble === 10 || nibble === 11) {
         i++
         if (i === coreValues.length) {
-          throw new Error('社会主义核心价值观不完整！')
+          throw new KitError('你的社会主义核心价值观破碎了！')
         }
         nibble = nibble === 10
           ? 10 + from(coreValues[i])

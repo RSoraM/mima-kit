@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { rotateL32 } from '../core/utils'
+import { KitError, rotateL32 } from '../core/utils'
 
 // * Function
 const FF = (X: number, Y: number, Z: number, j: number) => j < 16 ? X ^ Y ^ Z : (X & Y) | (X & Z) | (Y & Z)
@@ -27,7 +27,7 @@ function digest(M: Uint8Array) {
   const BLOCK_TOTAL = Math.ceil((sigBytes + 9) / BLOCK_SIZE)
   const BITS_TOTAL = BigInt(sigBytes) << 3n
   if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFn) {
-    throw new Error('Message is too long')
+    throw new KitError('Message is too long')
   }
 
   // * 填充

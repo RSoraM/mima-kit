@@ -1,6 +1,6 @@
-import { createHash } from '../core/hash'
-import { rotateR64 } from '../core/utils'
 import { UTF8 } from '../core/codec'
+import { createHash } from '../core/hash'
+import { KitError, rotateR64 } from '../core/utils'
 
 // * Constants
 
@@ -30,13 +30,13 @@ const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n)
  */
 function IVGen(t: number) {
   if (t <= 0) {
-    throw new Error('t must be greater than 0')
+    throw new KitError('t must be greater than 0')
   }
   if (t >= 512) {
-    throw new Error('t must be less than 512')
+    throw new KitError('t must be less than 512')
   }
   if (t === 384) {
-    throw new Error('t must not be 384')
+    throw new KitError('t must not be 384')
   }
 
   const state = new Uint8Array(64)
@@ -69,7 +69,7 @@ function digest(state: Uint8Array, M: Uint8Array) {
   const BLOCK_TOTAL = Math.ceil((sigBytes + 17) / BLOCK_SIZE)
   const BITS_TOTAL = BigInt(sigBytes) << 3n
   if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn)
-    throw new Error('Message is too long')
+    throw new KitError('Message is too long')
 
   // * 填充
   const P = new Uint8Array(BLOCK_TOTAL * BLOCK_SIZE)

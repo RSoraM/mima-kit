@@ -1,3 +1,4 @@
+import { KitError } from '../core/utils'
 import { createBlockCipher } from '../core/cipherSuite'
 
 // * Constants
@@ -64,7 +65,7 @@ function KeyExpansion(K: Uint8Array, Nr: 10 | 12 | 14) {
 
 function Cipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   if (M.byteLength !== 16) {
-    throw new Error(`Invalid M: Message length must be 16 bytes`)
+    throw new KitError(`Message length must be 16 bytes`)
   }
   const S = M.slice(0)
 
@@ -133,7 +134,7 @@ function Cipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
 
 function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   if (M.byteLength !== 16) {
-    throw new Error(`Invalid M: Message length must be 16 bytes`)
+    throw new KitError(`Message length must be 16 bytes`)
   }
   const S = M.slice(0)
 
@@ -205,7 +206,7 @@ export function aes(b: 128 | 192 | 256) {
   return createBlockCipher(
     (K: Uint8Array) => {
       if (K.byteLength !== b >> 3) {
-        throw new Error(`Invalid K: Key length must be ${b >> 3} bytes`)
+        throw new KitError(`Key length must be ${b >> 3} bytes`)
       }
       const W = KeyExpansion(K, Nr)
 

@@ -1,4 +1,4 @@
-import { rotateL32 } from '../core/utils'
+import { KitError, rotateL32 } from '../core/utils'
 import { createBlockCipher } from '../core/cipherSuite'
 
 // * Constants
@@ -347,7 +347,7 @@ function T1(A: number) {
  */
 function expandKey(key: Uint8Array) {
   if (key.length !== 16) {
-    throw new Error('Invalid key length')
+    throw new KitError('Key length must be 16 bytes')
   }
 
   const dv = new DataView(key.buffer)
@@ -398,7 +398,7 @@ function F(X0: number, X1: number, X2: number, X3: number, rk: number) {
  */
 function cipher(M: Uint8Array, rk: Uint32Array) {
   if (M.length !== 16) {
-    throw new Error('Invalid message length')
+    throw new KitError('Message length must be 16 bytes')
   }
 
   let dv = new DataView(M.buffer)

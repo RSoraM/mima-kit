@@ -54,3 +54,10 @@ export function joinBuffer(...buffers: ArrayBuffer[]) {
   }
   return result
 }
+
+export class KitError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'mima-kit Error'
+  }
+}

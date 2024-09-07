@@ -1,7 +1,7 @@
 import type { Codec } from '../core/codec'
 import { HEX, UTF8 } from '../core/codec'
 import { createHash, createTupleHash } from '../core/hash'
-import { joinBuffer } from '../core/utils'
+import { KitError, joinBuffer } from '../core/utils'
 import { Keccak_c, shake128, shake256 } from './sha3'
 
 // * Encode and Padding Function
@@ -130,7 +130,7 @@ function encodeString(input: string | Uint8Array) {
  */
 function bytepad(X: Uint8Array[], w: number): Uint8Array[] {
   if (w <= 0) {
-    throw new Error('Invalid w')
+    throw new KitError('w must be greater than 0')
   }
 
   // 使用 leftEncode 函数编码 w

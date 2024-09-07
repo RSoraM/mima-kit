@@ -1,11 +1,16 @@
 import type { Codec } from './codec'
 import { HEX, UTF8 } from './codec'
-import { joinBuffer } from './utils'
+import { KitError, joinBuffer } from './utils'
 
 // * 分组加密算法包装器
 
 interface Cipher {
   (K: Uint8Array): {
+    encrypt: (M: Uint8Array) => Uint8Array
+    decrypt: (C: Uint8Array) => Uint8Array
+  }
+  /** for 3DES only */
+  (K: Uint8Array, K2?: Uint8Array, K3?: Uint8Array): {
     encrypt: (M: Uint8Array) => Uint8Array
     decrypt: (C: Uint8Array) => Uint8Array
   }
@@ -16,14 +21,16 @@ interface CipherDescription {
 }
 interface BlockCipher extends CipherDescription {
   (K: Uint8Array): ReturnType<Cipher> & CipherDescription
+  /** for 3DES only */
+  (K: Uint8Array, K2?: Uint8Array, K3?: Uint8Array): ReturnType<Cipher> & CipherDescription
 }
 export function createBlockCipher(
   cipher: Cipher,
   description: CipherDescription,
 ): BlockCipher {
   return Object.freeze(Object.assign(
-    (K: Uint8Array) => Object.freeze(Object.assign(
-      cipher(K),
+    (K: Uint8Array, K2?: Uint8Array, K3?: Uint8Array) => Object.freeze(Object.assign(
+      cipher(K, K2, K3),
       description,
     )),
     description,
@@ -65,7 +72,7 @@ export const ecb = createOperationMode(
       },
       decrypt: (C: Uint8Array) => {
         if (C.byteLength % cipher.BLOCK_SIZE !== 0) {
-          throw new Error('Invalid ciphertext length')
+          throw new KitError('Ciphertext length must be a multiple of block size')
         }
         const P = new Uint8Array(C.byteLength)
         for (let i = 0; i < C.byteLength; i += cipher.BLOCK_SIZE) {
@@ -84,10 +91,10 @@ export const cbc = createOperationMode(
     // iv 检查
     const BLOCK_SIZE = cipher.BLOCK_SIZE
     if (!iv) {
-      throw new Error('iv is required')
+      throw new KitError('iv is required for CBC mode')
     }
     if (iv.byteLength !== BLOCK_SIZE) {
-      throw new Error('Invalid iv length')
+      throw new KitError('iv length must be equal to block size')
     }
 
     return {
@@ -105,7 +112,7 @@ export const cbc = createOperationMode(
       },
       decrypt: (C: Uint8Array) => {
         if (C.byteLength % BLOCK_SIZE !== 0) {
-          throw new Error('Invalid ciphertext length')
+          throw new KitError('Ciphertext length must be a multiple of block size')
         }
         const P = new Uint8Array(C.byteLength)
         let prev = iv
@@ -128,10 +135,10 @@ export const cfb = createOperationMode(
     // iv 检查
     const BLOCK_SIZE = cipher.BLOCK_SIZE
     if (!iv) {
-      throw new Error('iv is required')
+      throw new KitError('iv is required for CFB mode')
     }
     if (iv.byteLength !== BLOCK_SIZE) {
-      throw new Error('Invalid iv length')
+      throw new KitError('iv length must be equal to block size')
     }
 
     return {
@@ -149,7 +156,7 @@ export const cfb = createOperationMode(
       },
       decrypt: (C: Uint8Array) => {
         if (C.byteLength % BLOCK_SIZE !== 0) {
-          throw new Error('Invalid ciphertext length')
+          throw new KitError('Ciphertext length must be a multiple of block size')
         }
         const P = new Uint8Array(C.byteLength)
         let prev = iv
@@ -172,10 +179,10 @@ export const ofb = createOperationMode(
     // iv 检查
     const BLOCK_SIZE = cipher.BLOCK_SIZE
     if (!iv) {
-      throw new Error('iv is required')
+      throw new KitError('iv is required for OFB mode')
     }
     if (iv.byteLength !== BLOCK_SIZE) {
-      throw new Error('Invalid iv length')
+      throw new KitError('iv length must be equal to block size')
     }
 
     return {
@@ -193,7 +200,7 @@ export const ofb = createOperationMode(
       },
       decrypt: (C: Uint8Array) => {
         if (C.byteLength % BLOCK_SIZE !== 0) {
-          throw new Error('Invalid ciphertext length')
+          throw new KitError('Ciphertext length must be a multiple of block size')
         }
         const P = new Uint8Array(C.byteLength)
         let prev = iv
@@ -215,10 +222,10 @@ export const ctr = createOperationMode(
     // iv 检查
     const BLOCK_SIZE = cipher.BLOCK_SIZE
     if (!nonce) {
-      throw new Error('nonce is required')
+      throw new KitError('nonce(iv) is required for CTR mode')
     }
     if (nonce.byteLength !== BLOCK_SIZE) {
-      throw new Error('Invalid nonce length')
+      throw new KitError('nonce(iv) length must be equal to block size')
     }
 
     return {
@@ -240,7 +247,7 @@ export const ctr = createOperationMode(
       },
       decrypt: (C: Uint8Array) => {
         if (C.byteLength % BLOCK_SIZE !== 0) {
-          throw new Error('Invalid ciphertext length')
+          throw new KitError('Ciphertext length must be a multiple of block size')
         }
         const P = new Uint8Array(C.byteLength)
         const NonceCounter = nonce.slice(0)
@@ -332,7 +339,7 @@ export const ZeroPadding = createPaddingScheme(
     while (P[i] === 0) {
       i = i - 1
       if (i < 0) {
-        throw new Error('Invalid padding')
+        return new Uint8Array()
       }
     }
     return P.slice(0, i + 1)
@@ -359,7 +366,8 @@ export const ISO7816_4 = createPaddingScheme(
     while (P[i] === 0x80) {
       i = i - 1
       if (i < 0) {
-        throw new Error('Invalid padding')
+        console.warn('This message may not be ISO/IEC 7816-4 padded')
+        return new Uint8Array()
       }
     }
     return P.slice(0, i + 1)
@@ -398,6 +406,14 @@ export interface CipherSuiteConfig {
    */
   padding?: Padding
   key: string | Uint8Array
+  /**
+   * for 3DES only
+   */
+  key2?: string | Uint8Array
+  /**
+   * for 3DES only
+   */
+  key3?: string | Uint8Array
   /**
    * @default Hex
    */
@@ -464,10 +480,20 @@ interface CipherSuite extends CipherSuiteDescription {
   _decrypt: (C: Uint8Array) => Uint8Array
 }
 export function createCipherSuite(suite: CipherSuiteConfig): CipherSuite {
-  let { key } = suite
+  let { key, key2, key3 } = suite
   const { cipher, KEY_CODEC = HEX } = suite
   key = typeof key === 'string' ? KEY_CODEC.parse(key) : key
-  const c = cipher(key)
+  let c: ReturnType<BlockCipher>
+  if (cipher.ALGORITHM === '3DES') {
+    key2 = key2 || key
+    key3 = key3 || key
+    key2 = typeof key2 === 'string' ? KEY_CODEC.parse(key2) : key2
+    key3 = typeof key3 === 'string' ? KEY_CODEC.parse(key3) : key3
+    c = cipher(key, key2, key3)
+  }
+  else {
+    c = cipher(key)
+  }
 
   let { iv } = suite
   const { mode, IV_CODEC = HEX, padding = PKCS7 } = suite
