@@ -247,7 +247,12 @@ export const CSV: Codec = {
           ? 10 + from(coreValues[i])
           : 6 + from(coreValues[i])
       }
-      isHigh ? h = nibble : l = nibble
+      if (isHigh) {
+        h = nibble
+      }
+      else {
+        l = nibble
+      }
 
       if (!isHigh) {
         result.push(((h << 4) | l) & 0xFF)
@@ -265,16 +270,25 @@ export const CSV: Codec = {
     input.forEach((byte) => {
       const h = (byte >> 4) & 0xF
       const l = byte & 0xF
-      h < 10
-        ? result += map[h]
-        : rand()
-          ? result += map[10] + map[h - 10]
-          : result += map[11] + map[h - 6]
-      l < 10
-        ? result += map[l]
-        : rand()
-          ? result += map[10] + map[l - 10]
-          : result += map[11] + map[l - 6]
+      if (h < 10) {
+        result += map[h]
+      }
+      else if (rand()) {
+        result += map[11] + map[h - 6]
+      }
+      else {
+        result += map[11] + map[h - 6]
+      }
+
+      if (l < 10) {
+        result += map[l]
+      }
+      else if (rand()) {
+        result += map[10] + map[l - 10]
+      }
+      else {
+        result += map[11] + map[l - 6]
+      }
     })
 
     return result
