@@ -5,6 +5,9 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
+    "types": [
+      "@vitest/browser/matchers"
+    ],
     "strict": true,
     "strictNullChecks": true,
     "esModuleInterop": true,
