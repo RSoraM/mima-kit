@@ -9,11 +9,6 @@ interface Cipher {
     encrypt: (M: Uint8Array) => Uint8Array
     decrypt: (C: Uint8Array) => Uint8Array
   }
-  /** for 3DES only */
-  (K: Uint8Array, K2?: Uint8Array, K3?: Uint8Array): {
-    encrypt: (M: Uint8Array) => Uint8Array
-    decrypt: (C: Uint8Array) => Uint8Array
-  }
 }
 interface CipherDescription {
   ALGORITHM: string
@@ -21,16 +16,14 @@ interface CipherDescription {
 }
 interface BlockCipher extends CipherDescription {
   (K: Uint8Array): ReturnType<Cipher> & CipherDescription
-  /** for 3DES only */
-  (K: Uint8Array, K2?: Uint8Array, K3?: Uint8Array): ReturnType<Cipher> & CipherDescription
 }
 export function createBlockCipher(
   cipher: Cipher,
   description: CipherDescription,
 ): BlockCipher {
   return Object.freeze(Object.assign(
-    (K: Uint8Array, K2?: Uint8Array, K3?: Uint8Array) => Object.freeze(Object.assign(
-      cipher(K, K2, K3),
+    (K: Uint8Array) => Object.freeze(Object.assign(
+      cipher(K),
       description,
     )),
     description,
@@ -407,14 +400,6 @@ export interface CipherSuiteConfig {
   padding?: Padding
   key: string | Uint8Array
   /**
-   * for 3DES only
-   */
-  key2?: string | Uint8Array
-  /**
-   * for 3DES only
-   */
-  key3?: string | Uint8Array
-  /**
    * @default Hex
    */
   KEY_CODEC?: Codec
@@ -480,20 +465,10 @@ interface CipherSuite extends CipherSuiteDescription {
   _decrypt: (C: Uint8Array) => Uint8Array
 }
 export function createCipherSuite(suite: CipherSuiteConfig): CipherSuite {
-  let { key, key2, key3 } = suite
+  let { key } = suite
   const { cipher, KEY_CODEC = HEX } = suite
   key = typeof key === 'string' ? KEY_CODEC.parse(key) : key
-  let c: ReturnType<BlockCipher>
-  if (cipher.ALGORITHM === '3DES') {
-    key2 = key2 || key
-    key3 = key3 || key
-    key2 = typeof key2 === 'string' ? KEY_CODEC.parse(key2) : key2
-    key3 = typeof key3 === 'string' ? KEY_CODEC.parse(key3) : key3
-    c = cipher(key, key2, key3)
-  }
-  else {
-    c = cipher(key)
-  }
+  const c = cipher(key)
 
   let { iv } = suite
   const { mode, IV_CODEC = HEX, padding = PKCS7 } = suite

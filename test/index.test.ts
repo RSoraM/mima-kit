@@ -13,6 +13,7 @@ import type { CipherSuiteConfig } from '../src/core/cipherSuite'
 import * as cipherSuite from '../src/core/cipherSuite'
 import { sm4 } from '../src/cipher/sm4'
 import { aes } from '../src/cipher/aes'
+import { des, t_des } from '../src/cipher/des'
 
 const { sha3_224, sha3_256 } = sha3
 const { sha3_384, sha3_512 } = sha3
@@ -287,6 +288,31 @@ describe('block cipher', () => {
     const ecb_aes = createCipherSuite(suite)
     expect(ecb_aes.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ecb_aes.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+  })
+  // * DES
+  it('des', () => {
+    const k = new Uint8Array([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
+    const m = new Uint8Array([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
+    const c = new Uint8Array([0x56, 0xCC, 0x09, 0xE7, 0xCF, 0xDC, 0x4C, 0xEF])
+
+    const cipher = des(k)
+    expect(cipher.encrypt(m)).toMatchObject(c)
+    expect(cipher.decrypt(c)).toMatchObject(m)
+  })
+  // * 3DES
+  it('t_des', () => {
+    const k = new Uint8Array([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFF, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0xFF, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
+    const m = new Uint8Array([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
+    const c192 = new Uint8Array([0xD2, 0x1E, 0x1E, 0xA1, 0x13, 0x0B, 0x42, 0x73])
+    const c128 = new Uint8Array([0x40, 0x50, 0x77, 0x2A, 0xE7, 0x64, 0x22, 0x0A])
+
+    const cipher128 = t_des(128)(k.subarray(0, 16))
+    expect(cipher128.encrypt(m)).toMatchObject(c128)
+    expect(cipher128.decrypt(c128)).toMatchObject(m)
+
+    const cipher192 = t_des(192)(k)
+    expect(cipher192.encrypt(m)).toMatchObject(c192)
+    expect(cipher192.decrypt(c192)).toMatchObject(m)
   })
 })
 
