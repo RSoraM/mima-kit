@@ -218,6 +218,7 @@ export function aes(b: 128 | 192 | 256) {
     {
       ALGORITHM: `AES-${b}`,
       BLOCK_SIZE: 16,
+      KEY_SIZE: b >> 3,
     },
   )
 }

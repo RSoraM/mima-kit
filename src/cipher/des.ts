@@ -161,6 +161,7 @@ export function t_des(k: 128 | 192) {
     {
       ALGORITHM: '3DES',
       BLOCK_SIZE: 8,
+      KEY_SIZE: k >> 3,
     },
   )
 }

@@ -13,6 +13,7 @@ interface Cipher {
 interface CipherDescription {
   ALGORITHM: string
   BLOCK_SIZE: number
+  KEY_SIZE?: number
 }
 interface BlockCipher extends CipherDescription {
   (K: Uint8Array): ReturnType<Cipher> & CipherDescription
@@ -464,19 +465,19 @@ interface CipherSuite extends CipherSuiteDescription {
   decrypt: (C: string | Uint8Array, CODEC?: Codec) => string
   _decrypt: (C: Uint8Array) => Uint8Array
 }
-export function createCipherSuite(suite: CipherSuiteConfig): CipherSuite {
-  let { key } = suite
-  const { cipher, KEY_CODEC = HEX } = suite
+export function createCipherSuite(config: CipherSuiteConfig): CipherSuite {
+  let { key } = config
+  const { cipher, KEY_CODEC = HEX } = config
   key = typeof key === 'string' ? KEY_CODEC.parse(key) : key
   const c = cipher(key)
 
-  let { iv } = suite
-  const { mode, IV_CODEC = HEX, padding = PKCS7 } = suite
+  let { iv } = config
+  const { mode, IV_CODEC = HEX, padding = PKCS7 } = config
   iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
   const m = mode(c, padding, iv)
 
-  const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = suite
-  const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = suite
+  const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+  const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
 
   return Object.freeze({
     _encrypt: m.encrypt,
@@ -494,7 +495,7 @@ export function createCipherSuite(suite: CipherSuiteConfig): CipherSuite {
     ALGORITHM: `${mode.ALGORITHM}-${cipher.ALGORITHM}`,
     PADDING: padding,
     BLOCK_SIZE: cipher.BLOCK_SIZE,
-    KEY_SIZE: cipher.BLOCK_SIZE,
+    KEY_SIZE: cipher.KEY_SIZE || cipher.BLOCK_SIZE,
     KEY_CODEC,
     IV_SIZE: cipher.BLOCK_SIZE,
     IV_CODEC,

@@ -29,6 +29,7 @@ const { parallelHash128XOF, parallelHash256XOF } = sha3Derived
 
 const { createCipherSuite } = cipherSuite
 const { ecb, cbc, cfb, ofb, ctr } = cipherSuite
+const { ANSI_X923 } = cipherSuite
 
 describe('hash', () => {
   // * MD5
@@ -183,12 +184,13 @@ describe('block cipher', () => {
     const k = '8586c1e4007b4ac8ea156616bb813986'
     const iv = '060d358b88e62a5287b1df4dddf016b3'
     const m = 'meow, 喵， 🐱'
-    const c = 'ac1e00f787097325407c4686cf80273bee30ee3d1a4bea26d3d09480a5241626'
+    const c = 'ac1e00f787097325407c4686cf80273bd1ec1f8de32343df8d9b245b04e58014'
     const suite: CipherSuiteConfig = {
       cipher: sm4,
       mode: cbc,
       key: k,
       iv,
+      padding: ANSI_X923,
     }
 
     const cbc_sm4 = createCipherSuite(suite)
@@ -300,7 +302,7 @@ describe('block cipher', () => {
     expect(cipher.decrypt(c)).toMatchObject(m)
   })
   // * 3DES
-  it('t_des', () => {
+  it('3des', () => {
     const k = new Uint8Array([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFF, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0xFF, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
     const m = new Uint8Array([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
     const c192 = new Uint8Array([0xD2, 0x1E, 0x1E, 0xA1, 0x13, 0x0B, 0x42, 0x73])
@@ -313,6 +315,21 @@ describe('block cipher', () => {
     const cipher192 = t_des(192)(k)
     expect(cipher192.encrypt(m)).toMatchObject(c192)
     expect(cipher192.decrypt(c192)).toMatchObject(m)
+  })
+  // * ECB-3DES
+  it('ecb-3des', () => {
+    const k = '2b7e151628aed2a6abf7158809cf4f3c2b7e151628aed2a6'
+    const m = 'meow, 喵， 🐱'
+    const c = '5ec0666b0b5d7dd971c6996157997e4c4d4810951aa35da9'
+    const suite: CipherSuiteConfig = {
+      cipher: t_des(192),
+      mode: ecb,
+      key: k,
+    }
+
+    const ecb_3des = createCipherSuite(suite)
+    expect(ecb_3des.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
+    expect(ecb_3des.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
 })
 
