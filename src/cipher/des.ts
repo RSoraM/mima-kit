@@ -1,5 +1,5 @@
 import { KitError } from '../core/utils'
-import { createBlockCipher } from '../core/cipherSuite'
+import { createCipherAlgorithm } from '../core/cipherSuite'
 
 // * Constants
 
@@ -112,7 +112,7 @@ function Cipher(M: Uint8Array, K: Uint8Array) {
   return permute((r << 32n) | l, FP)
 }
 
-export const des = createBlockCipher(
+export const des = createCipherAlgorithm(
   (K: Uint8Array) => {
     const key_set = generateKeys(K)
     const inv_key_set = reverseKeys(key_set)
@@ -134,11 +134,12 @@ export const des = createBlockCipher(
   {
     ALGORITHM: 'DES',
     BLOCK_SIZE: 8,
+    KEY_SIZE: 8,
   },
 )
 
 export function t_des(k: 128 | 192) {
-  return createBlockCipher(
+  return createCipherAlgorithm(
     (K: Uint8Array) => {
       if (K.byteLength !== k >> 3) {
         throw new KitError(`Key length must be ${k >> 3} bytes`)

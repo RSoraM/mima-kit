@@ -1,5 +1,5 @@
 import { KitError, rotateL32 } from '../core/utils'
-import { createBlockCipher } from '../core/cipherSuite'
+import { createCipherAlgorithm } from '../core/cipherSuite'
 
 // * Constants
 
@@ -430,7 +430,7 @@ function cipher(M: Uint8Array, rk: Uint32Array) {
  *
  * SM4 分组密码算法.
  */
-export const sm4 = createBlockCipher(
+export const sm4 = createCipherAlgorithm(
   (K: Uint8Array) => {
     const rk = expandKey(K)
     const rkReversed = rk.toReversed()
@@ -442,5 +442,6 @@ export const sm4 = createBlockCipher(
   {
     ALGORITHM: 'SM4',
     BLOCK_SIZE: 16,
+    KEY_SIZE: 16,
   },
 )

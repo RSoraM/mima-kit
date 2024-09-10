@@ -9,7 +9,7 @@ import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import type { HMACScheme } from '../src/hash/hmac'
 import { hmac } from '../src/hash/hmac'
-import type { CipherSuiteConfig } from '../src/core/cipherSuite'
+import type { CipherConfig } from '../src/core/cipherSuite'
 import * as cipherSuite from '../src/core/cipherSuite'
 import { sm4 } from '../src/cipher/sm4'
 import { aes } from '../src/cipher/aes'
@@ -27,7 +27,7 @@ const { tupleHash128XOF, tupleHash256XOF } = sha3Derived
 const { parallelHash128, parallelHash256 } = sha3Derived
 const { parallelHash128XOF, parallelHash256XOF } = sha3Derived
 
-const { createCipherSuite } = cipherSuite
+const { createCipher } = cipherSuite
 const { ecb, cbc, cfb, ofb, ctr } = cipherSuite
 const { ANSI_X923 } = cipherSuite
 
@@ -169,13 +169,8 @@ describe('block cipher', () => {
     const k = '8586c1e4007b4ac8ea156616bb813986'
     const m = 'meow, 喵， 🐱'
     const c = 'cd5a3e21a3c5fbeb05a819c67469703b49597aa5bc280694147d3145f8269bdb'
-    const suite: CipherSuiteConfig = {
-      cipher: sm4,
-      mode: ecb,
-      key: k,
-    }
 
-    const ecb_sm4 = createCipherSuite(suite)
+    const ecb_sm4 = createCipher(sm4, ecb)(k)
     expect(ecb_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ecb_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -185,15 +180,11 @@ describe('block cipher', () => {
     const iv = '060d358b88e62a5287b1df4dddf016b3'
     const m = 'meow, 喵， 🐱'
     const c = 'ac1e00f787097325407c4686cf80273bd1ec1f8de32343df8d9b245b04e58014'
-    const suite: CipherSuiteConfig = {
-      cipher: sm4,
-      mode: cbc,
-      key: k,
-      iv,
-      padding: ANSI_X923,
+    const config: CipherConfig = {
+      PADDING: ANSI_X923,
     }
 
-    const cbc_sm4 = createCipherSuite(suite)
+    const cbc_sm4 = createCipher(sm4, cbc, config)(k, iv)
     expect(cbc_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(cbc_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -203,14 +194,8 @@ describe('block cipher', () => {
     const iv = '060d358b88e62a5287b1df4dddf016b3'
     const m = 'meow, 喵， 🐱'
     const c = 'e38ec4c9fb65e1da9ba25c2f35840c123c171e4d8e26c1d54e7038aa4a8e9e65'
-    const suite: CipherSuiteConfig = {
-      cipher: sm4,
-      mode: cfb,
-      key: k,
-      iv,
-    }
 
-    const cfb_sm4 = createCipherSuite(suite)
+    const cfb_sm4 = createCipher(sm4, cfb)(k, iv)
     expect(cfb_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(cfb_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -220,14 +205,8 @@ describe('block cipher', () => {
     const iv = '060d358b88e62a5287b1df4dddf016b3'
     const m = 'meow, 喵， 🐱'
     const c = 'e38ec4c9fb65e1da9ba25c2f35840c1222d0dc374e57e74de38c562c8e0d2e3f'
-    const suite: CipherSuiteConfig = {
-      cipher: sm4,
-      mode: ofb,
-      key: k,
-      iv,
-    }
 
-    const ofb_sm4 = createCipherSuite(suite)
+    const ofb_sm4 = createCipher(sm4, ofb)(k, iv)
     expect(ofb_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ofb_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -237,14 +216,8 @@ describe('block cipher', () => {
     const iv = '060d358b88e62a5287b1df4dddf016b3'
     const m = 'meow, 喵， 🐱'
     const c = 'e38ec4c9fb65e1da9ba25c2f35840c1226cd921b5c89efd7008b46c4a73c908a'
-    const suite: CipherSuiteConfig = {
-      cipher: sm4,
-      mode: ctr,
-      key: k,
-      iv,
-    }
 
-    const ctr_sm4 = createCipherSuite(suite)
+    const ctr_sm4 = createCipher(sm4, ctr)(k, iv)
     expect(ctr_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ctr_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -281,13 +254,8 @@ describe('block cipher', () => {
     const k = '2b7e151628aed2a6abf7158809cf4f3c2b7e151628aed2a6abf7158809cf4f3c'
     const m = 'meow, 喵， 🐱'
     const c = 'b4123633a9945a628f88a8341bd2681c04d8362ad46cedfc05596ccdfc14e05a'
-    const suite: CipherSuiteConfig = {
-      cipher: aes(256),
-      mode: ecb,
-      key: k,
-    }
 
-    const ecb_aes = createCipherSuite(suite)
+    const ecb_aes = createCipher(aes(256), ecb)(k)
     expect(ecb_aes.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ecb_aes.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -318,16 +286,11 @@ describe('block cipher', () => {
   })
   // * ECB-3DES
   it('ecb-3des', () => {
-    const k = '2b7e151628aed2a6abf7158809cf4f3c2b7e151628aed2a6'
+    const k = 'feabc81628aed2a6abf7158809cf4f3c2b7e151628aed2a6'
     const m = 'meow, 喵， 🐱'
-    const c = '5ec0666b0b5d7dd971c6996157997e4c4d4810951aa35da9'
-    const suite: CipherSuiteConfig = {
-      cipher: t_des(192),
-      mode: ecb,
-      key: k,
-    }
+    const c = 'a115e72123e27813740d04f9d77f714255e025f3ea8dc0f6'
 
-    const ecb_3des = createCipherSuite(suite)
+    const ecb_3des = createCipher(t_des(192), ecb)(k)
     expect(ecb_3des.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ecb_3des.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
