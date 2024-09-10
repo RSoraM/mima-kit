@@ -201,6 +201,14 @@ function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   return new Uint8Array(S.buffer)
 }
 
+/**
+ * @description
+ * Advanced Encryption Standard (AES) block cipher algorithm.
+ *
+ * 高级加密标准 (AES) 分组密码算法.
+ *
+ * @param {128 | 192 | 256} b - Key length (bits).
+ */
 export function aes(b: 128 | 192 | 256) {
   const Nr = b === 128 ? 10 : (b === 192 ? 12 : 14)
   return createCipherAlgorithm(

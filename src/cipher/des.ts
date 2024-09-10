@@ -112,6 +112,12 @@ function Cipher(M: Uint8Array, K: Uint8Array) {
   return permute((r << 32n) | l, FP)
 }
 
+/**
+ * @description
+ * Data Encryption Standard (DES) block cipher algorithm.
+ *
+ * 数据加密标准（DES）分组密码算法.
+ */
 export const des = createCipherAlgorithm(
   (K: Uint8Array) => {
     const key_set = generateKeys(K)
@@ -138,6 +144,14 @@ export const des = createCipherAlgorithm(
   },
 )
 
+/**
+ * @description
+ * Triple Data Encryption Standard (3DES) block cipher algorithm.
+ *
+ * 三重数据加密标准（3DES）分组密码算法.
+ *
+ * @param {128 | 192} k - Key length (bits)
+ */
 export function t_des(k: 128 | 192) {
   return createCipherAlgorithm(
     (K: Uint8Array) => {
