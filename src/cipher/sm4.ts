@@ -400,6 +400,10 @@ function cipher(M: Uint8Array, rk: Uint32Array) {
   if (M.length !== 16) {
     throw new KitError('Message length must be 16 bytes')
   }
+  // When the buffer is shared, it needs to be copied
+  if (M.buffer.byteLength !== 16) {
+    M = M.slice(0)
+  }
 
   let dv = new DataView(M.buffer)
   let X0 = dv.getUint32(0, false)
