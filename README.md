@@ -39,8 +39,6 @@
     - [HMAC](#hmac)
     - [KMAC](#kmac)
 - [分组加密算法](#分组加密算法)
-  - [加密方案（createCipher）](#加密方案createcipher)
-    - [加密方案的默认行为](#加密方案的默认行为)
   - [加密算法](#加密算法)
     - [SM4](#sm4)
     - [AES](#aes)
@@ -54,10 +52,11 @@
   - [分组模式](#分组模式)
     - [ECB](#ecb)
     - [CBC](#cbc)
+    - [PCBC](#pcbc)
     - [CFB](#cfb)
     - [OFB](#ofb)
     - [CTR](#ctr)
-    - [PCBC](#pcbc)
+    - [GCM](#gcm)
 - [License](#license)
 
 ## 安装
@@ -269,84 +268,22 @@ kmac256XOF(512, config)('mima-kit')
 
 # 分组加密算法
 
-## 加密方案（createCipher）
+通常，我们会将 `加密算法`、 `填充模式` 和 `分组模式` 组合在一起，形成一个完整的 `加密方案`。因为单独的 `加密算法` 只能对单个数据块进行加解密，所以它们在单独使用时并没有太大的意义。
 
-通常，我们会将 `加密算法`、`分组模式` 和 `填充模式` 组合在一起，形成一个完整的 `加密方案`。因为单独的 `加密算法` 只能对单个数据块进行加解密，所以它们在单独使用时并没有太大的意义。
+`mima-kit` 将 `组合` 这一行为放在了 `分组模式` 中，以达到灵活复用的目的。
 
 ```typescript
 const k = ''
 const iv = ''
-const config: CipherConfig = { }
-const cbc_aes = createCipher(aes(256), cbc, config)(k, iv)
-```
-
-```ts
-interface CipherConfig {
-  /**
-   * @default PKCS7
-   */
-  PADDING?: Padding
-  /**
-   * @default Hex
-   */
-  KEY_CODEC?: Codec
-  /**
-   * @default Hex
-   */
-  IV_CODEC?: Codec
-  /**
-   * @default UTF8
-   */
-  ENCRYPT_INPUT_CODEC?: Codec
-  /**
-   * @default HEX
-   */
-  ENCRYPT_OUTPUT_CODEC?: Codec
-  /**
-   * @default HEX
-   */
-  DECRYPT_INPUT_CODEC?: Codec
-  /**
-   * @default UTF8
-   */
-  DECRYPT_OUTPUT_CODEC?: Codec
-}
-```
-
-### 加密方案的默认行为
-
-和 `createHash` 类似，使用 `createCipher` 创建的加密方案也有一些默认行为：
-
-1. `_encrypt` 和 `_decrypt` 函数是加密方案的原生实现，其输入输出均为 `Uint8Array` 类型。
-2. 对于加密，除了调用 `_encrypt` 函数外，还可以直接调用 `encrypt` 函数。`encrypt` 函数接受 `string` 或 `Uint8Array` 类型的输入，并会自动对 `string` 类型的输入进行 `UTF8` 编码。
-3. 对于解密，除了调用 `_decrypt` 函数外，还可以直接调用 `decrypt` 函数。`decrypt` 函数接受 `string` 或 `Uint8Array` 类型的输入，并会自动对 `string` 类型的输入进行 `HEX` 编码。
-4. `encrypt` 和 `decrypt`，都可以通过传递第二个参数来更改输出编码。只要编码器实现了 `Codec` 接口，理论上可以使用任何编码。
-5. 加密方案不仅提供了丰富的调用方式和可自由组合的编码器，还记录了许多有用的信息，你可以通过 `console.log` 查看这些信息。
-
-```typescript
-const config: CipherConfig = { }
-const cipher = createCipher(sm4, ofb, config)(k, iv)
-
-let M: string | Uint8Array
-let C: string | Uint8Array
-
-// When M is Uint8Array
-M = new Uint8Array()
-C = cipher._encrypt(M) // c: Uint8Array
-M = cipher._decrypt(C) // m: Uint8Array
-
-// When M is string
-M = 'utf-8 string'
-C = cipher.encrypt(M) // c: Hex string
-M = cipher.decrypt(C) // m: UTF8 string
-
-// Cipher Information
-console.log(cipher)
+const config: CBCConfig = { }
+const cbc_sm4 = cbc(sm4, config)(k, iv)
+const c = cbc_sm4.encrypt('mima-kit') // c: Hex string
+const m = cbc_sm4.decrypt(c) // m: UTF8 string
 ```
 
 ## 加密算法
 
-单独使用 `加密算法` 并没有太大的意义。查看 [加密方案](#加密方案createcipher) 了解如何将 `加密算法`、`分组模式` 和 `填充模式` 组合在一起。
+单独使用 `加密算法` 并没有太大的意义。查看 [分组模式](#分组模式) 将 `加密算法`、`分组模式` 和 `填充模式` 组合在一起。
 
 ### SM4
 
@@ -403,7 +340,7 @@ t_des(192)(k).decrypt(c) // m
 
 ## 填充模式
 
-单独使用 `填充模式` 并没有太大的意义。查看 [加密方案](#加密方案createcipher) 了解如何将 `加密算法`、`分组模式` 和 `填充模式` 组合在一起。
+单独使用 `填充模式` 并没有太大的意义。查看 [分组模式](#分组模式) 将 `加密算法`、`分组模式` 和 `填充模式` 组合在一起。
 
 ### PKCS#7
 
@@ -447,83 +384,384 @@ ZERO_PAD(p) // m
 
 ## 分组模式
 
-单独使用 `分组模式` 并没有太大的意义。查看 [加密方案](#加密方案createcipher) 了解如何将 `加密算法`、`分组模式` 和 `填充模式` 组合在一起。
+查看 `/test/index.test.ts` 以获取更多使用示例。
 
 ### ECB
 
-```typescript
-let k: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
+Electronic Codebook (ECB) 是最简单的分组模式。`ECB` 模式将明文分成固定长度的数据块，然后对每个数据块进行加密。
 
-const CIPHER = ecb(aes(128))(k)
+- `ECB` 模式不需要 `iv`。
+
+```typescript
+const k = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: ECBConfig = { }
+
+const CIPHER = ecb(sm4, config)(k)
 CIPHER.encrypt(m) // c
 CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface ECBConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
 ```
 
 ### CBC
 
-```typescript
-let k: Uint8Array
-let iv: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
+Cipher Block Chaining (CBC) 是最常用的分组模式。`CBC` 模式每个明文块都会与前一个密文块进行异或操作，然后再进行加密。
 
-const CIPHER = cbc(aes(128))(k, iv)
+- `CBC` 模式需要 `iv`。
+- `iv` 的长度与加密算法的 `BLOCK_SIZE` 相同。
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: CBCConfig = { }
+
+const CIPHER = cbc(sm4, config)(k, iv)
 CIPHER.encrypt(m) // c
 CIPHER.decrypt(c) // m
 ```
 
-### CFB
-
 ```typescript
-let k: Uint8Array
-let iv: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
-
-const CIPHER = cfb(aes(128))(k, iv)
-CIPHER.encrypt(m) // c
-CIPHER.decrypt(c) // m
-```
-
-### OFB
-
-```typescript
-let k: Uint8Array
-let iv: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
-
-const CIPHER = ofb(aes(128))(k, iv)
-CIPHER.encrypt(m) // c
-CIPHER.decrypt(c) // m
-```
-
-### CTR
-
-```typescript
-let k: Uint8Array
-let nonce: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
-
-const CIPHER = ctr(aes(128))(k, nonce)
-CIPHER.encrypt(m) // c
-CIPHER.decrypt(c) // m
+interface CBCConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
 ```
 
 ### PCBC
 
-```typescript
-let k: Uint8Array
-let iv: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
+Progressive Chaining Block Cipher (PCBC) 是 `CBC` 的变种。`PCBC` 模式每个明文块都会与前一个明文和前一个密文块进行异或操作，然后再进行加密。`PCBC` 模式旨在将密文中的微小变化在加解密时无限传播。
 
-const CIPHER = pcbc(aes(128))(k, iv)
+- `PCBC` 模式需要 `iv`。
+- `iv` 的长度与加密算法的 `BLOCK_SIZE` 相同。
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: PCBCConfig = { }
+
+const CIPHER = pcbc(sm4, config)(k, iv)
 CIPHER.encrypt(m) // c
 CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface PCBCConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### CFB
+
+Cipher Feedback (CFB) 将分组密码转换为流密码。`CFB` 模式通过加密前一个密文块获得加密数据流，然后与明文块进行异或操作，获得密文块。
+
+- `CFB` 模式需要 `iv`。
+- `iv` 的长度与加密算法的 `BLOCK_SIZE` 相同。
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: CFBConfig = { }
+
+const CIPHER = cfb(sm4, config)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface CFBConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### OFB
+
+Output Feedback (OFB) 将分组密码转换为流密码。`OFB` 模式通过加密 `iv` 获得加密数据流，然后与明文块进行异或操作，获得密文块。
+
+- `OFB` 模式需要 `iv`。
+- `iv` 的长度与加密算法的 `BLOCK_SIZE` 相同。
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: OFBConfig = { }
+
+const CIPHER = ofb(sm4, config)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface OFBConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### CTR
+
+- `CTR` 模式需要 `iv`。
+- `iv` 的长度与加密算法的 `BLOCK_SIZE` 相同。
+
+Counter Mode (CTR) 将分组密码转换为流密码。`CTR` 模式将 `iv` 与计数器组合以生成唯一的 `计数器块`，通过加密 `计数器块` 获得加密数据流，然后与明文块进行异或操作，获得密文块。
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: CTRConfig = { }
+
+const CIPHER = ctr(sm4, config)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface CTRConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### GCM
+
+Galois/Counter Mode (GCM) 将分组密码转换为流密码。`GCM` 模式可以看作是 `CTR` 模式的变种，它在 `CTR` 模式的基础上增加了 `认证` 功能。
+
+- `GCM` 模式需要 `iv`。
+- `iv` 的长度没有限制，但推荐使用 `96` 位长度的 `iv`。
+- 签名生成的 `AUTH_TAG` 长度由 `AUTH_TAG_SIZE` 参数决定。`AUTH_TAG` 最大长度为 `128` 位，设置任意长度都不会影响程序的运行，但一般推荐使用 `128`、`120`、`112`、`104`、`96` 位长度，对于某些应用也可以使用 `64`、`32` 位长度。
+
+`mima-kit` 实现的 `GCM` 模式并没有进行查表优化，因此性能可能会比较慢。
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const a = '' // utf8 string
+const c = '' // hex string
+const t = '' // hex string
+const config: GCMConfig = { }
+
+const CIPHER = gcm(aes(128), config)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+CIPHER.sign(c, a) // auth tag
+CIPHER.verify(t, c, a) // true or false
+```
+
+```typescript
+interface GCMConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ADDITIONAL_DATA_CODEC?: Codec
+  /**
+   * 认证标签长度 (byte)
+   * @default 16
+   */
+  AUTH_TAG_SIZE?: number
+  /**
+   * @default HEX
+   */
+  AUTH_TAG_CODEC?: Codec
+}
 ```
 
 # License

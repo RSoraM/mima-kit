@@ -19,7 +19,9 @@
 
 # mima-kit
 
-`mima-kit` is a cryptographic suite implemented in `TypeScript`. The goal is to provide an easy-to-use cryptographic library. `mima-kit` is still in the early stages of development, and the API may change.
+`mima-kit` is a cryptographic suite implemented in `TypeScript`. The goal is to provide an easy-to-use cryptographic library. The name `mima` comes from the Chinese word `密码`, which means `password` or `cipher`. `mima-kit` is still in the early stages of development, and the API may change.
+
+> Documents in other languages may be outdated. Please refer to the Simplified Chinese document for details.
 
 - [mima-kit](#mima-kit)
   - [Install](#install)
@@ -39,8 +41,6 @@
     - [HMAC](#hmac)
     - [KMAC](#kmac)
 - [Block Cipher Algorithm](#block-cipher-algorithm)
-  - [Encryption Scheme (createCipher)](#encryption-scheme-createcipher)
-    - [Default behavior of encryption schemes](#default-behavior-of-encryption-schemes)
   - [Cipher Algorithm](#cipher-algorithm)
     - [SM4](#sm4)
     - [AES](#aes)
@@ -54,10 +54,11 @@
   - [Block Mode](#block-mode)
     - [ECB](#ecb)
     - [CBC](#cbc)
+    - [PCBC](#pcbc)
     - [CFB](#cfb)
     - [OFB](#ofb)
     - [CTR](#ctr)
-    - [PCBC](#pcbc)
+    - [GCM](#gcm)
 - [License](#license)
 
 ## Install
@@ -269,83 +270,13 @@ kmac256XOF(512, config)('mima-kit')
 
 # Block Cipher Algorithm
 
-## Encryption Scheme (createCipher)
+Typically, we combine `encryption algorithms`, `padding modes`, and `block modes` to form a complete `encryption scheme`. Since standalone `encryption algorithms` can only encrypt or decrypt single data blocks, they are not very meaningful when used alone.
 
-Usually, we combine the `cipher algorithm`, `blocking mode` and `padding mode` to form a complete `encryption scheme`. Because a single `cipher algorithm` can only encrypt and decrypt a single block of data, they do not make much sense when used alone.
-
-```typescript
-const k = ''
-const iv = ''
-const config: CipherConfig = { }
-const cbc_aes = createCipher(aes(256), cbc, config)(k, iv)
-```
-
-```ts
-interface CipherConfig {
-  /**
-   * @default PKCS7
-   */
-  PADDING?: Padding
-  /**
-   * @default Hex
-   */
-  KEY_CODEC?: Codec
-  /**
-   * @default Hex
-   */
-  IV_CODEC?: Codec
-  /**
-   * @default UTF8
-   */
-  ENCRYPT_INPUT_CODEC?: Codec
-  /**
-   * @default HEX
-   */
-  ENCRYPT_OUTPUT_CODEC?: Codec
-  /**
-   * @default HEX
-   */
-  DECRYPT_INPUT_CODEC?: Codec
-  /**
-   * @default UTF8
-   */
-  DECRYPT_OUTPUT_CODEC?: Codec
-}
-```
-
-### Default behavior of encryption schemes
-Similar to `createHash`, encryption schemes created with `createCipher` also have some default behaviors:
-
-1. The `_encrypt` and `_decrypt` functions are the native implementations of the encryption scheme, with both input and output being of type `Uint8Array`.
-2. For encryption, in addition to calling the `_encrypt` function, you can also directly call the `encrypt` function. The `encrypt` function accepts inputs of type `string` or `Uint8Array` and will automatically encode `string` inputs to `UTF8`.
-3. For decryption, in addition to calling the `_decrypt` function, you can also directly call the `decrypt` function. The `decrypt` function accepts inputs of type `string` or `Uint8Array` and will automatically encode `string` inputs to `HEX`.
-4. Both `encrypt` and `decrypt` can change the output encoding by passing a second parameter. As long as the encoder implements the `Codec` interface, any encoding can theoretically be used.
-5. The encryption scheme not only provides a variety of calling methods and freely combinable encoders but also records a lot of useful information, which you can view via `console.log`.
-
-```typescript
-const config: CipherConfig = { }
-const cipher = createCipher(sm4, ofb, config)(k, iv)
-
-let M: string | Uint8Array
-let C: string | Uint8Array
-
-// When M is Uint8Array
-M = new Uint8Array()
-C = cipher._encrypt(M) // c: Uint8Array
-M = cipher._decrypt(C) // m: Uint8Array
-
-// When M is string
-M = 'utf-8 string'
-C = cipher.encrypt(M) // c: Hex string
-M = cipher.decrypt(C) // m: UTF8 string
-
-// Cipher Information
-console.log(cipher)
-```
+`mima-kit` places the `combination` behavior within the `block modes` to achieve flexible reuse.
 
 ## Cipher Algorithm
 
-Using the `cipher algorithm` alone does not make much sense. See [Encryption Scheme](#encryption-scheme-createcipher) to learn how to combine `cipher algorithm`, `blocking mode`, and `padding mode`.
+Using the `cipher algorithm` alone does not make much sense. See [Block Mode](#block-mode) to learn how to combine `cipher algorithm`, `padding mode`, and `block mode`.
 
 ### SM4
 
@@ -402,7 +333,7 @@ t_des(192)(k).decrypt(c) // m
 
 ## Padding Mode
 
-Using the `padding mode` alone does not make much sense. See [Encryption Scheme](#encryption-scheme-createcipher) to learn how to combine `cipher algorithm`, `blocking mode`, and `padding mode`.
+Using the `padding mode` alone does not make much sense. See [Block Mode](#block-mode) to learn how to combine `cipher algorithm`, `padding mode`, and `block mode`.
 
 ### PKCS#7
 
@@ -446,83 +377,384 @@ ZERO_PAD(p) // m
 
 ## Block Mode
 
-Using the `block mode` alone does not make much sense. See [Encryption Scheme](#encryption-scheme-createcipher) to learn how to combine `cipher algorithm`, `blocking mode`, and `padding mode`.
+See `/test/index.test.ts` for more usage examples.
 
 ### ECB
 
-```typescript
-let k: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
+Electronic Codebook (ECB) is the simplest block mode. `ECB` mode divides the plaintext into fixed-length data blocks, and then encrypts each data block.
 
-const CIPHER = ecb(aes(128))(k)
+- `ECB` mode does not require `iv`.
+
+```typescript
+const k = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: ECBConfig = { }
+
+const CIPHER = ecb(sm4, config)(k)
 CIPHER.encrypt(m) // c
 CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface ECBConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
 ```
 
 ### CBC
 
-```typescript
-let k: Uint8Array
-let iv: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
+Cipher Block Chaining (CBC) is the most commonly used block mode. In `CBC` mode, each plaintext block is XORed with the previous ciphertext block before being encrypted.
 
-const CIPHER = cbc(aes(128))(k, iv)
+- `CBC` mode requires an `iv`.
+- The length of the `iv` is the same as the `BLOCK_SIZE` of the encryption algorithm.
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: CBCConfig = { }
+
+const CIPHER = cbc(sm4, config)(k, iv)
 CIPHER.encrypt(m) // c
 CIPHER.decrypt(c) // m
 ```
 
-### CFB
-
 ```typescript
-let k: Uint8Array
-let iv: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
-
-const CIPHER = cfb(aes(128))(k, iv)
-CIPHER.encrypt(m) // c
-CIPHER.decrypt(c) // m
-```
-
-### OFB
-
-```typescript
-let k: Uint8Array
-let iv: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
-
-const CIPHER = ofb(aes(128))(k, iv)
-CIPHER.encrypt(m) // c
-CIPHER.decrypt(c) // m
-```
-
-### CTR
-
-```typescript
-let k: Uint8Array
-let nonce: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
-
-const CIPHER = ctr(aes(128))(k, nonce)
-CIPHER.encrypt(m) // c
-CIPHER.decrypt(c) // m
+interface CBCConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
 ```
 
 ### PCBC
 
-```typescript
-let k: Uint8Array
-let iv: Uint8Array
-let m: Uint8Array
-let c: Uint8Array
+Progressive Chaining Block Cipher (PCBC) is a variant of `CBC`. In `PCBC` mode, each plaintext block is XORed with the previous plaintext and previous ciphertext blocks before being encrypted. `PCBC` mode aims to propagate small changes in the ciphertext infinitely during encryption and decryption.
 
-const CIPHER = pcbc(aes(128))(k, iv)
+- `PCBC` mode requires an `iv`.
+- The length of the `iv` is the same as the `BLOCK_SIZE` of the encryption algorithm.
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: PCBCConfig = { }
+
+const CIPHER = pcbc(sm4, config)(k, iv)
 CIPHER.encrypt(m) // c
 CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface PCBCConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### CFB
+
+Cipher Feedback (CFB) mode converts block ciphers into stream ciphers. `CFB` mode generates an encryption data stream by encrypting the previous ciphertext block, then XORs the data stream with the plaintext block to obtain the ciphertext block.
+
+- `CFB` mode requires an `iv`.
+- The length of the `iv` is the same as the `BLOCK_SIZE` of the encryption algorithm.
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: CFBConfig = { }
+
+const CIPHER = cfb(sm4, config)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface CFBConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### OFB
+
+OFB mode converts block ciphers into stream ciphers. `OFB` mode generates an encryption data stream by encrypting the `iv`, then XORs the data stream with the plaintext block to obtain the ciphertext block.
+
+- `OFB` mode requires an `iv`.
+- The length of the `iv` is the same as the `BLOCK_SIZE` of the encryption algorithm.
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: OFBConfig = { }
+
+const CIPHER = ofb(sm4, config)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface OFBConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### CTR
+
+Counter Mode (CTR) converts block ciphers into stream ciphers. `CTR` mode generates an encryption data stream by combining the `iv` with a counter to generate a unique `counter block`, encrypting the `counter block` to obtain the encryption data stream, and then XORing the data stream with the plaintext block to obtain the ciphertext block.
+
+- `CTR` mode requires an `iv`.
+- The length of the `iv` is the same as the `BLOCK_SIZE` of the encryption algorithm.
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const c = '' // hex string
+const config: CTRConfig = { }
+
+const CIPHER = ctr(sm4, config)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface CTRConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### GCM
+
+Galois/Counter Mode (GCM) converts block ciphers into stream ciphers. `GCM` mode can be seen as a variant of `CTR` mode, with the addition of `authentication` functionality.
+
+- `GCM` Requires an `iv`.
+- Length of `iv` is not limited, but it is recommended to use a `96` bit length `iv`.
+- `AUTH_TAG` generated by the `GCM` mode is a `HEX` encoded string, and the `AUTH_TAG` length is determined by the `AUTH_TAG_SIZE` parameter. The maximum length of the `AUTH_TAG` is `128` bits. Setting any length will not affect the operation of the program, but it is generally recommended to use `128`, `120`, `112`, `104`, `96` bits, and for some applications, `64`, `32` bits can also be used.
+
+The `GCM` mode implemented by `mima-kit` does not perform table lookup optimization, so the performance may be slower.
+
+```typescript
+const k = '' // hex string
+const iv = '' // hex string
+const m = '' // utf8 string
+const a = '' // utf8 string
+const c = '' // hex string
+const t = '' // hex string
+const config: GCMConfig = { }
+
+const CIPHER = gcm(aes(128), config)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+CIPHER.sign(c, a) // auth tag
+CIPHER.verify(t, c, a) // true or false
+```
+
+```typescript
+interface GCMConfig {
+  /**
+   * @default PKCS7
+   */
+  PADDING?: Padding
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ADDITIONAL_DATA_CODEC?: Codec
+  /**
+   * Authentication tag size (byte)
+   * @default 16
+   */
+  AUTH_TAG_SIZE?: number
+  /**
+   * @default HEX
+   */
+  AUTH_TAG_CODEC?: Codec
+}
 ```
 
 # License

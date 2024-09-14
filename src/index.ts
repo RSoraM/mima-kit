@@ -65,7 +65,7 @@ export { gcm, GCMConfig } from './core/cipherSuite'
 export { pcbc, PCBCConfig } from './core/cipherSuite'
 
 // * Block Cipher Padding
-export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4 } from './core/cipherSuite'
+export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4, NoPadding } from './core/cipherSuite'
 
 // * AES
 export { aes } from './cipher/aes'
