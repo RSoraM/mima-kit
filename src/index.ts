@@ -55,12 +55,14 @@ export { sm3 } from './hash/sm3'
 export type { HMACScheme } from './hash/hmac'
 export { hmac } from './hash/hmac'
 
-// * Block Cipher Utils
-export type { CipherConfig } from './core/cipherSuite'
-export { createCipher } from './core/cipherSuite'
-
 // * Block Cipher Modes
-export { ecb, cbc, cfb, ofb, ctr, pcbc } from './core/cipherSuite'
+export { ecb, ECBConfig } from './core/cipherSuite'
+export { cbc, CBCConfig } from './core/cipherSuite'
+export { cfb, CFBConfig } from './core/cipherSuite'
+export { ofb, OFBConfig } from './core/cipherSuite'
+export { ctr, CTRConfig } from './core/cipherSuite'
+export { gcm, GCMConfig } from './core/cipherSuite'
+export { pcbc, PCBCConfig } from './core/cipherSuite'
 
 // * Block Cipher Padding
 export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4 } from './core/cipherSuite'

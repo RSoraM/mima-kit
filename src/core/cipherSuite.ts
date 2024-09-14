@@ -1,30 +1,20 @@
 import type { Codec } from './codec'
 import { HEX, UTF8 } from './codec'
-import { KitError, joinBuffer } from './utils'
+import { KitError, joinBuffer, wrap } from './utils'
 
 // * 分组加密算法包装器
 
-interface BaseCipherAlgorithm<R = object> {
+export interface Cipherable {
   /**
-   * @param {Uint8Array} K - 密钥
+   * @param {Uint8Array} M - 消息
    */
-  (K: Uint8Array): {
-    /**
-     * @param {Uint8Array} M - 消息
-     */
-    encrypt: (M: Uint8Array) => Uint8Array
-    /**
-     * @param {Uint8Array} C - 密文
-     */
-    decrypt: (C: Uint8Array) => Uint8Array
-  } & R
+  encrypt: (M: Uint8Array) => Uint8Array
+  /**
+   * @param {Uint8Array} C - 密文
+   */
+  decrypt: (C: Uint8Array) => Uint8Array
 }
-interface BaseCipherDescription {
-  /**
-   * cipher algorithm name
-   *
-   * 加密算法名称
-   */
+export interface CipherInfo {
   ALGORITHM: string
   /**
    * Block size (byte)
@@ -39,25 +29,28 @@ interface BaseCipherDescription {
    */
   KEY_SIZE: number
 }
-export type CipherAlgorithm =
-  & BaseCipherAlgorithm<BaseCipherDescription>
-  & BaseCipherDescription
-export function createCipherAlgorithm(
-  algorithm: BaseCipherAlgorithm,
-  description: BaseCipherDescription,
-): CipherAlgorithm {
-  return Object.freeze(Object.assign(
-    (K: Uint8Array) => Object.freeze(Object.assign(
+export interface Cipher extends CipherInfo {
+  /**
+   * @param {Uint8Array} K - 密钥
+   */
+  (K: Uint8Array): Cipherable & CipherInfo
+}
+export function createCipher(
+  algorithm: (K: Uint8Array) => Cipherable,
+  description: CipherInfo,
+): Cipher {
+  return wrap(
+    (K: Uint8Array) => wrap(
       algorithm(K),
       description,
-    )),
+    ),
     description,
-  ))
+  )
 }
 
 // * 填充方案包装器
 
-interface doPad {
+export interface doPad {
   /**
    * add padding
    *
@@ -68,7 +61,7 @@ interface doPad {
    */
   (M: Uint8Array, BLOCK_SIZE: number): Uint8Array
 }
-interface UnPad {
+export interface UnPad {
   /**
    * remove padding
    *
@@ -78,30 +71,24 @@ interface UnPad {
    */
   (P: Uint8Array): Uint8Array
 }
-interface PaddingDescription {
-  /**
-   * padding scheme name
-   *
-   * 填充方案名称
-   */
+export interface PaddingInfo {
   ALGORITHM: string
 }
-export type Padding =
-  & doPad & UnPad
-  & PaddingDescription
+export interface Padding extends doPad, UnPad, PaddingInfo {
+}
 export function createPadding(
   doPad: doPad,
   unPad: UnPad,
-  description: PaddingDescription,
+  description: PaddingInfo,
 ): Padding {
-  return Object.freeze(Object.assign(
+  return wrap(
     (M: Uint8Array, BLOCK_SIZE?: number) => (
       typeof BLOCK_SIZE === 'number'
         ? doPad(M, BLOCK_SIZE)
         : unPad(M)
     ),
     description,
-  ))
+  )
 }
 
 // * 填充方案
@@ -197,323 +184,80 @@ export const ANSI_X923 = createPadding(
   { ALGORITHM: 'ANSI X9.23' },
 )
 
-// * 工作模式包装器
-
-interface ModeDescription {
-  ALGORITHM: string
-}
-interface CipherModeDescription {
-  ALGORITHM: string
-  PADDING: Padding
-  BLOCK_SIZE: number
-  KEY_SIZE: number
-}
-interface Mode<T = ''> {
-  (cipher: CipherAlgorithm, padding?: Padding): T extends 'ECB'
-    ? (K: Uint8Array) => ReturnType<BaseCipherAlgorithm>
-    : (K: Uint8Array, iv: Uint8Array) => ReturnType<BaseCipherAlgorithm>
-}
-interface CipherMode<T = 'iv'> extends ModeDescription {
-  (cipher: CipherAlgorithm, padding?: Padding): T extends 'ECB'
-    ? ((K: Uint8Array) => ReturnType<BaseCipherAlgorithm> & CipherModeDescription) & CipherModeDescription
-    : ((K: Uint8Array, iv: Uint8Array) => ReturnType<BaseCipherAlgorithm> & CipherModeDescription) & CipherModeDescription
-}
-export function createCipherMode(mode: Mode<'ECB'>, description: ModeDescription): CipherMode<'ECB'>
-export function createCipherMode(mode: Mode, description: ModeDescription): CipherMode
-export function createCipherMode(mode: Mode | Mode<'ECB'>, description: ModeDescription): CipherMode | CipherMode<'ECB'> {
-  const isECBMode = (mode: Mode | Mode<'ECB'>): mode is Mode<'ECB'> => description.ALGORITHM === 'ECB'
-  return Object.freeze(Object.assign(
-    (cipher: CipherAlgorithm, padding: Padding = PKCS7) => {
-      const cipherDescription: CipherModeDescription = {
-        ALGORITHM: `${description.ALGORITHM}-${cipher.ALGORITHM}`,
-        PADDING: padding,
-        BLOCK_SIZE: cipher.BLOCK_SIZE,
-        KEY_SIZE: cipher.KEY_SIZE,
-      }
-      const fn = (K: Uint8Array, iv?: Uint8Array) => {
-        const c = isECBMode(mode) ? mode(cipher, padding)(K) : mode(cipher, padding)(K, iv!)
-        return Object.freeze(Object.assign(
-          c,
-          cipherDescription,
-        ))
-      }
-      return Object.freeze(Object.assign(
-        isECBMode(mode)
-          ? (K: Uint8Array) => fn(K)
-          : (K: Uint8Array, iv: Uint8Array) => fn(K, iv),
-        cipherDescription,
-      ))
-    },
-    description,
-  ))
-}
+export const NoPadding = createPadding(
+  (M: Uint8Array) => M,
+  (P: Uint8Array) => P,
+  { ALGORITHM: 'No Padding' },
+)
 
 // * 工作模式
 
-export const ecb = createCipherMode(
-  (cipher: CipherAlgorithm, padding: Padding = PKCS7) =>
-    (K: Uint8Array) => {
-      const c = cipher(K)
-      return ({
-        encrypt: (M: Uint8Array) => {
-          const P = padding(M, cipher.BLOCK_SIZE)
-          const C = new Uint8Array(P.byteLength)
-          for (let i = 0; i < P.byteLength; i += cipher.BLOCK_SIZE) {
-            const B = P.slice(i, i + cipher.BLOCK_SIZE)
-            C.set(c.encrypt(B), i)
-          }
-          return C
-        },
-        decrypt: (C: Uint8Array) => {
-          if (C.byteLength % cipher.BLOCK_SIZE !== 0) {
-            throw new KitError('Ciphertext length must be a multiple of block size')
-          }
-          const P = new Uint8Array(C.byteLength)
-          for (let i = 0; i < C.byteLength; i += cipher.BLOCK_SIZE) {
-            const B = C.slice(i, i + cipher.BLOCK_SIZE)
-            P.set(c.decrypt(B), i)
-          }
-          return padding(P)
-        },
-      })
-    },
-  { ALGORITHM: 'ECB' },
-)
+function inc32(iv: Uint8Array) {
+  const view = new DataView(iv.buffer)
+  let counter = view.getUint32(iv.byteLength - 4, false)
+  counter = (counter + 1) % 0xFFFFFFFF
+  view.setUint32(iv.byteLength - 4, counter, false)
+  return iv
+}
 
-export const cbc = createCipherMode(
-  (cipher: CipherAlgorithm, padding: Padding = PKCS7) =>
-    (K: Uint8Array, iv: Uint8Array) => {
-      // iv 检查
-      const BLOCK_SIZE = cipher.BLOCK_SIZE
-      if (iv.byteLength !== BLOCK_SIZE) {
-        throw new KitError('iv length must be equal to block size')
-      }
-      const c = cipher(K)
-      return {
-        encrypt: (M: Uint8Array) => {
-          const P = padding(M, BLOCK_SIZE)
-          const C = new Uint8Array(P.byteLength)
-          let prev = iv
-          for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
-            const B = P.slice(i, i + BLOCK_SIZE)
-            B.forEach((_, i) => B[i] ^= prev[i])
-            prev = c.encrypt(B)
-            C.set(prev, i)
-          }
-          return C
-        },
-        decrypt: (C: Uint8Array) => {
-          if (C.byteLength % BLOCK_SIZE !== 0) {
-            throw new KitError('Ciphertext length must be a multiple of block size')
-          }
-          const P = new Uint8Array(C.byteLength)
-          let prev = iv
-          for (let i = 0; i < C.byteLength; i += BLOCK_SIZE) {
-            const B = C.slice(i, i + BLOCK_SIZE)
-            const _P = c.decrypt(B)
-            _P.forEach((_, i) => _P[i] ^= prev[i])
-            P.set(_P, i)
-            prev = B
-          }
-          return padding(P)
-        },
-      }
-    },
-  { ALGORITHM: 'CBC' },
-)
+interface ModeVerifiable {
+  /**
+   * @param {Uint8Array} C - 密文
+   * @param {Uint8Array} A - 附加数据
+   * @returns {Uint8Array} - 签名
+   */
+  _sign: (C: Uint8Array, A?: Uint8Array) => Uint8Array
+  /**
+   * @param {string | Uint8Array} C - 密文
+   * @param {string | Uint8Array} A - 附加数据
+   * @returns {string} - 签名
+   */
+  sign: (C: string | Uint8Array, A?: string | Uint8Array) => string
+  /**
+   * @param {Uint8Array} T - 签名
+   * @param {Uint8Array} C - 密文
+   * @param {Uint8Array} A - 附加数据
+   * @returns {boolean} - 是否验证通过
+   */
+  _verify: (T: Uint8Array, C: Uint8Array, A?: Uint8Array) => boolean
+  /**
+   * @param {string | Uint8Array} T - 签名
+   * @param {string | Uint8Array} C - 密文
+   * @param {string | Uint8Array} A - 附加数据
+   * @returns {boolean} - 是否验证通过
+   */
+  verify: (T: string | Uint8Array, C: string | Uint8Array, A?: string | Uint8Array) => boolean
+}
+interface ModeCipherable {
+  /**
+   * @param {Uint8Array} M - 消息
+   */
+  _encrypt: (M: Uint8Array) => Uint8Array
+  /**
+   * @param {string | Uint8Array} M - 消息
+   * @param {Codec} CODEC - 输出编码器
+   */
+  encrypt: (M: string | Uint8Array, CODEC?: Codec) => string
+  /**
+   * @param {Uint8Array} C - 密文
+   */
+  _decrypt: (C: Uint8Array) => Uint8Array
+  /**
+   * @param {string | Uint8Array} C - 密文
+   * @param {Codec} CODEC - 输出编码器
+   */
+  decrypt: (C: string | Uint8Array, CODEC?: Codec) => string
+}
 
-export const cfb = createCipherMode(
-  (cipher: CipherAlgorithm, padding: Padding = PKCS7) =>
-    (K: Uint8Array, iv: Uint8Array) => {
-      // iv 检查
-      const BLOCK_SIZE = cipher.BLOCK_SIZE
-      if (iv.byteLength !== BLOCK_SIZE) {
-        throw new KitError('iv length must be equal to block size')
-      }
-      const c = cipher(K)
-      return {
-        encrypt: (M: Uint8Array) => {
-          const P = padding(M, BLOCK_SIZE)
-          const C = new Uint8Array(P.byteLength)
-          let prev = iv
-          for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
-            const B = P.slice(i, i + BLOCK_SIZE)
-            prev = c.encrypt(prev)
-            prev.forEach((_, i) => prev[i] ^= B[i])
-            C.set(prev, i)
-          }
-          return C
-        },
-        decrypt: (C: Uint8Array) => {
-          if (C.byteLength % BLOCK_SIZE !== 0) {
-            throw new KitError('Ciphertext length must be a multiple of block size')
-          }
-          const P = new Uint8Array(C.byteLength)
-          let prev = iv
-          for (let i = 0; i < C.byteLength; i += BLOCK_SIZE) {
-            const B = C.slice(i, i + BLOCK_SIZE)
-            const _P = c.encrypt(prev)
-            _P.forEach((_, i) => _P[i] ^= B[i])
-            P.set(_P, i)
-            prev = B
-          }
-          return padding(P)
-        },
-      }
-    },
-  { ALGORITHM: 'CFB' },
-)
-
-export const ofb = createCipherMode(
-  (cipher: CipherAlgorithm, padding: Padding = PKCS7) =>
-    (K: Uint8Array, iv: Uint8Array) => {
-      // iv 检查
-      const BLOCK_SIZE = cipher.BLOCK_SIZE
-      if (iv.byteLength !== BLOCK_SIZE) {
-        throw new KitError('iv length must be equal to block size')
-      }
-      const c = cipher(K)
-      return {
-        encrypt: (M: Uint8Array) => {
-          const P = padding(M, BLOCK_SIZE)
-          const C = new Uint8Array(P.byteLength)
-          let prev = iv
-          for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
-            const B = P.slice(i, i + BLOCK_SIZE)
-            prev = c.encrypt(prev)
-            prev.forEach((_, i) => B[i] ^= _)
-            C.set(B, i)
-          }
-          return C
-        },
-        decrypt: (C: Uint8Array) => {
-          if (C.byteLength % BLOCK_SIZE !== 0) {
-            throw new KitError('Ciphertext length must be a multiple of block size')
-          }
-          const P = new Uint8Array(C.byteLength)
-          let prev = iv
-          for (let i = 0; i < C.byteLength; i += BLOCK_SIZE) {
-            const B = C.slice(i, i + BLOCK_SIZE)
-            prev = c.encrypt(prev)
-            B.forEach((_, i) => B[i] ^= prev[i])
-            P.set(B, i)
-          }
-          return padding(P)
-        },
-      }
-    },
-  { ALGORITHM: 'OFB' },
-)
-
-export const ctr = createCipherMode(
-  (cipher: CipherAlgorithm, padding: Padding = PKCS7) =>
-    (K: Uint8Array, iv: Uint8Array) => {
-      // iv 检查
-      const BLOCK_SIZE = cipher.BLOCK_SIZE
-      if (iv.byteLength !== BLOCK_SIZE) {
-        throw new KitError('nonce(iv) length must be equal to block size')
-      }
-      const c = cipher(K)
-      return {
-        encrypt: (M: Uint8Array) => {
-          const P = padding(M, BLOCK_SIZE)
-          const C = new Uint8Array(P.byteLength)
-          const NonceCounter = iv.slice(0)
-          const view = new DataView(NonceCounter.buffer)
-          const COUNTER_OFFSET = BLOCK_SIZE - 8
-          let counter = view.getBigUint64(COUNTER_OFFSET, false)
-          for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
-            view.setBigUint64(COUNTER_OFFSET, counter, false)
-            const B = P.slice(i, i + BLOCK_SIZE)
-            c.encrypt(NonceCounter).forEach((_, i) => B[i] ^= _)
-            C.set(B, i)
-            counter++
-          }
-          return C
-        },
-        decrypt: (C: Uint8Array) => {
-          if (C.byteLength % BLOCK_SIZE !== 0) {
-            throw new KitError('Ciphertext length must be a multiple of block size')
-          }
-          const P = new Uint8Array(C.byteLength)
-          const NonceCounter = iv.slice(0)
-          const view = new DataView(NonceCounter.buffer)
-          const COUNTER_OFFSET = BLOCK_SIZE - 8
-          let counter = view.getBigUint64(COUNTER_OFFSET, false)
-          for (let i = 0; i < C.byteLength; i += BLOCK_SIZE) {
-            view.setBigUint64(COUNTER_OFFSET, counter, false)
-            const B = C.slice(i, i + BLOCK_SIZE)
-            c.encrypt(NonceCounter).forEach((_, i) => B[i] ^= _)
-            P.set(B, i)
-            counter++
-          }
-          return padding(P)
-        },
-      }
-    },
-  { ALGORITHM: 'CTR' },
-)
-
-export const pcbc = createCipherMode(
-  (cipher: CipherAlgorithm, padding: Padding = PKCS7) =>
-    (K: Uint8Array, iv: Uint8Array) => {
-      // iv 检查
-      const BLOCK_SIZE = cipher.BLOCK_SIZE
-      if (iv.byteLength !== BLOCK_SIZE) {
-        throw new KitError('iv length must be equal to block size')
-      }
-      const c = cipher(K)
-      return {
-        encrypt: (M: Uint8Array) => {
-          const P = padding(M, BLOCK_SIZE)
-          const C = new Uint8Array(P.byteLength)
-          const prev = iv.slice(0)
-          for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
-            const B = P.slice(i, i + BLOCK_SIZE)
-            prev.forEach((_, i) => prev[i] ^= B[i])
-            const _C = c.encrypt(prev)
-            C.set(_C, i)
-            _C.forEach((_, i) => prev[i] = _C[i] ^ B[i])
-          }
-          return C
-        },
-        decrypt: (C: Uint8Array) => {
-          if (C.byteLength % BLOCK_SIZE !== 0) {
-            throw new KitError('Ciphertext length must be a multiple of block size')
-          }
-          const P = new Uint8Array(C.byteLength)
-          const prev = iv.slice(0)
-          for (let i = 0; i < C.byteLength; i += BLOCK_SIZE) {
-            const B = C.slice(i, i + BLOCK_SIZE)
-            const _P = c.decrypt(B)
-            _P.forEach((_, i) => _P[i] ^= prev[i])
-            P.set(_P, i)
-            B.forEach((_, i) => prev[i] = B[i] ^ _P[i])
-          }
-          return padding(P)
-        },
-      }
-    },
-  { ALGORITHM: 'PCBC' },
-)
-
-// TODO GCM CCM
-
-// * 加密套件包装器
-
-export interface CipherConfig {
+export interface ECBConfig {
   /**
    * @default PKCS7
    */
   PADDING?: Padding
   /**
-   * @default Hex
+   * @default HEX
    */
   KEY_CODEC?: Codec
-  /**
-   * @default Hex
-   */
-  IV_CODEC?: Codec
   /**
    * @default UTF8
    */
@@ -531,119 +275,778 @@ export interface CipherConfig {
    */
   DECRYPT_OUTPUT_CODEC?: Codec
 }
-interface SuiteDescription {
+export interface ECBModeBaseInfo {
   ALGORITHM: string
+}
+export interface ECBModeInfo extends CipherInfo, ECBModeBaseInfo, Required<ECBConfig> {
+}
+export interface ECBMode extends ECBModeBaseInfo {
+  (cipher: Cipher, config?: ECBConfig):
+    ((K: string | Uint8Array) =>
+      ModeCipherable & ECBModeInfo) & ECBModeInfo
+}
+export const ecb = wrap<ECBMode>(
+  (cipher: Cipher, config: ECBConfig = {}) => {
+    const { PADDING = PKCS7 } = config
+    const { KEY_CODEC = HEX } = config
+    const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+    const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+
+    const info: ECBModeInfo = {
+      ALGORITHM: `ECB-${cipher.ALGORITHM}`,
+      BLOCK_SIZE: cipher.BLOCK_SIZE,
+      KEY_SIZE: cipher.KEY_SIZE,
+      PADDING,
+      KEY_CODEC,
+      ENCRYPT_INPUT_CODEC,
+      ENCRYPT_OUTPUT_CODEC,
+      DECRYPT_INPUT_CODEC,
+      DECRYPT_OUTPUT_CODEC,
+    }
+
+    const suite = (K: string | Uint8Array) => {
+      K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
+      const c = cipher(K)
+      const encrypt = (M: Uint8Array) => {
+        const P = PADDING(M, cipher.BLOCK_SIZE)
+        const C = new Uint8Array(P.byteLength)
+        for (let i = 0; i < P.byteLength; i += cipher.BLOCK_SIZE) {
+          const B = P.subarray(i, i + cipher.BLOCK_SIZE)
+          C.set(c.encrypt(B), i)
+        }
+        return C
+      }
+      const decrypt = (C: Uint8Array) => {
+        if (C.byteLength % cipher.BLOCK_SIZE !== 0) {
+          throw new KitError('Ciphertext length must be a multiple of block size')
+        }
+        const P = new Uint8Array(C.byteLength)
+        for (let i = 0; i < C.byteLength; i += cipher.BLOCK_SIZE) {
+          const B = C.subarray(i, i + cipher.BLOCK_SIZE)
+          P.set(c.decrypt(B), i)
+        }
+        return PADDING(P)
+      }
+      const cipherable: ModeCipherable = {
+        _encrypt: encrypt,
+        _decrypt: decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
+      }
+      return wrap(cipherable, info)
+    }
+
+    return wrap(suite, info)
+  },
+  { ALGORITHM: 'ECB' },
+)
+
+export interface CBCConfig extends ECBConfig {
   /**
-   * padding scheme
-   *
-   * 填充方案
+   * @default HEX
    */
-  PADDING: Padding
-  /**
-   * Block size (byte)
-   *
-   * 分组大小 (字节)
-   */
-  BLOCK_SIZE: number
-  /**
-   * Key size (byte)
-   *
-   * 密钥大小 (字节)
-   */
-  KEY_SIZE: number
-  KEY_CODEC: Codec
+  IV_CODEC?: Codec
+}
+export interface CBCModeBaseInfo extends ECBModeBaseInfo {
+}
+export interface CBCModeInfo extends CipherInfo, CBCModeBaseInfo, Required<CBCConfig> {
   /**
    * IV size (byte)
    *
    * IV 大小 (字节)
    */
   IV_SIZE: number
-  IV_CODEC: Codec
-  ENCRYPT_INPUT_CODEC?: Codec
-  ENCRYPT_OUTPUT_CODEC?: Codec
-  DECRYPT_INPUT_CODEC?: Codec
-  DECRYPT_OUTPUT_CODEC?: Codec
 }
-interface CipherECB extends SuiteDescription {
-  (K: string | Uint8Array): {
-    encrypt: (M: string | Uint8Array, CODEC?: Codec) => string
-    _encrypt: (M: Uint8Array) => Uint8Array
-    decrypt: (C: string | Uint8Array, CODEC?: Codec) => string
-    _decrypt: (C: Uint8Array) => Uint8Array
-  } & SuiteDescription
+export interface CBCMode extends CBCModeBaseInfo {
+  (cipher: Cipher, config?: CBCConfig):
+    ((K: string | Uint8Array, iv: string | Uint8Array) =>
+      ModeCipherable & CBCModeInfo) & CBCModeInfo
 }
-interface CipherIV extends SuiteDescription {
-  (K: string | Uint8Array, iv: string | Uint8Array): {
-    encrypt: (M: string | Uint8Array, CODEC?: Codec) => string
-    _encrypt: (M: Uint8Array) => Uint8Array
-    decrypt: (C: string | Uint8Array, CODEC?: Codec) => string
-    _decrypt: (C: Uint8Array) => Uint8Array
-  } & SuiteDescription
-}
-type CipherSuite<T = 'iv'> = T extends 'ECB' ? CipherECB : CipherIV
+export const cbc = wrap<CBCMode>(
+  (cipher: Cipher, config: CBCConfig = {}) => {
+    const { PADDING = PKCS7 } = config
+    const { KEY_CODEC = HEX, IV_CODEC = HEX } = config
+    const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+    const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
 
-/**
- * @description
- * Create a cipher suite.
- *
- * 创建一个加密套件.
- *
- * @param {CipherAlgorithm} algorithm - 加密算法
- * @param {CipherMode} mode - 工作模式
- * @param {CipherConfig} config - 配置
- */
-export function createCipher(algorithm: CipherAlgorithm, mode: CipherMode<'ECB'>, config?: CipherConfig): CipherSuite<'ECB'>
-export function createCipher(algorithm: CipherAlgorithm, mode: CipherMode, config?: CipherConfig): CipherSuite
-export function createCipher(algorithm: CipherAlgorithm, mode: CipherMode | CipherMode<'ECB'>, config?: CipherConfig): CipherSuite | CipherSuite<'ECB'> {
-  config = config || {}
-  const { PADDING = PKCS7 } = config
-  const { KEY_CODEC = HEX, IV_CODEC = HEX } = config
-  const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
-  const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+    const info: CBCModeInfo = {
+      ALGORITHM: `CBC-${cipher.ALGORITHM}`,
+      BLOCK_SIZE: cipher.BLOCK_SIZE,
+      KEY_SIZE: cipher.KEY_SIZE,
+      IV_SIZE: cipher.BLOCK_SIZE,
+      PADDING,
+      KEY_CODEC,
+      IV_CODEC,
+      ENCRYPT_INPUT_CODEC,
+      ENCRYPT_OUTPUT_CODEC,
+      DECRYPT_INPUT_CODEC,
+      DECRYPT_OUTPUT_CODEC,
+    }
 
-  function isECBMode(mode: CipherMode | CipherMode<'ECB'>): mode is CipherMode<'ECB'> {
-    return mode.ALGORITHM === 'ECB'
+    const suite = (K: string | Uint8Array, iv: string | Uint8Array) => {
+      K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
+      iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
+      // iv 检查
+      const BLOCK_SIZE = cipher.BLOCK_SIZE
+      if (iv.byteLength !== BLOCK_SIZE) {
+        throw new KitError('iv length must be equal to block size')
+      }
+      const c = cipher(K)
+      const encrypt = (M: Uint8Array) => {
+        const P = PADDING(M, BLOCK_SIZE)
+        const C = new Uint8Array(P.byteLength)
+        let prev = iv.slice(0)
+        for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
+          const B = P.subarray(i, i + BLOCK_SIZE)
+          prev.forEach((_, i) => prev[i] ^= B[i])
+          prev = c.encrypt(prev)
+          C.set(prev, i)
+        }
+        return C
+      }
+      const decrypt = (C: Uint8Array) => {
+        if (C.byteLength % BLOCK_SIZE !== 0) {
+          throw new KitError('Ciphertext length must be a multiple of block size')
+        }
+        const P = new Uint8Array(C.byteLength)
+        let prev = iv
+        for (let i = 0; i < C.byteLength; i += BLOCK_SIZE) {
+          const B = C.slice(i, i + BLOCK_SIZE)
+          c.decrypt(B).forEach((_, i) => prev[i] ^= _)
+          P.set(prev, i)
+          prev = B
+        }
+        return PADDING(P)
+      }
+      const cipherable: ModeCipherable = {
+        _encrypt: encrypt,
+        _decrypt: decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
+      }
+      return wrap(cipherable, info)
+    }
+
+    return wrap(suite, info)
+  },
+  { ALGORITHM: 'CBC' },
+)
+
+export interface CFBConfig extends CBCConfig {
+}
+export interface CFBModeBaseInfo extends CBCModeBaseInfo {
+}
+export interface CFBModeInfo extends CipherInfo, CFBModeBaseInfo, Required<CFBConfig> {
+  /**
+   * IV size (byte)
+   *
+   * IV 大小 (字节)
+   */
+  IV_SIZE: number
+}
+export interface CFBMode extends CFBModeBaseInfo {
+  (cipher: Cipher, config?: CFBConfig):
+    ((K: string | Uint8Array, iv: string | Uint8Array) =>
+      ModeCipherable & CFBModeInfo) & CFBModeInfo
+}
+export const cfb = wrap<CFBMode>(
+  (cipher: Cipher, config: CBCConfig = {}) => {
+    const { PADDING = PKCS7 } = config
+    const { KEY_CODEC = HEX, IV_CODEC = HEX } = config
+    const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+    const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+
+    const info: CFBModeInfo = {
+      ALGORITHM: `CFB-${cipher.ALGORITHM}`,
+      BLOCK_SIZE: cipher.BLOCK_SIZE,
+      KEY_SIZE: cipher.KEY_SIZE,
+      IV_SIZE: cipher.BLOCK_SIZE,
+      PADDING,
+      KEY_CODEC,
+      IV_CODEC,
+      ENCRYPT_INPUT_CODEC,
+      ENCRYPT_OUTPUT_CODEC,
+      DECRYPT_INPUT_CODEC,
+      DECRYPT_OUTPUT_CODEC,
+    }
+
+    const suite = (K: string | Uint8Array, iv: string | Uint8Array) => {
+      K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
+      iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
+      // iv 检查
+      const BLOCK_SIZE = cipher.BLOCK_SIZE
+      if (iv.byteLength !== BLOCK_SIZE) {
+        throw new KitError('iv length must be equal to block size')
+      }
+      const c = cipher(K)
+      const encrypt = (M: Uint8Array) => {
+        const P = PADDING(M, BLOCK_SIZE)
+        const C = new Uint8Array(P.byteLength)
+        let prev = iv
+        for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
+          const B = P.subarray(i, i + BLOCK_SIZE)
+          prev = c.encrypt(prev)
+          prev.forEach((_, i) => prev[i] ^= B[i])
+          C.set(prev.subarray(0, B.byteLength), i)
+        }
+        return C
+      }
+      const decrypt = (C: Uint8Array) => {
+        const P = new Uint8Array(C.byteLength)
+        let prev = iv
+        for (let i = 0; i < C.byteLength; i += BLOCK_SIZE) {
+          const B = C.subarray(i, i + BLOCK_SIZE)
+          prev = c.encrypt(prev)
+          B.forEach((_, i) => prev[i] ^= B[i])
+          P.set(prev.subarray(0, B.byteLength), i)
+          prev = B
+        }
+        return PADDING(P)
+      }
+      const cipherable: ModeCipherable = {
+        _encrypt: encrypt,
+        _decrypt: decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
+      }
+      return wrap(cipherable, info)
+    }
+
+    return wrap(suite, info)
+  },
+  { ALGORITHM: 'CFB' },
+)
+
+export interface OFBConfig extends CBCConfig {
+}
+export interface OFBModeBaseInfo extends CBCModeBaseInfo {
+}
+export interface OFBModeInfo extends CipherInfo, OFBModeBaseInfo, Required<OFBConfig> {
+  /**
+   * IV size (byte)
+   *
+   * IV 大小 (字节)
+   */
+  IV_SIZE: number
+}
+export interface OFBMode extends OFBModeBaseInfo {
+  (cipher: Cipher, config?: OFBConfig):
+    ((K: string | Uint8Array, iv: string | Uint8Array) =>
+      ModeCipherable & OFBModeInfo) & OFBModeInfo
+}
+export const ofb = wrap<OFBMode>(
+  (cipher: Cipher, config: CBCConfig = {}) => {
+    const { PADDING = PKCS7 } = config
+    const { KEY_CODEC = HEX, IV_CODEC = HEX } = config
+    const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+    const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+
+    const info: OFBModeInfo = {
+      ALGORITHM: `OFB-${cipher.ALGORITHM}`,
+      BLOCK_SIZE: cipher.BLOCK_SIZE,
+      KEY_SIZE: cipher.KEY_SIZE,
+      IV_SIZE: cipher.BLOCK_SIZE,
+      PADDING,
+      KEY_CODEC,
+      IV_CODEC,
+      ENCRYPT_INPUT_CODEC,
+      ENCRYPT_OUTPUT_CODEC,
+      DECRYPT_INPUT_CODEC,
+      DECRYPT_OUTPUT_CODEC,
+    }
+
+    const suite = (K: string | Uint8Array, iv: string | Uint8Array) => {
+      K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
+      iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
+      // iv 检查
+      const BLOCK_SIZE = cipher.BLOCK_SIZE
+      if (iv.byteLength !== BLOCK_SIZE) {
+        throw new KitError('iv length must be equal to block size')
+      }
+      const c = cipher(K)
+      let prev = c.encrypt(iv)
+      let S = prev
+      let current = 1
+      const squeeze = (count: number) => {
+        if (current > count) {
+          return S
+        }
+        let offset = S.byteLength
+        const buffer = new Uint8Array(count * BLOCK_SIZE)
+        buffer.set(S)
+        while (current < count) {
+          prev = c.encrypt(prev)
+          buffer.set(prev, offset)
+          offset += BLOCK_SIZE
+          current++
+        }
+        S = buffer
+        return S
+      }
+      const encrypt = (M: Uint8Array) => {
+        const P = PADDING(M, BLOCK_SIZE)
+        const BLOCK_TOTAL = Math.ceil(P.byteLength / BLOCK_SIZE)
+        S = squeeze(BLOCK_TOTAL)
+        return P.map((_, i) => _ ^ S[i])
+      }
+      const decrypt = (C: Uint8Array) => {
+        const BLOCK_TOTAL = Math.ceil(C.byteLength / BLOCK_SIZE)
+        S = squeeze(BLOCK_TOTAL)
+        return PADDING(C.map((_, i) => _ ^ S[i]))
+      }
+      const cipherable: ModeCipherable = {
+        _encrypt: encrypt,
+        _decrypt: decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
+      }
+      return wrap(cipherable, info)
+    }
+
+    return wrap(suite, info)
+  },
+  { ALGORITHM: 'OFB' },
+)
+
+export interface CTRConfig extends CBCConfig {
+}
+export interface CTRModeBaseInfo extends CBCModeBaseInfo {
+}
+export interface CTRModeInfo extends CipherInfo, CTRModeBaseInfo, Required<CTRConfig> {
+  /**
+   * IV size (byte)
+   *
+   * IV 大小 (字节)
+   */
+  IV_SIZE: number
+}
+export interface CTRMode extends CTRModeBaseInfo {
+  (cipher: Cipher, config?: CTRConfig):
+    ((K: string | Uint8Array, iv: string | Uint8Array) =>
+      ModeCipherable & CTRModeInfo) & CTRModeInfo
+}
+export const ctr = wrap<CTRMode>(
+  (cipher: Cipher, config: CBCConfig = {}) => {
+    const { PADDING = PKCS7 } = config
+    const { KEY_CODEC = HEX, IV_CODEC = HEX } = config
+    const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+    const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+
+    const info: CTRModeInfo = {
+      ALGORITHM: `CTR-${cipher.ALGORITHM}`,
+      BLOCK_SIZE: cipher.BLOCK_SIZE,
+      KEY_SIZE: cipher.KEY_SIZE,
+      IV_SIZE: cipher.BLOCK_SIZE,
+      PADDING,
+      KEY_CODEC,
+      IV_CODEC,
+      ENCRYPT_INPUT_CODEC,
+      ENCRYPT_OUTPUT_CODEC,
+      DECRYPT_INPUT_CODEC,
+      DECRYPT_OUTPUT_CODEC,
+    }
+
+    const suite = (K: string | Uint8Array, iv: string | Uint8Array) => {
+      K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
+      iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
+      // iv 检查
+      const BLOCK_SIZE = cipher.BLOCK_SIZE
+      if (iv.byteLength !== BLOCK_SIZE) {
+        throw new KitError('nonce(iv) length must be equal to block size')
+      }
+      const c = cipher(K)
+      let counter = iv.slice(0)
+      let current = 1
+      let S = c.encrypt(counter)
+      const squeeze = (count: number) => {
+        if (current > count) {
+          return S
+        }
+        let offset = S.byteLength
+        const buffer = new Uint8Array(count * BLOCK_SIZE)
+        buffer.set(S)
+        while (current < count) {
+          counter = inc32(counter)
+          buffer.set(c.encrypt(counter), offset)
+          offset += BLOCK_SIZE
+          current++
+        }
+        S = buffer
+        return S
+      }
+      const encrypt = (M: Uint8Array) => {
+        const P = PADDING(M, BLOCK_SIZE)
+        const BLOCK_TOTAL = Math.ceil(P.byteLength / BLOCK_SIZE)
+        S = squeeze(BLOCK_TOTAL)
+        return P.map((_, i) => _ ^ S[i])
+      }
+      const decrypt = (C: Uint8Array) => {
+        const BLOCK_TOTAL = Math.ceil(C.byteLength / BLOCK_SIZE)
+        S = squeeze(BLOCK_TOTAL)
+        return PADDING(C.map((_, i) => _ ^ S[i]))
+      }
+      const cipherable: ModeCipherable = {
+        _encrypt: encrypt,
+        _decrypt: decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
+      }
+      return wrap(cipherable, info)
+    }
+
+    return wrap(suite, info)
+  },
+  { ALGORITHM: 'CTR' },
+)
+
+export interface PCBCConfig extends CBCConfig {
+}
+export interface PCBCModeBaseInfo extends CBCModeBaseInfo {
+}
+export interface PCBCModeInfo extends CipherInfo, PCBCModeBaseInfo, Required<PCBCConfig> {
+  /**
+   * IV size (byte)
+   *
+   * IV 大小 (字节)
+   */
+  IV_SIZE: number
+}
+export interface PCBCMode extends PCBCModeBaseInfo {
+  (cipher: Cipher, config?: PCBCConfig):
+    ((K: string | Uint8Array, iv: string | Uint8Array) =>
+      ModeCipherable & PCBCModeInfo) & PCBCModeInfo
+}
+export const pcbc = wrap<PCBCMode>(
+  (cipher: Cipher, config: CBCConfig = {}) => {
+    const { PADDING = PKCS7 } = config
+    const { KEY_CODEC = HEX, IV_CODEC = HEX } = config
+    const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+    const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+
+    const info: PCBCModeInfo = {
+      ALGORITHM: `PCBC-${cipher.ALGORITHM}`,
+      BLOCK_SIZE: cipher.BLOCK_SIZE,
+      KEY_SIZE: cipher.KEY_SIZE,
+      IV_SIZE: cipher.BLOCK_SIZE,
+      PADDING,
+      KEY_CODEC,
+      IV_CODEC,
+      ENCRYPT_INPUT_CODEC,
+      ENCRYPT_OUTPUT_CODEC,
+      DECRYPT_INPUT_CODEC,
+      DECRYPT_OUTPUT_CODEC,
+    }
+
+    const suite = (K: string | Uint8Array, iv: string | Uint8Array) => {
+      K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
+      iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
+      // iv 检查
+      const BLOCK_SIZE = cipher.BLOCK_SIZE
+      if (iv.byteLength !== BLOCK_SIZE) {
+        throw new KitError('iv length must be equal to block size')
+      }
+      const c = cipher(K)
+      const encrypt = (M: Uint8Array) => {
+        const P = PADDING(M, BLOCK_SIZE)
+        const C = new Uint8Array(P.byteLength)
+        const prev = iv.slice(0)
+        for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
+          // TODO can be subarray?
+          const B = P.slice(i, i + BLOCK_SIZE)
+          prev.forEach((_, i) => prev[i] ^= B[i])
+          const _C = c.encrypt(prev)
+          C.set(_C, i)
+          _C.forEach((_, i) => prev[i] = _C[i] ^ B[i])
+        }
+        return C
+      }
+      const decrypt = (C: Uint8Array) => {
+        if (C.byteLength % BLOCK_SIZE !== 0) {
+          throw new KitError('Ciphertext length must be a multiple of block size')
+        }
+        const P = new Uint8Array(C.byteLength)
+        const prev = iv.slice(0)
+        for (let i = 0; i < C.byteLength; i += BLOCK_SIZE) {
+          const B = C.slice(i, i + BLOCK_SIZE)
+          const _P = c.decrypt(B)
+          _P.forEach((_, i) => _P[i] ^= prev[i])
+          P.set(_P, i)
+          B.forEach((_, i) => prev[i] = B[i] ^ _P[i])
+        }
+        return PADDING(P)
+      }
+      const cipherable: ModeCipherable = {
+        _encrypt: encrypt,
+        _decrypt: decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
+      }
+      return wrap(cipherable, info)
+    }
+
+    return wrap(suite, info)
+  },
+  { ALGORITHM: 'PCBC' },
+)
+
+export interface GCMConfig extends CBCConfig {
+  /**
+   * Additional data codec
+   *
+   * 附加数据编解码器
+   *
+   * @default UTF8
+   */
+  ADDITIONAL_DATA_CODEC?: Codec
+  /**
+   * Authentication tag size (byte)
+   *
+   * 认证标签大小 (字节)
+   *
+   * @default 16
+   */
+  AUTH_TAG_SIZE?: number
+  /**
+   * @default HEX
+   */
+  AUTH_TAG_CODEC?: Codec
+}
+export interface GCMModeBaseInfo extends CBCModeBaseInfo {
+  /**
+   * IV size (byte)
+   *
+   * IV 大小 (字节)
+   *
+   * @default 12
+   */
+  IV_SIZE: number
+}
+export interface GCMModeInfo extends CipherInfo, GCMModeBaseInfo, Required<GCMConfig> {
+}
+export interface GCMMode extends GCMModeBaseInfo {
+  (cipher: Cipher, config?: GCMConfig):
+    ((K: string | Uint8Array, iv: string | Uint8Array) =>
+      ModeCipherable & ModeVerifiable & GCMModeInfo) & GCMModeInfo
+}
+function GF128Mul(X: Uint8Array, Y: Uint8Array): Uint8Array {
+  // R: E1000000000000000000000000000000
+  const RH = 0xE1n << 56n
+
+  const YView = new DataView(Y.buffer)
+  let VH = YView.getBigUint64(0, false)
+  let VL = YView.getBigUint64(8, false)
+  let ZH = 0n
+  let ZL = 0n
+
+  for (let i = 0; i < 16; i++) {
+    const x = X[i]
+    for (let j = 7; j >= 0; j--) {
+      if ((x >> j) & 1) {
+        ZH ^= VH
+        ZL ^= VL
+      }
+      const carry = VL & 1n
+      VL = (VH << 63n) | (VL >> 1n)
+      VL = VL & 0xFFFFFFFFFFFFFFFFn
+      VH = (VH >> 1n)
+      if (carry) {
+        VH ^= RH
+      }
+    }
   }
 
-  const description = {
-    ALGORITHM: `${mode.ALGORITHM}-${algorithm.ALGORITHM}`,
-    PADDING,
-    BLOCK_SIZE: algorithm.BLOCK_SIZE,
-    KEY_SIZE: algorithm.KEY_SIZE || algorithm.BLOCK_SIZE,
-    KEY_CODEC,
-    IV_SIZE: algorithm.BLOCK_SIZE,
-    IV_CODEC,
-    ENCRYPT_INPUT_CODEC,
-    ENCRYPT_OUTPUT_CODEC,
-    DECRYPT_INPUT_CODEC,
-    DECRYPT_OUTPUT_CODEC,
-  }
-
-  const fn = (K: string | Uint8Array, iv?: string | Uint8Array) => {
-    K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
-    iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
-    const m = isECBMode(mode) ? mode(algorithm, PADDING)(K) : mode(algorithm, PADDING)(K, iv!)
-    return Object.freeze({
-      _encrypt: m.encrypt,
-      encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
-        M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
-        const codec = CODEC || ENCRYPT_OUTPUT_CODEC
-        return codec.stringify(m.encrypt(M))
-      },
-      _decrypt: m.decrypt,
-      decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
-        C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
-        const codec = CODEC || DECRYPT_OUTPUT_CODEC
-        return codec.stringify(m.decrypt(C))
-      },
-      ...description,
-    })
-  }
-
-  return Object.freeze(Object.assign(
-    isECBMode(mode)
-      ? (K: string | Uint8Array) => fn(K)
-      : (K: string | Uint8Array, iv: string | Uint8Array) => fn(K, iv),
-    description,
-  ))
+  const Z = new Uint8Array(16)
+  const ZView = new DataView(Z.buffer)
+  ZView.setBigUint64(0, ZH, false)
+  ZView.setBigUint64(8, ZL, false)
+  return Z
 }
+function GHASH(H: Uint8Array, A: Uint8Array, C: Uint8Array) {
+  const A_BLOCK_TOTAL = Math.ceil(A.byteLength / 16)
+  const C_BLOCK_TOTAL = Math.ceil(C.byteLength / 16)
+  const D = new Uint8Array((A_BLOCK_TOTAL + C_BLOCK_TOTAL + 1) * 16)
+  const view = new DataView(D.buffer)
+  D.set(A)
+  D.set(C, A_BLOCK_TOTAL * 16)
+  view.setBigUint64(D.byteLength - 16, BigInt(A.byteLength << 3), false)
+  view.setBigUint64(D.byteLength - 8, BigInt(C.byteLength << 3), false)
+  let X = new Uint8Array(16)
+  for (let i = 0; i < D.byteLength; i += 16) {
+    const B = D.subarray(i, i + 16)
+    X.forEach((_, i) => X[i] ^= B[i])
+    X = GF128Mul(H, X)
+  }
+  return X
+}
+export const gcm = wrap<GCMMode>(
+  (cipher: Cipher, config: GCMConfig = {}) => {
+    const BLOCK_SIZE = cipher.BLOCK_SIZE
+    if (BLOCK_SIZE !== 16) {
+      throw new KitError('GCM mode requires a cipher with a block size of 128 bits')
+    }
+    const { PADDING = PKCS7 } = config
+    const { KEY_CODEC = HEX, IV_CODEC = HEX } = config
+    const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+    const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+    const { AUTH_TAG_SIZE = 16 } = config
+    const { ADDITIONAL_DATA_CODEC = UTF8, AUTH_TAG_CODEC = HEX } = config
+
+    const info: GCMModeInfo = {
+      ALGORITHM: `GCM-${cipher.ALGORITHM}`,
+      BLOCK_SIZE: cipher.BLOCK_SIZE,
+      KEY_SIZE: cipher.KEY_SIZE,
+      IV_SIZE: 12,
+      PADDING,
+      KEY_CODEC,
+      IV_CODEC,
+      ENCRYPT_INPUT_CODEC,
+      ENCRYPT_OUTPUT_CODEC,
+      DECRYPT_INPUT_CODEC,
+      DECRYPT_OUTPUT_CODEC,
+      AUTH_TAG_SIZE,
+      AUTH_TAG_CODEC,
+      ADDITIONAL_DATA_CODEC,
+    }
+
+    const suite = (K: string | Uint8Array, iv: string | Uint8Array) => {
+      K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
+      iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
+      const c = cipher(K)
+      const H = c.encrypt(new Uint8Array(BLOCK_SIZE))
+      let IV = new Uint8Array(16)
+      if (iv.byteLength === 12) {
+        IV.set(iv)
+        IV[15] = 1
+      }
+      else {
+        IV = GHASH(H, new Uint8Array(), iv.slice(0))
+      }
+      let S = c.encrypt(IV)
+      let current = 0
+      const squeeze = (count: number) => {
+        if (current > count) {
+          return S
+        }
+        let offset = S.byteLength
+        const buffer = new Uint8Array((count + 1) * BLOCK_SIZE)
+        buffer.set(S)
+        while (current < count) {
+          IV = inc32(IV)
+          buffer.set(c.encrypt(IV), offset)
+          offset += BLOCK_SIZE
+          current++
+        }
+        S = buffer
+        return S
+      }
+      const encrypt = (M: Uint8Array) => {
+        const P = NoPadding(M, BLOCK_SIZE)
+        const BLOCK_TOTAL = Math.ceil(P.byteLength / BLOCK_SIZE)
+        S = squeeze(BLOCK_TOTAL)
+        return P.map((_, i) => _ ^ S[i + 16])
+      }
+      const decrypt = (C: Uint8Array) => {
+        const BLOCK_TOTAL = Math.ceil(C.byteLength / BLOCK_SIZE)
+        S = squeeze(BLOCK_TOTAL)
+        return NoPadding(C.map((_, i) => _ ^ S[i + 16]))
+      }
+      const cipherable: ModeCipherable = {
+        _encrypt: encrypt,
+        _decrypt: decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
+      }
+      const sign = (C: Uint8Array, A: Uint8Array = new Uint8Array()) => {
+        const T = GHASH(H, A, C)
+        T.forEach((_, i) => T[i] ^= S[i])
+        return T.slice(0, AUTH_TAG_SIZE)
+      }
+      const verify = (T: Uint8Array, C: Uint8Array, A?: Uint8Array) => {
+        if (T.byteLength !== AUTH_TAG_SIZE) {
+          return false
+        }
+        const T1 = sign(C, A)
+        return T.every((_, i) => _ === T1[i])
+      }
+      const verifiable: ModeVerifiable = {
+        _sign: sign,
+        _verify: verify,
+        sign: (C: string | Uint8Array, A: string | Uint8Array = new Uint8Array()) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          A = typeof A === 'string' ? ADDITIONAL_DATA_CODEC.parse(A) : A
+          const T = sign(C, A)
+          return AUTH_TAG_CODEC.stringify(T)
+        },
+        verify: (T: string | Uint8Array, C: string | Uint8Array, A?: string | Uint8Array) => {
+          T = typeof T === 'string' ? AUTH_TAG_CODEC.parse(T) : T
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          A = typeof A === 'string' ? ADDITIONAL_DATA_CODEC.parse(A) : A
+          return verify(T, C, A)
+        },
+      }
+      return wrap(cipherable, verifiable, info)
+    }
+
+    return wrap(suite, info)
+  },
+  {
+    ALGORITHM: 'GCM',
+    IV_SIZE: 12,
+  },
+)

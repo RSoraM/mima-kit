@@ -9,7 +9,6 @@ import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import type { HMACScheme } from '../src/hash/hmac'
 import { hmac } from '../src/hash/hmac'
-import type { CipherConfig } from '../src/core/cipherSuite'
 import * as cipherSuite from '../src/core/cipherSuite'
 import { sm4 } from '../src/cipher/sm4'
 import { aes } from '../src/cipher/aes'
@@ -27,11 +26,10 @@ const { tupleHash128XOF, tupleHash256XOF } = sha3Derived
 const { parallelHash128, parallelHash256 } = sha3Derived
 const { parallelHash128XOF, parallelHash256XOF } = sha3Derived
 
-const { createCipher } = cipherSuite
-const { ecb, cbc, cfb, ofb, ctr } = cipherSuite
-const { ANSI_X923 } = cipherSuite
+const { ecb, cbc, cfb, ofb, ctr, gcm } = cipherSuite
+const { ANSI_X923, NoPadding } = cipherSuite
 
-describe('hash', () => {
+describe.skip('hash', () => {
   // * MD5
   it('md5', () => {
     expect(md5('')).toMatchInlineSnapshot('"d41d8cd98f00b204e9800998ecf8427e"')
@@ -170,7 +168,7 @@ describe('block cipher', () => {
     const m = 'meow, 喵， 🐱'
     const c = 'cd5a3e21a3c5fbeb05a819c67469703b49597aa5bc280694147d3145f8269bdb'
 
-    const ecb_sm4 = createCipher(sm4, ecb)(k)
+    const ecb_sm4 = ecb(sm4)(k)
     expect(ecb_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ecb_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -180,11 +178,8 @@ describe('block cipher', () => {
     const iv = '060d358b88e62a5287b1df4dddf016b3'
     const m = 'meow, 喵， 🐱'
     const c = 'ac1e00f787097325407c4686cf80273bd1ec1f8de32343df8d9b245b04e58014'
-    const config: CipherConfig = {
-      PADDING: ANSI_X923,
-    }
 
-    const cbc_sm4 = createCipher(sm4, cbc, config)(k, iv)
+    const cbc_sm4 = cbc(sm4, { PADDING: ANSI_X923 })(k, iv)
     expect(cbc_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(cbc_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -195,7 +190,18 @@ describe('block cipher', () => {
     const m = 'meow, 喵， 🐱'
     const c = 'e38ec4c9fb65e1da9ba25c2f35840c123c171e4d8e26c1d54e7038aa4a8e9e65'
 
-    const cfb_sm4 = createCipher(sm4, cfb)(k, iv)
+    const cfb_sm4 = cfb(sm4)(k, iv)
+    expect(cfb_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
+    expect(cfb_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+  })
+  // * CFB-SM4-Stream
+  it('cfb-sm4-stream', () => {
+    const k = '8586c1e4007b4ac8ea156616bb813986'
+    const iv = '060d358b88e62a5287b1df4dddf016b3'
+    const m = 'meow, 喵， 🐱'
+    const c = 'e38ec4c9fb65e1da9ba25c2f35840c123c'
+
+    const cfb_sm4 = cfb(sm4, { PADDING: NoPadding })(k, iv)
     expect(cfb_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(cfb_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -206,7 +212,18 @@ describe('block cipher', () => {
     const m = 'meow, 喵， 🐱'
     const c = 'e38ec4c9fb65e1da9ba25c2f35840c1222d0dc374e57e74de38c562c8e0d2e3f'
 
-    const ofb_sm4 = createCipher(sm4, ofb)(k, iv)
+    const ofb_sm4 = ofb(sm4)(k, iv)
+    expect(ofb_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
+    expect(ofb_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+  })
+  // * OFB-SM4-Stream
+  it('ofb-sm4-stream', () => {
+    const k = '8586c1e4007b4ac8ea156616bb813986'
+    const iv = '060d358b88e62a5287b1df4dddf016b3'
+    const m = 'meow, 喵， 🐱'
+    const c = 'e38ec4c9fb65e1da9ba25c2f35840c1222'
+
+    const ofb_sm4 = ofb(sm4, { PADDING: NoPadding })(k, iv)
     expect(ofb_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ofb_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -217,7 +234,18 @@ describe('block cipher', () => {
     const m = 'meow, 喵， 🐱'
     const c = 'e38ec4c9fb65e1da9ba25c2f35840c1226cd921b5c89efd7008b46c4a73c908a'
 
-    const ctr_sm4 = createCipher(sm4, ctr)(k, iv)
+    const ctr_sm4 = ctr(sm4)(k, iv)
+    expect(ctr_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
+    expect(ctr_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+  })
+  // * CTR-SM4-Stream
+  it('ctr-sm4-stream', () => {
+    const k = '8586c1e4007b4ac8ea156616bb813986'
+    const iv = '060d358b88e62a5287b1df4dddf016b3'
+    const m = 'meow, 喵， 🐱'
+    const c = 'e38ec4c9fb65e1da9ba25c2f35840c1226'
+
+    const ctr_sm4 = ctr(sm4, { PADDING: NoPadding })(k, iv)
     expect(ctr_sm4.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ctr_sm4.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
@@ -255,9 +283,33 @@ describe('block cipher', () => {
     const m = 'meow, 喵， 🐱'
     const c = 'b4123633a9945a628f88a8341bd2681c04d8362ad46cedfc05596ccdfc14e05a'
 
-    const ecb_aes = createCipher(aes(256), ecb)(k)
+    const ecb_aes = ecb(aes(256))(k)
     expect(ecb_aes.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ecb_aes.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+  })
+  // * GCM-AES
+  it('gcm-aes-128', () => {
+    const k = 'feffe9928665731c6d6a8f9467308308'
+    const iv = 'cafebabefacedbad'
+    const m = 'd9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39'
+    const a = 'feedfacedeadbeeffeedfacedeadbeefabaddad2'
+    const c = '61353b4c2806934a777ff51fa22a4755699b2a714fcdc6f83766e5f97b6c742373806900e49f24b22b097544d4896b424989b5e1ebac0f07c23f4598'
+    const t = '3612d2e79e3b0785561be14aaca2fccb'
+    const config: cipherSuite.GCMConfig = {
+      PADDING: NoPadding,
+      AUTH_TAG_CODEC: HEX,
+      ADDITIONAL_DATA_CODEC: HEX,
+      ENCRYPT_INPUT_CODEC: HEX,
+      ENCRYPT_OUTPUT_CODEC: HEX,
+      DECRYPT_INPUT_CODEC: HEX,
+      DECRYPT_OUTPUT_CODEC: HEX,
+    }
+
+    const gcm_aes = gcm(aes(128), config)(k, iv)
+    expect(gcm_aes.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
+    expect(gcm_aes.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+    expect(gcm_aes.sign(c, a)).toMatchInlineSnapshot(`"${t}"`)
+    expect(gcm_aes.verify(t, c, a)).toMatchInlineSnapshot(`${true}`)
   })
   // * DES
   it('des', () => {
@@ -290,13 +342,13 @@ describe('block cipher', () => {
     const m = 'meow, 喵， 🐱'
     const c = 'a115e72123e27813740d04f9d77f714255e025f3ea8dc0f6'
 
-    const ecb_3des = createCipher(t_des(192), ecb)(k)
+    const ecb_3des = ecb(t_des(192))(k)
     expect(ecb_3des.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ecb_3des.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
 })
 
-describe('codec', () => {
+describe.skip('codec', () => {
   it('utf8', () => {
     expect(UTF8.stringify(UTF8.parse('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
   })

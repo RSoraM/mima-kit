@@ -295,3 +295,8 @@ export const CSV: Codec = {
   },
   FORMAT: 'core-socialist-values',
 }
+
+export const Buffer = {
+  from: (input: string, codec: Codec) => codec.parse(input),
+  to: (input: Uint8Array, codec: Codec) => codec.stringify(input),
+}

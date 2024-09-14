@@ -55,6 +55,14 @@ export function joinBuffer(...buffers: ArrayBuffer[]) {
   return result
 }
 
+export function wrap<T = any>(...args: any[]): T {
+  if (args.length === 0) {
+    return {} as T
+  }
+  // @ts-expect-error Object assign
+  return Object.freeze(Object.assign(...args))
+}
+
 export class KitError extends Error {
   constructor(message: string) {
     super(message)

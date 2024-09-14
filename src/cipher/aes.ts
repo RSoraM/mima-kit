@@ -1,5 +1,5 @@
 import { KitError } from '../core/utils'
-import { createCipherAlgorithm } from '../core/cipherSuite'
+import { createCipher } from '../core/cipherSuite'
 
 // * Constants
 
@@ -211,7 +211,7 @@ function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
  */
 export function aes(b: 128 | 192 | 256) {
   const Nr = b === 128 ? 10 : (b === 192 ? 12 : 14)
-  return createCipherAlgorithm(
+  return createCipher(
     (K: Uint8Array) => {
       if (K.byteLength !== b >> 3) {
         throw new KitError(`Key length must be ${b >> 3} bytes`)

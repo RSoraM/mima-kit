@@ -1,5 +1,5 @@
 import { KitError } from '../core/utils'
-import { createCipherAlgorithm } from '../core/cipherSuite'
+import { createCipher } from '../core/cipherSuite'
 
 // * Constants
 
@@ -118,7 +118,7 @@ function Cipher(M: Uint8Array, K: Uint8Array) {
  *
  * 数据加密标准（DES）分组密码算法.
  */
-export const des = createCipherAlgorithm(
+export const des = createCipher(
   (K: Uint8Array) => {
     const key_set = generateKeys(K)
     const inv_key_set = reverseKeys(key_set)
@@ -153,7 +153,7 @@ export const des = createCipherAlgorithm(
  * @param {128 | 192} k - Key length (bits)
  */
 export function t_des(k: 128 | 192) {
-  return createCipherAlgorithm(
+  return createCipher(
     (K: Uint8Array) => {
       if (K.byteLength !== k >> 3) {
         throw new KitError(`Key length must be ${k >> 3} bytes`)
