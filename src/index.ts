@@ -56,13 +56,13 @@ export type { HMACScheme } from './hash/hmac'
 export { hmac } from './hash/hmac'
 
 // * Block Cipher Modes
-export { ecb, ECBConfig } from './core/cipherSuite'
-export { cbc, CBCConfig } from './core/cipherSuite'
-export { cfb, CFBConfig } from './core/cipherSuite'
-export { ofb, OFBConfig } from './core/cipherSuite'
-export { ctr, CTRConfig } from './core/cipherSuite'
-export { gcm, GCMConfig } from './core/cipherSuite'
-export { pcbc, PCBCConfig } from './core/cipherSuite'
+export { ecb, type ECBConfig } from './core/cipherSuite'
+export { cbc, type CBCConfig } from './core/cipherSuite'
+export { cfb, type CFBConfig } from './core/cipherSuite'
+export { ofb, type OFBConfig } from './core/cipherSuite'
+export { ctr, type CTRConfig } from './core/cipherSuite'
+export { gcm, type GCMConfig } from './core/cipherSuite'
+export { pcbc, type PCBCConfig } from './core/cipherSuite'
 
 // * Block Cipher Padding
 export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4, NoPadding } from './core/cipherSuite'

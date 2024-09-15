@@ -10,6 +10,7 @@ export default antfu(
   {
     rules: {
       // overrides
+      'style/indent': 'off',
     },
   },
 )

@@ -200,7 +200,7 @@ function inc32(iv: Uint8Array) {
   return iv
 }
 
-interface ModeVerifiable {
+export interface ModeVerifiable {
   /**
    * @param {Uint8Array} C - 密文
    * @param {Uint8Array} A - 附加数据
@@ -228,7 +228,7 @@ interface ModeVerifiable {
    */
   verify: (T: string | Uint8Array, C: string | Uint8Array, A?: string | Uint8Array) => boolean
 }
-interface ModeCipherable {
+export interface ModeCipherable {
   /**
    * @param {Uint8Array} M - 消息
    */
