@@ -9,7 +9,10 @@
   "homepage": "https://github.com/RSoraM/mima-kit#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RSoraM/mima-kit.git"
+    "url": "https://github.com/RSoraM/mima-kit.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "bugs": "https://github.com/RSoraM/mima-kit/issues",
   "keywords": [
