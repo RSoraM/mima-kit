@@ -9,10 +9,11 @@ import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import type { HMACScheme } from '../src/hash/hmac'
 import { hmac } from '../src/hash/hmac'
-import * as cipherSuite from '../src/core/cipherSuite'
+import * as cipherSuite from '../src/core/cipher'
 import { sm4 } from '../src/cipher/sm4'
 import { aes } from '../src/cipher/aes'
 import { des, t_des } from '../src/cipher/des'
+import { arc4 } from '../src/cipher/arc4'
 
 const { sha3_224, sha3_256 } = sha3
 const { sha3_384, sha3_512 } = sha3
@@ -345,6 +346,22 @@ describe('block cipher', () => {
     const ecb_3des = ecb(t_des(192))(k)
     expect(ecb_3des.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(ecb_3des.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+  })
+})
+
+describe('stream cipher', () => {
+  // * RC4
+  it('rc4', () => {
+    const k = 'Key'
+    const m = 'Plaintext'
+    const c = 'bbf316e8d940af0ad3'
+    const config: cipherSuite.StreamCipherConfig = {
+      KEY_CODEC: UTF8,
+    }
+
+    const cipher = arc4(k, config)
+    expect(cipher.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
+    expect(cipher.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
   })
 })
 

@@ -56,16 +56,16 @@ export type { HMACScheme } from './hash/hmac'
 export { hmac } from './hash/hmac'
 
 // * Block Cipher Modes
-export { ecb, type ECBConfig } from './core/cipherSuite'
-export { cbc, type CBCConfig } from './core/cipherSuite'
-export { cfb, type CFBConfig } from './core/cipherSuite'
-export { ofb, type OFBConfig } from './core/cipherSuite'
-export { ctr, type CTRConfig } from './core/cipherSuite'
-export { gcm, type GCMConfig } from './core/cipherSuite'
-export { pcbc, type PCBCConfig } from './core/cipherSuite'
+export { ecb, type ECBConfig } from './core/cipher'
+export { cbc, type CBCConfig } from './core/cipher'
+export { cfb, type CFBConfig } from './core/cipher'
+export { ofb, type OFBConfig } from './core/cipher'
+export { ctr, type CTRConfig } from './core/cipher'
+export { gcm, type GCMConfig } from './core/cipher'
+export { pcbc, type PCBCConfig } from './core/cipher'
 
 // * Block Cipher Padding
-export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4, NoPadding } from './core/cipherSuite'
+export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4, NoPadding } from './core/cipher'
 
 // * AES
 export { aes } from './cipher/aes'
@@ -75,3 +75,9 @@ export { des, t_des } from './cipher/des'
 
 // * SM4
 export { sm4 } from './cipher/sm4'
+
+// * Stream Cipher
+export type { StreamCipherConfig } from './core/cipher'
+
+// * RC4
+export { arc4 } from './cipher/arc4'
