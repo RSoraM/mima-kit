@@ -1095,6 +1095,9 @@ export const gcm = wrap<GCMMode>(
 
 // * 流加密算法包装器
 
+export interface StreamCipherable extends ModeCipherable {
+}
+
 export interface StreamCipherConfig {
   /**
    * @default HEX
@@ -1117,8 +1120,7 @@ export interface StreamCipherConfig {
    */
   DECRYPT_OUTPUT_CODEC?: Codec
 }
-export interface StreamCipherable extends ModeCipherable { }
-export interface StreamCipherInfo {
+export interface StreamCipherBaseInfo {
   ALGORITHM: string
   /**
    * Key size (byte)
@@ -1127,16 +1129,19 @@ export interface StreamCipherInfo {
    */
   KEY_SIZE: number
 }
-export interface StreamCipher extends StreamCipherInfo {
+export interface StreamCipherInfo extends StreamCipherBaseInfo, Required<StreamCipherConfig> {
+}
+export interface StreamCipher extends StreamCipherBaseInfo {
   /**
    * @param {string | Uint8Array} K - 密钥
    * @param {StreamCipherConfig} config - 配置
    */
-  (K: string | Uint8Array, config?: StreamCipherConfig): StreamCipherable & StreamCipherInfo
+  (K: string | Uint8Array, config?: StreamCipherConfig):
+    StreamCipherable & StreamCipherInfo
 }
 export function createStreamCipher(
   algorithm: (K: Uint8Array) => Cipherable,
-  description: StreamCipherInfo,
+  description: StreamCipherBaseInfo,
 ): StreamCipher {
   return wrap(
     (K: string | Uint8Array, config?: StreamCipherConfig) => {
@@ -1144,27 +1149,128 @@ export function createStreamCipher(
       const { KEY_CODEC = HEX } = config
       const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
       const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+      const info: StreamCipherInfo = {
+        ...description,
+        KEY_CODEC,
+        ENCRYPT_INPUT_CODEC,
+        ENCRYPT_OUTPUT_CODEC,
+        DECRYPT_INPUT_CODEC,
+        DECRYPT_OUTPUT_CODEC,
+      }
 
       K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
       const c = algorithm(K)
-      const encrypt = (M: string | Uint8Array, CODEC?: Codec) => {
-        M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
-        const C = c.encrypt(M)
-        return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
-      }
-      const decrypt = (C: string | Uint8Array, CODEC?: Codec) => {
-        C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
-        const P = c.decrypt(C)
-        return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
-      }
-
       const cipherable: StreamCipherable = {
         _encrypt: c.encrypt,
         _decrypt: c.decrypt,
-        encrypt,
-        decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = c.encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = c.decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
       }
-      return wrap(cipherable, description)
+      return wrap(cipherable, info)
+    },
+    description,
+  )
+}
+
+export interface IVStreamCipherConfig {
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+export interface IVStreamCipherable extends ModeCipherable { }
+export interface IVStreamCipherBaseInfo {
+  ALGORITHM: string
+  /**
+   * Key size (byte)
+   *
+   * 密钥大小 (字节)
+   */
+  KEY_SIZE: number
+  /**
+   * IV size (byte)
+   *
+   * IV 大小 (字节)
+   */
+  IV_SIZE: number
+}
+export interface IVStreamCipherInfo extends IVStreamCipherBaseInfo, Required<IVStreamCipherConfig> {
+}
+export interface IVStreamCipher extends IVStreamCipherBaseInfo {
+  /**
+   * @param {string | Uint8Array} K - 密钥
+   * @param {string | Uint8Array} iv - 初始化向量
+   * @param {IVStreamCipherConfig} config - 配置
+   */
+  (K: string | Uint8Array, iv: string | Uint8Array, config?: IVStreamCipherConfig):
+    StreamCipherable & IVStreamCipher
+}
+export function createIVStreamCipher(
+  algorithm: (K: Uint8Array, iv: Uint8Array) => Cipherable,
+  description: IVStreamCipherBaseInfo,
+): IVStreamCipher {
+  return wrap(
+    (K: string | Uint8Array, iv: string | Uint8Array, config?: IVStreamCipherConfig) => {
+      config = config || {}
+      const { KEY_CODEC = HEX, IV_CODEC = HEX } = config
+      const { ENCRYPT_INPUT_CODEC = UTF8, ENCRYPT_OUTPUT_CODEC = HEX } = config
+      const { DECRYPT_INPUT_CODEC = HEX, DECRYPT_OUTPUT_CODEC = UTF8 } = config
+      const info: IVStreamCipherInfo = {
+        ...description,
+        KEY_CODEC,
+        IV_CODEC,
+        ENCRYPT_INPUT_CODEC,
+        ENCRYPT_OUTPUT_CODEC,
+        DECRYPT_INPUT_CODEC,
+        DECRYPT_OUTPUT_CODEC,
+      }
+
+      K = typeof K === 'string' ? KEY_CODEC.parse(K) : K
+      iv = typeof iv === 'string' ? IV_CODEC.parse(iv) : iv
+      const c = algorithm(K, iv)
+      const cipherable: StreamCipherable = {
+        _encrypt: c.encrypt,
+        _decrypt: c.decrypt,
+        encrypt: (M: string | Uint8Array, CODEC?: Codec) => {
+          M = typeof M === 'string' ? ENCRYPT_INPUT_CODEC.parse(M) : M
+          const C = c.encrypt(M)
+          return (CODEC || ENCRYPT_OUTPUT_CODEC).stringify(C)
+        },
+        decrypt: (C: string | Uint8Array, CODEC?: Codec) => {
+          C = typeof C === 'string' ? DECRYPT_INPUT_CODEC.parse(C) : C
+          const P = c.decrypt(C)
+          return (CODEC || DECRYPT_OUTPUT_CODEC).stringify(P)
+        },
+      }
+      return wrap(cipherable, info)
     },
     description,
   )
