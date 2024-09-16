@@ -15,6 +15,7 @@ import { aes } from '../src/cipher/aes'
 import { des, t_des } from '../src/cipher/des'
 import { arc4 } from '../src/cipher/arc4'
 import { salsa20 } from '../src/cipher/salsa20'
+import { rabbit } from '../src/cipher/rabbit'
 
 const { sha3_224, sha3_256 } = sha3
 const { sha3_384, sha3_512 } = sha3
@@ -31,7 +32,7 @@ const { parallelHash128XOF, parallelHash256XOF } = sha3Derived
 const { ecb, cbc, cfb, ofb, ctr, gcm } = cipherSuite
 const { ANSI_X923, NoPadding } = cipherSuite
 
-describe.skip('hash', () => {
+describe('hash', () => {
   // * MD5
   it('md5', () => {
     expect(md5('')).toMatchInlineSnapshot('"d41d8cd98f00b204e9800998ecf8427e"')
@@ -375,9 +376,25 @@ describe('stream cipher', () => {
     expect(cipher.encrypt(m)).toMatchInlineSnapshot(`"${HEX.stringify(c)}"`)
     expect(cipher.decrypt(c)).toMatchInlineSnapshot(`"${UTF8.stringify(m)}"`)
   })
+  // * Rabbit
+  it('rabbit', () => {
+    const k = '2b7e151628aed2a6abf7158809cf4f3c'
+    const iv = 'cafebabecafebabe'
+    const m = 'hello world'
+    const c = '416710e6a92705a851d0ca'
+    const m1 = 'meowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeow'
+    const c1 = '446713fdab621db04ed9c19eb655bfa7583f5fd58a15f7d32fcb7032e6d0e45a6bbed84d700d6e6f9d0ec98e9ec5017039ae24fbb53790087c6ccce37ac26fe95b708e1253753b66b763835374574eade94ec1bea87c2574c5c2c6a2874c6f19c4bd2f31b580e9a70af6969f68aeefd01d967db86f3b787096714c4d7d463bce600c749c1730acc2c1e4928be3a265dd1134f44e8dbe3a83b97127483a3ddcbafee6f410bcfa0f11a0e464c0e144ed79e29c48b4c22a51524cf7bbb5'
+
+    const cipher = rabbit(k, iv)
+    expect(cipher.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
+    expect(cipher.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+
+    expect(cipher.encrypt(m1)).toMatchInlineSnapshot(`"${c1}"`)
+    expect(cipher.decrypt(c1)).toMatchInlineSnapshot(`"${m1}"`)
+  })
 })
 
-describe.skip('codec', () => {
+describe('codec', () => {
   it('utf8', () => {
     expect(UTF8.stringify(UTF8.parse('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
   })
