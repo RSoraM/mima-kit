@@ -14,6 +14,7 @@ import { sm4 } from '../src/cipher/sm4'
 import { aes } from '../src/cipher/aes'
 import { des, t_des } from '../src/cipher/des'
 import { arc4 } from '../src/cipher/arc4'
+import { salsa20 } from '../src/cipher/salsa20'
 
 const { sha3_224, sha3_256 } = sha3
 const { sha3_384, sha3_512 } = sha3
@@ -362,6 +363,17 @@ describe('stream cipher', () => {
     const cipher = arc4(k, config)
     expect(cipher.encrypt(m)).toMatchInlineSnapshot(`"${c}"`)
     expect(cipher.decrypt(c)).toMatchInlineSnapshot(`"${m}"`)
+  })
+  // * Salsa20
+  it('salsa20', () => {
+    const k = UTF8.parse('2b7e151628aed2a6abf7158809cf4f3c')
+    const iv = UTF8.parse('cafebabe')
+    const m = UTF8.parse('meowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeow')
+    const c = B64.parse('heP0vh0o4kkRZVkf1R9CQ8VsUZEM8TIX1ZDra/1xbrp7nX4csbbLRcyFkofzddSqnjmP20LEQVLQy6kPMUOJuO8jb/soNNDmsS/AczPsUVJZ2MzRKFXwi2aeM1GEv1iuWJConhfqqEjVQXre7WGGSsh3CxnmUNN10r2mTzm/tNSarH8Wy4s4RmmWrHsPOY2WEiyAvMIdVq+X8UATk7GXtpL4Z8CXnrswFp7Cd+M28C8u9hjt6taYC9+4DJc=')
+
+    const cipher = salsa20(k, iv)
+    expect(cipher.encrypt(m)).toMatchInlineSnapshot(`"${HEX.stringify(c)}"`)
+    expect(cipher.decrypt(c)).toMatchInlineSnapshot(`"${UTF8.stringify(m)}"`)
   })
 })
 
