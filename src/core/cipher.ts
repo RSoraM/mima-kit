@@ -1030,7 +1030,7 @@ export const gcm = wrap<GCMMode>(
         return S
       }
       const encrypt = (M: Uint8Array) => {
-        const P = NoPadding(M, BLOCK_SIZE)
+        const P = PADDING(M, BLOCK_SIZE)
         const BLOCK_TOTAL = Math.ceil(P.byteLength / BLOCK_SIZE)
         S = squeeze(BLOCK_TOTAL)
         return P.map((_, i) => _ ^ S[i + 16])
@@ -1038,7 +1038,7 @@ export const gcm = wrap<GCMMode>(
       const decrypt = (C: Uint8Array) => {
         const BLOCK_TOTAL = Math.ceil(C.byteLength / BLOCK_SIZE)
         S = squeeze(BLOCK_TOTAL)
-        return NoPadding(C.map((_, i) => _ ^ S[i + 16]))
+        return PADDING(C.map((_, i) => _ ^ S[i + 16]))
       }
       const cipherable: ModeCipherable = {
         _encrypt: encrypt,
