@@ -8,6 +8,7 @@ import { arc4 } from '../src/cipher/arc4'
 import { salsa20 } from '../src/cipher/salsa20'
 import { rabbit } from '../src/cipher/rabbit'
 import { blowfish } from '../src/cipher/blowfish'
+import { twofish } from '../src/cipher/twofish'
 
 const { ecb, cbc, pcbc, cfb, ofb, ctr, gcm } = cipherSuite
 const { ANSI_X923, NoPadding } = cipherSuite
@@ -138,6 +139,28 @@ describe('block cipher', () => {
     const bf = blowfish(k)
     expect(bf.encrypt(m)).toMatchObject(c)
     expect(bf.decrypt(c)).toMatchObject(m)
+  })
+  // * Twofish
+  it('twofish', () => {
+    // source: https://www.schneier.com/wp-content/uploads/2015/12/ecb_ival.txt
+    const k = new Uint8Array(16)
+    const m = new Uint8Array(16)
+    const c = HEX.parse('9F589F5CF6122C32B6BFEC2F2AE8C35A')
+    const tf = twofish(k)
+    expect(tf.encrypt(m)).toMatchObject(c)
+    expect(tf.decrypt(c)).toMatchObject(m)
+
+    const k192 = HEX.parse('0123456789ABCDEFFEDCBA98765432100011223344556677')
+    const c192 = HEX.parse('CFD1D2E5A9BE9CDF501F13B892BD2248')
+    const tf192 = twofish(k192)
+    expect(tf192.encrypt(m)).toMatchObject(c192)
+    expect(tf192.decrypt(c192)).toMatchObject(m)
+
+    const k256 = HEX.parse('0123456789ABCDEFFEDCBA987654321000112233445566778899AABBCCDDEEFF')
+    const c256 = HEX.parse('37527BE0052334B89F0CFCCAE87CFA20')
+    const tf256 = twofish(k256)
+    expect(tf256.encrypt(m)).toMatchObject(c256)
+    expect(tf256.decrypt(c256)).toMatchObject(m)
   })
 })
 
