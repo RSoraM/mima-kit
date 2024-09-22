@@ -9,6 +9,7 @@ import { salsa20 } from '../src/cipher/salsa20'
 import { rabbit } from '../src/cipher/rabbit'
 import { blowfish } from '../src/cipher/blowfish'
 import { twofish } from '../src/cipher/twofish'
+import { tea, xtea } from '../src/cipher/tea'
 
 const { ecb, cbc, pcbc, cfb, ofb, ctr, gcm } = cipherSuite
 const { ANSI_X923, NoPadding } = cipherSuite
@@ -161,6 +162,24 @@ describe('block cipher', () => {
     const tf256 = twofish(k256)
     expect(tf256.encrypt(m)).toMatchObject(c256)
     expect(tf256.decrypt(c256)).toMatchObject(m)
+  })
+  // * TEA
+  it('tea', () => {
+    const k = new Uint8Array(16)
+    const m = new Uint8Array(8)
+    const c = new Uint8Array([0x0A, 0x3A, 0xEA, 0x41, 0x40, 0xA9, 0xBA, 0x94])
+    const cipher = tea(k)
+    expect(cipher.encrypt(m)).toMatchObject(c)
+    expect(cipher.decrypt(c)).toMatchObject(m)
+  })
+  // * XTEA
+  it('xtea', () => {
+    const k = new Uint8Array(16)
+    const m = new Uint8Array(8)
+    const c = new Uint8Array([0xD8, 0xD4, 0xE9, 0xDE, 0xD9, 0x1E, 0x13, 0xF7])
+    const cipher = xtea(k)
+    expect(cipher.encrypt(m)).toMatchObject(c)
+    expect(cipher.decrypt(c)).toMatchObject(m)
   })
 })
 
