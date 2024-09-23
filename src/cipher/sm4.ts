@@ -60,20 +60,19 @@ function expandKey(key: Uint8Array) {
     throw new KitError('Key length must be 16 bytes')
   }
 
-  const dv = new DataView(key.buffer)
-  const rk = new Uint32Array(32)
-  let K0 = dv.getUint32(0, false) ^ 0xA3B1BAC6
-  let K1 = dv.getUint32(4, false) ^ 0x56AA3350
-  let K2 = dv.getUint32(8, false) ^ 0x677D9197
-  let K3 = dv.getUint32(12, false) ^ 0xB27022DC
+  const KView = new DataView(key.buffer)
+  let K0 = 0xA3B1BAC6 ^ KView.getUint32(0, false)
+  let K1 = 0x56AA3350 ^ KView.getUint32(4, false)
+  let K2 = 0x677D9197 ^ KView.getUint32(8, false)
+  let K3 = 0xB27022DC ^ KView.getUint32(12, false)
 
+  const rk = new Uint32Array(32)
   for (let i = 0; i < 32; i++) {
-    const newK = K0 ^ T1(K1 ^ K2 ^ K3 ^ CK[i])
-    rk[i] = newK
+    rk[i] = K0 ^ T1(K1 ^ K2 ^ K3 ^ CK[i])
     K0 = K1
     K1 = K2
     K2 = K3
-    K3 = newK
+    K3 = rk[i]
   }
 
   return rk
@@ -110,32 +109,29 @@ function cipher(M: Uint8Array, rk: Uint32Array) {
   if (M.length !== 16) {
     throw new KitError('Message length must be 16 bytes')
   }
-  // When the buffer is shared, it needs to be copied
-  if (M.buffer.byteLength !== 16) {
-    M = M.slice(0)
-  }
 
-  let dv = new DataView(M.buffer)
-  let X0 = dv.getUint32(0, false)
-  let X1 = dv.getUint32(4, false)
-  let X2 = dv.getUint32(8, false)
-  let X3 = dv.getUint32(12, false)
+  const MView = new DataView(M.buffer, M.byteOffset)
+  let X0 = MView.getUint32(0, false)
+  let X1 = MView.getUint32(4, false)
+  let X2 = MView.getUint32(8, false)
+  let X3 = MView.getUint32(12, false)
 
+  let X_: number
   for (let i = 0; i < 32; i++) {
-    const newX = F(X0, X1, X2, X3, rk[i])
+    X_ = F(X0, X1, X2, X3, rk[i])
     X0 = X1
     X1 = X2
     X2 = X3
-    X3 = newX
+    X3 = X_
   }
 
-  const resultBuffer = new ArrayBuffer(16)
-  dv = new DataView(resultBuffer)
-  dv.setUint32(0, X3, false)
-  dv.setUint32(4, X2, false)
-  dv.setUint32(8, X1, false)
-  dv.setUint32(12, X0, false)
-  return new Uint8Array(resultBuffer)
+  const R = new Uint8Array(16)
+  const RView = new DataView(R.buffer)
+  RView.setUint32(0, X3, false)
+  RView.setUint32(4, X2, false)
+  RView.setUint32(8, X1, false)
+  RView.setUint32(12, X0, false)
+  return R
 }
 
 /**
