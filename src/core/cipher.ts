@@ -102,7 +102,7 @@ export function createPadding(
 export const PKCS7 = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
     const pad = BLOCK_SIZE - M.byteLength % BLOCK_SIZE
-    return joinBuffer(M, new Uint8Array(pad).map(() => pad))
+    return joinBuffer(M, new Uint8Array(pad).fill(pad))
   },
   (P: Uint8Array) => {
     const pad = P[P.byteLength - 1]
@@ -184,6 +184,12 @@ export const ANSI_X923 = createPadding(
   { ALGORITHM: 'ANSI X9.23' },
 )
 
+/**
+ * @description
+ * No Padding
+ *
+ * 无填充
+ */
 export const NoPadding = createPadding(
   (M: Uint8Array) => M,
   (P: Uint8Array) => P,
