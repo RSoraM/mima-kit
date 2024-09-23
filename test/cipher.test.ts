@@ -133,9 +133,10 @@ describe('block cipher', () => {
   })
   // * Blowfish
   it('blowfish', () => {
-    const k = HEX.parse('0123456789ABCDEFFEDCBA9876543210')
-    const m = HEX.parse('6D656F772C20E596')
-    const c = HEX.parse('26A31048CF7C6953')
+    // source: https://www.schneier.com/wp-content/uploads/2015/12/vectors-2.txt
+    const k = new Uint8Array(16)
+    const m = new Uint8Array(8)
+    const c = HEX.parse('4EF997456198DD78')
 
     const bf = blowfish(k)
     expect(bf.encrypt(m)).toMatchObject(c)

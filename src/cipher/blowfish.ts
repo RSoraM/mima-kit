@@ -76,31 +76,27 @@ export const blowfish = createCipher(
         if (M.byteLength !== 8) {
           throw new KitError(`Blowfish requires a block of 8 bytes`)
         }
-        let dv = new DataView(M.buffer, M.byteOffset)
-        let l = dv.getUint32(0, false)
-        let r = dv.getUint32(4, false);
-        [l, r] = _encrypt(l, r)
-
-        const R = new Uint8Array(8)
-        dv = new DataView(R.buffer)
-        dv.setUint32(0, l, false)
-        dv.setUint32(4, r, false)
-        return R
+        const C = M.slice(0)
+        const CView = new DataView(C.buffer)
+        let C0 = CView.getUint32(0, false)
+        let C1 = CView.getUint32(4, false);
+        [C0, C1] = _encrypt(C0, C1)
+        CView.setUint32(0, C0, false)
+        CView.setUint32(4, C1, false)
+        return C
       },
       decrypt: (C: Uint8Array) => {
         if (C.byteLength !== 8) {
           throw new KitError(`Blowfish requires a block of 8 bytes`)
         }
-        let dv = new DataView(C.buffer, C.byteOffset)
-        let l = dv.getUint32(0, false)
-        let r = dv.getUint32(4, false);
-        [l, r] = _decrypt(l, r)
-
-        const R = new Uint8Array(8)
-        dv = new DataView(R.buffer)
-        dv.setUint32(0, l, false)
-        dv.setUint32(4, r, false)
-        return R
+        const M = C.slice(0)
+        const MView = new DataView(M.buffer)
+        let M0 = MView.getUint32(0, false)
+        let M1 = MView.getUint32(4, false);
+        [M0, M1] = _decrypt(M0, M1)
+        MView.setUint32(0, M0, false)
+        MView.setUint32(4, M1, false)
+        return M
       },
     }
   },
