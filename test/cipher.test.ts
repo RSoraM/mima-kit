@@ -166,6 +166,7 @@ describe('block cipher', () => {
   })
   // * TEA
   it('tea', () => {
+    // source: https://www.cix.co.uk/~klockstone/teavect.htm
     const k = new Uint8Array(16)
     const m = new Uint8Array(8)
     const c = new Uint8Array([0x0A, 0x3A, 0xEA, 0x41, 0x40, 0xA9, 0xBA, 0x94])
