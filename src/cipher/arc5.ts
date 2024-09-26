@@ -1,5 +1,5 @@
 import { createCipher } from '../core/cipher'
-import { KitError, joinBuffer, rotateL128, rotateL16, rotateL32, rotateL64, rotateL8, rotateR128, rotateR16, rotateR32, rotateR64, rotateR8 } from '../core/utils'
+import { KitError, resizeBuffer, rotateL128, rotateL16, rotateL32, rotateL64, rotateL8, rotateR128, rotateR16, rotateR32, rotateR64, rotateR8 } from '../core/utils'
 
 // const Eul = [0xB7, 0xE1, 0x51, 0x62, 0x8A, 0xED, 0x2A, 0x6A, 0xBF, 0x71, 0x58, 0x80, 0x9C, 0xF4, 0xF3, 0xC7, 0x62, 0xE7, 0x16, 0x0F, 0x38, 0xB4, 0xDA, 0x56, 0xA7, 0x84, 0xD9, 0x04, 0x51, 0x90, 0xCF, 0xEF]
 // const Phi = [0x9E, 0x37, 0x79, 0xB9, 0x7F, 0x4A, 0x7C, 0x15, 0xF3, 0x9C, 0xC0, 0x60, 0x5C, 0xED, 0xC8, 0x34, 0x10, 0x82, 0x27, 0x6B, 0xF3, 0xA2, 0x72, 0x51, 0xF8, 0x6C, 0x6A, 0x11, 0xD0, 0xC1, 0x8E, 0x95]
@@ -66,9 +66,7 @@ function setup16(K: Uint8Array, r: number) {
   const P = 0xB7E1
   const Q = 0x9E37
   // Break the key into 16-bit words
-  const l = K.byteLength === 0
-    ? new Uint8Array(2)
-    : joinBuffer(K, new Uint8Array(K.byteLength % 2))
+  const l = resizeBuffer(K, K.byteLength & 1 ? K.byteLength + 1 : K.byteLength)
   const L = new Uint16Array(l.buffer)
   const c = L.length
   // Initialize key-independent pseudorandom S array
@@ -125,9 +123,7 @@ function setup32(K: Uint8Array, r: number) {
   const P = 0xB7E15163
   const Q = 0x9E3779B9
   // Break the key into 32-bit words
-  const l = K.byteLength === 0
-    ? new Uint8Array(4)
-    : joinBuffer(K, new Uint8Array(K.byteLength % 4))
+  const l = resizeBuffer(K, ((K.byteLength + 3) >> 2 || 1) << 2)
   const L = new Uint32Array(l.buffer)
   const c = L.length
   // Initialize key-independent pseudorandom S array
@@ -184,9 +180,7 @@ function setup64(K: Uint8Array, r: number) {
   const P = 0xB7E151628AED2A6Bn
   const Q = 0x9E3779B97F4A7C15n
   // Break the key into 64-bit words
-  const l = K.byteLength === 0
-    ? new Uint8Array(8)
-    : joinBuffer(K, new Uint8Array(K.byteLength % 8))
+  const l = resizeBuffer(K, ((K.byteLength + 7) >> 3 || 1) << 3)
   const L = new BigUint64Array(l.buffer)
   const c = L.length
   // Initialize key-independent pseudorandom S array
@@ -243,12 +237,11 @@ function setup128(K: Uint8Array, r: number) {
   const P = 0xB7E151628AED2A6ABF7158809CF4F3C7n
   const Q = 0x9E3779B97F4A7C15F39CC0605CEDC835n
   // Break the key into 64-bit words
-  const c = K.byteLength === 0
-    ? 1
-    : (K.byteLength + (K.byteLength % 16)) >> 4
+  const l = resizeBuffer(K, ((K.byteLength + 15) >> 4 || 1) << 4)
+  const c = l.byteLength >> 4
   const L = Array.from<bigint>({ length: c }).fill(0n);
   (function breakKey() {
-    const K64 = new BigUint64Array(K.buffer)
+    const K64 = new BigUint64Array(l.buffer)
     // littel-endian
     for (let i = 0; i < c; i++) {
       L[i] = K64[(i << 1)] | (K64[(i << 1) + 1] << 64n)
