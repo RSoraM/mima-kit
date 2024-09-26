@@ -1212,7 +1212,8 @@ export interface IVStreamCipherConfig {
    */
   DECRYPT_OUTPUT_CODEC?: Codec
 }
-export interface IVStreamCipherable extends ModeCipherable { }
+export interface IVStreamCipherable extends ModeCipherable {
+}
 export interface IVStreamCipherBaseInfo {
   ALGORITHM: string
   /**
