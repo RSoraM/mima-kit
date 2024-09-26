@@ -87,6 +87,21 @@ export function joinBuffer(...buffers: ArrayBuffer[]) {
   return result
 }
 
+/**
+ * @description
+ * resize ArrayBuffer
+ *
+ * 调整 ArrayBuffer 大小
+ *
+ * @param {ArrayBuffer} buffer
+ * @param {number} size - byte
+ */
+export function resizeBuffer(buffer: ArrayBuffer, size: number) {
+  const B = new Uint8Array(size)
+  B.set(new Uint8Array(buffer))
+  return B
+}
+
 export function wrap<T = any>(...args: any[]): T {
   if (args.length === 0) {
     return {} as T

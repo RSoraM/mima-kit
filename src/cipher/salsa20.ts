@@ -1,5 +1,5 @@
 import { createIVStreamCipher } from '../core/cipher'
-import { KitError, rotateL32 } from '../core/utils'
+import { KitError, resizeBuffer, rotateL32 } from '../core/utils'
 
 // * Functions
 
@@ -104,9 +104,7 @@ export const salsa20 = createIVStreamCipher(
       if (current > BLOCK_TOTAL) {
         return M.map((byte, i) => byte ^ S[i])
       }
-      const _S = new Uint8Array(BLOCK_TOTAL << 6)
-      _S.set(S, 0)
-      S = _S
+      S = resizeBuffer(S, BLOCK_TOTAL << 6)
       while (BLOCK_TOTAL > current) {
         E = inc64(E)
         S.set(hash(E), current << 6)

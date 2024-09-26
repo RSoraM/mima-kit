@@ -1,5 +1,5 @@
 import { createIVStreamCipher } from '../core/cipher'
-import { KitError, rotateL32 } from '../core/utils'
+import { KitError, resizeBuffer, rotateL32 } from '../core/utils'
 
 // * Constants
 
@@ -135,9 +135,7 @@ export const rabbit = createIVStreamCipher(
       if (current >= count) {
         return S
       }
-      const T = new Uint8Array(count << 4)
-      T.set(S, 0)
-      S = T
+      S = resizeBuffer(S, count << 4)
       while (current < count) {
         S.set(nextState(), current << 4)
         current++
