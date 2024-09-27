@@ -88,6 +88,18 @@ function expand(K: Uint8Array, iv: Uint8Array) {
 
 // * Salsa20 Algorithm
 
+/**
+ * @description
+ * Salsa20 stream cipher
+ *
+ * Salsa20 流密码
+ *
+ * ```ts
+ * const cipher = salsa20(k, iv)
+ * cipher.encrypt(m)
+ * cipher.decrypt(c)
+ * ```
+ */
 export const salsa20 = createIVStreamCipher(
   (K: Uint8Array, iv: Uint8Array) => {
     let E = expand(K, iv)

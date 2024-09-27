@@ -32,6 +32,18 @@ function cipher(M: Uint8Array, SBox: Uint8Array) {
   return result
 }
 
+/**
+ * @description
+ * ARC4 stream cipher
+ *
+ * ARC4 流密码
+ *
+ * ```ts
+ * const cipher = arc4(k)
+ * cipher.encrypt(m)
+ * cipher.decrypt(c)
+ * ```
+ */
 export const arc4 = createStreamCipher(
   (K: Uint8Array) => {
     if (K.byteLength < 1 || K.byteLength > 256) {

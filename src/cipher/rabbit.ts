@@ -11,12 +11,8 @@ const A = new Uint32Array([0x4D34D34D, 0xD34D34D3, 0x34D34D34, 0x4D34D34D, 0xD34
  * @description
  * Rabbit stream cipher
  *
- * 兔子流密码
+ * Rabbit 流密码
  *
- * @example
- * Note: Empty iv will skip iv setup
- *
- * 注意: 空 iv 将跳过 iv 配置
  * ```ts
  * const cipher = rabbit(k, iv)
  * cipher.encrypt(m)

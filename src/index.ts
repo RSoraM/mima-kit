@@ -77,7 +77,17 @@ export { des, t_des } from './cipher/des'
 export { sm4 } from './cipher/sm4'
 
 // * Stream Cipher
-export type { StreamCipherConfig } from './core/cipher'
+export type { StreamCipherConfig, IVStreamCipherConfig } from './core/cipher'
 
-// * RC4
+// * ZUC
+export type { ZUCParams, ZUCConfig } from './cipher/zuc'
+export { eea3, eia3, zuc } from './cipher/zuc'
+
+// * ARC4
 export { arc4 } from './cipher/arc4'
+
+// * Salsa20
+export { salsa20 } from './cipher/salsa20'
+
+// * Rabbit
+export { rabbit } from './cipher/rabbit'

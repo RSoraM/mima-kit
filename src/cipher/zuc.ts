@@ -1,6 +1,6 @@
 import type { Codec } from '../core/codec'
 import { HEX, UTF8 } from '../core/codec'
-import { KitError, rotateL32 } from '../core/utils'
+import { KitError, rotateL32, wrap } from '../core/utils'
 
 // * Constants
 
@@ -39,8 +39,8 @@ function F(X0: number, X1: number, X2: number, R: Uint32Array) {
 /**
  * 线性反馈移位寄存器有两种运行模式：初始化模式和工作模式，当输入 `u` 时为初始化模式，否则为工作模式
  *
- * @param S 线性反馈移位寄存器(LFSR)
- * @param u 初始化模式下的输入
+ * @param {Uint32Array} S - 线性反馈移位寄存器(LFSR)
+ * @param {number} u - 初始化模式下的输入
  */
 function next(S: Uint32Array, u?: number) {
   let s16: number, v: number
@@ -66,6 +66,19 @@ function next(S: Uint32Array, u?: number) {
 
 // * ZUC Algorithm (presudo-random generator)
 
+/**
+ * @description
+ * 3GPP ZUC algorithm is used to generate a key stream, each call returns a 32-bit key stream.
+ *
+ * 3GPP ZUC 算法用于生成密钥流，每次调用返回一个 32 位的密钥流.
+ *
+ * ```ts
+ * const K = new Uint8Array(16)
+ * const iv = new Uint8Array(16)
+ * const zuc = zuc(K, iv)
+ * zuc() // 32-bit number
+ * ```
+ */
 export function zuc(K: Uint8Array, iv: Uint8Array) {
   if (K.byteLength !== 16) {
     throw new KitError('ZUC requires a key of 16 bytes')
@@ -129,9 +142,9 @@ export interface ZUCParams {
   /**
    * 32-bit counter
    *
-   * 如果 `counter` 为 `number` 类型，则转换为小端存储的 `Uint8Array` 类型。
-   * 如果 `counter` 为 `string` 类型，则通过 `COUNTER_CODEC` 转换为 `Uint8Array` 类型。
-   * `COUNTER_CODEC` 通过 `ZUCConfig` 配置，默认为 `HEX`。
+   * 如果 `counter` 为 `number` 类型，则转换为小端存储的 `Uint8Array` 类型.
+   * 如果 `counter` 为 `string` 类型，则通过 `COUNTER_CODEC` 转换为 `Uint8Array` 类型.
+   * `COUNTER_CODEC` 通过 `ZUCConfig` 配置，默认为 `HEX`.
    */
   COUNTER: Uint8Array | number | string
   /**
@@ -145,8 +158,8 @@ export interface ZUCParams {
   /**
    * 128-bit key
    *
-   * 如果 `KEY` 为 `string` 类型，则通过 `KEY_CODEC` 转换为 `Uint8Array` 类型。
-   * `KEY_CODEC` 通过 `ZUCConfig` 配置，默认为 `HEX`。
+   * 如果 `KEY` 为 `string` 类型，则通过 `KEY_CODEC` 转换为 `Uint8Array` 类型.
+   * `KEY_CODEC` 通过 `ZUCConfig` 配置，默认为 `HEX`.
    */
   KEY: Uint8Array | string
   /**
@@ -169,82 +182,123 @@ export interface ZUCConfig {
    */
   INPUT_CODEC?: Codec
 }
-export function eea3(param: ZUCParams, config: ZUCConfig = {}) {
-  const { COUNTER_CODEC = HEX, KEY_CODEC = HEX, INPUT_CODEC = UTF8 } = config
-
-  // 转换参数
-  const { BEARER, DIRECTION } = param
-  let { COUNTER, KEY, M, LENGTH } = param
-  switch (typeof COUNTER) {
-    case 'string':
-      COUNTER = COUNTER_CODEC.parse(COUNTER)
-      break
-    case 'number':
-      COUNTER = new Uint8Array([COUNTER >> 24, COUNTER >> 16, COUNTER >> 8, COUNTER])
-      break
-  }
-  KEY = typeof KEY === 'string'
-    ? KEY_CODEC.parse(KEY)
-    : KEY
-  M = typeof M === 'string'
-    ? INPUT_CODEC.parse(M)
-    : M
-
-  // 生成密钥流
-  LENGTH = M.byteLength << 3
-  const WORD_COUNT = (LENGTH + 31) >> 5
-  const EEA_KeyStream = new Uint8Array(WORD_COUNT << 2)
-  const KSView = new DataView(EEA_KeyStream.buffer)
-  const EEA_IV = createEEA_IV(COUNTER, BEARER, DIRECTION)
-  const prg = zuc(KEY, EEA_IV)
-  for (let i = 0; i < WORD_COUNT; i++) {
-    KSView.setUint32(i << 2, prg(), false)
-  }
-
-  // 加密
-  return M.map((_, i) => _ ^ EEA_KeyStream[i])
+export interface ZUC3GPP {
+  (param: ZUCParams, config?: ZUCConfig): Uint8Array
 }
-export function eia3(param: ZUCParams, config: ZUCConfig = {}) {
-  const { COUNTER_CODEC = HEX, KEY_CODEC = HEX, INPUT_CODEC = UTF8 } = config
+/**
+ * @description
+ * 3GPP ZUC encryption algorithm.
+ *
+ * 3GPP ZUC 加密算法.
+ *
+ * ```ts
+ * const encrypt: ZUCParams = {...}
+ * const decrypt: ZUCParams = {...}
+ * const config: ZUCConfig = {...}
+ * eea3(encrypt, config) // Uint8Array
+ * eia3(decrypt, config) // Uint8Array
+ * ```
+ */
+export const eea3 = wrap<ZUC3GPP>(
+  (param: ZUCParams, config: ZUCConfig = {}) => {
+    const { COUNTER_CODEC = HEX, KEY_CODEC = HEX, INPUT_CODEC = UTF8 } = config
 
-  // 转换参数
-  const { BEARER, DIRECTION } = param
-  let { COUNTER, KEY, M, LENGTH } = param
-  switch (typeof COUNTER) {
-    case 'string':
-      COUNTER = COUNTER_CODEC.parse(COUNTER)
-      break
-    case 'number':
-      COUNTER = new Uint8Array([COUNTER >> 24, COUNTER >> 16, COUNTER >> 8, COUNTER])
-      break
-  }
-  KEY = typeof KEY === 'string'
-    ? KEY_CODEC.parse(KEY)
-    : KEY
-  M = typeof M === 'string'
-    ? INPUT_CODEC.parse(M)
-    : M
-
-  // 生成密钥流
-  const N = LENGTH + 64
-  const WORD_COUNT = N + 31 >> 5
-  const EIA_KeyStream = new Uint8Array(WORD_COUNT << 2)
-  const KSView = new DataView(EIA_KeyStream.buffer)
-  const EIA_IV = createEIA_IV(COUNTER, BEARER, DIRECTION)
-  const prg = zuc(KEY, EIA_IV)
-  for (let i = 0; i < WORD_COUNT; i++) {
-    KSView.setUint32(i << 2, prg(), false)
-  }
-
-  // 计算 MAC
-  let t = 0
-  for (let i = 0; i < LENGTH; i++) {
-    const bit = M[i >>> 3] & (1 << (7 - (i % 8)))
-    if (bit) {
-      t ^= getWord(KSView, i)
+    // 转换参数
+    const { BEARER, DIRECTION } = param
+    let { COUNTER, KEY, M, LENGTH } = param
+    switch (typeof COUNTER) {
+      case 'string':
+        COUNTER = COUNTER_CODEC.parse(COUNTER)
+        break
+      case 'number':
+        COUNTER = new Uint8Array([COUNTER >> 24, COUNTER >> 16, COUNTER >> 8, COUNTER])
+        break
     }
-  }
-  t ^= getWord(KSView, LENGTH)
-  t ^= KSView.getUint32(EIA_KeyStream.byteLength - 4)
-  return new Uint8Array([t >> 24, t >> 16, t >> 8, t])
-}
+    KEY = typeof KEY === 'string'
+      ? KEY_CODEC.parse(KEY)
+      : KEY
+    M = typeof M === 'string'
+      ? INPUT_CODEC.parse(M)
+      : M
+
+    // 生成密钥流
+    LENGTH = M.byteLength << 3
+    const WORD_COUNT = (LENGTH + 31) >> 5
+    const EEA_KeyStream = new Uint8Array(WORD_COUNT << 2)
+    const KSView = new DataView(EEA_KeyStream.buffer)
+    const EEA_IV = createEEA_IV(COUNTER, BEARER, DIRECTION)
+    const prg = zuc(KEY, EEA_IV)
+    for (let i = 0; i < WORD_COUNT; i++) {
+      KSView.setUint32(i << 2, prg(), false)
+    }
+
+    // 加密
+    return M.map((_, i) => _ ^ EEA_KeyStream[i])
+  },
+  {
+    ALGORITHM: 'ZUC-EEA3',
+    KEY_SIZE: 16,
+  },
+)
+/**
+ * @description
+ * 3GPP ZUC integrity algorithm.
+ *
+ * 3GPP ZUC 完整性算法.
+ *
+ * ```ts
+ * const mac: ZUCParams = {...}
+ * const config: ZUCConfig = {...}
+ * eia3(mac, config) // Uint8Array
+ * ```
+ */
+export const eia3 = wrap<ZUC3GPP>(
+  (param: ZUCParams, config: ZUCConfig = {}) => {
+    const { COUNTER_CODEC = HEX, KEY_CODEC = HEX, INPUT_CODEC = UTF8 } = config
+
+    // 转换参数
+    const { BEARER, DIRECTION } = param
+    let { COUNTER, KEY, M, LENGTH } = param
+    switch (typeof COUNTER) {
+      case 'string':
+        COUNTER = COUNTER_CODEC.parse(COUNTER)
+        break
+      case 'number':
+        COUNTER = new Uint8Array([COUNTER >> 24, COUNTER >> 16, COUNTER >> 8, COUNTER])
+        break
+    }
+    KEY = typeof KEY === 'string'
+      ? KEY_CODEC.parse(KEY)
+      : KEY
+    M = typeof M === 'string'
+      ? INPUT_CODEC.parse(M)
+      : M
+
+    // 生成密钥流
+    const N = LENGTH + 64
+    const WORD_COUNT = N + 31 >> 5
+    const EIA_KeyStream = new Uint8Array(WORD_COUNT << 2)
+    const KSView = new DataView(EIA_KeyStream.buffer)
+    const EIA_IV = createEIA_IV(COUNTER, BEARER, DIRECTION)
+    const prg = zuc(KEY, EIA_IV)
+    for (let i = 0; i < WORD_COUNT; i++) {
+      KSView.setUint32(i << 2, prg(), false)
+    }
+
+    // 计算 MAC
+    let t = 0
+    for (let i = 0; i < LENGTH; i++) {
+      const bit = M[i >>> 3] & (1 << (7 - (i % 8)))
+      if (bit) {
+        t ^= getWord(KSView, i)
+      }
+    }
+    t ^= getWord(KSView, LENGTH)
+    t ^= KSView.getUint32(EIA_KeyStream.byteLength - 4)
+    return new Uint8Array([t >> 24, t >> 16, t >> 8, t])
+  },
+  {
+    ALGORITHM: 'ZUC-EIA3',
+    KEY_SIZE: 16,
+  },
+)
