@@ -201,6 +201,19 @@ function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   return new Uint8Array(S.buffer)
 }
 
+function _aes(K: Uint8Array, b: 128 | 192 | 256) {
+  if (K.byteLength !== b >> 3) {
+    throw new KitError(`Key length must be ${b >> 3} bytes`)
+  }
+  const Nr = b === 128 ? 10 : (b === 192 ? 12 : 14)
+  const W = KeyExpansion(K, Nr)
+
+  return {
+    encrypt: (M: Uint8Array) => Cipher(M, W, Nr),
+    decrypt: (C: Uint8Array) => InvCipher(C, W, Nr),
+  }
+}
+
 /**
  * @description
  * Advanced Encryption Standard (AES) block cipher algorithm.
@@ -210,19 +223,8 @@ function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
  * @param {128 | 192 | 256} b - Key length (bits).
  */
 export function aes(b: 128 | 192 | 256) {
-  const Nr = b === 128 ? 10 : (b === 192 ? 12 : 14)
   return createCipher(
-    (K: Uint8Array) => {
-      if (K.byteLength !== b >> 3) {
-        throw new KitError(`Key length must be ${b >> 3} bytes`)
-      }
-      const W = KeyExpansion(K, Nr)
-
-      return {
-        encrypt: (M: Uint8Array) => Cipher(M, W, Nr),
-        decrypt: (C: Uint8Array) => InvCipher(C, W, Nr),
-      }
-    },
+    (K: Uint8Array) => _aes(K, b),
     {
       ALGORITHM: `AES-${b}`,
       BLOCK_SIZE: 16,

@@ -67,14 +67,29 @@ export { pcbc, type PCBCConfig } from './core/cipher'
 // * Block Cipher Padding
 export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4, NoPadding } from './core/cipher'
 
+// * SM4
+export { sm4 } from './cipher/sm4'
+
 // * AES
 export { aes } from './cipher/aes'
+
+// * ARIA
+export { aria } from './cipher/aria'
 
 // * DES & 3DES
 export { des, t_des } from './cipher/des'
 
-// * SM4
-export { sm4 } from './cipher/sm4'
+// * ARC5
+export { arc5 } from './cipher/arc5'
+
+// * Blowfish
+export { blowfish } from './cipher/blowfish'
+
+// * Twofish
+export { twofish } from './cipher/twofish'
+
+// * TEA
+export { tea, xtea } from './cipher/tea'
 
 // * Stream Cipher
 export type { StreamCipherConfig, IVStreamCipherConfig } from './core/cipher'

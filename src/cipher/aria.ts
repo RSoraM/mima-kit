@@ -242,6 +242,30 @@ function computeDK(EK: Uint8Array[], round: 12 | 14 | 16) {
 
 // * ARIA Algorithm
 
+function _aria(K: Uint8Array, b: 128 | 192 | 256) {
+  if (K.byteLength !== b >> 3) {
+    throw new KitError(`Key length must be ${b >> 3} bytes`)
+  }
+  const round = b === 128 ? 12 : (b === 192 ? 14 : 16)
+  const { EK, DK } = KeyScheduling(K, round)
+  const cipher = (M: Uint8Array, RK: Uint8Array[]) => {
+    let P = M.slice(0)
+    let i = 0
+    while (i < round - 2) {
+      P = FO(P, RK[i++])
+      P = FE(P, RK[i++])
+    }
+    P = FO(P, RK[i++])
+    P = SL2(xor(P, RK[i++]))
+    P = xor(P, RK[i++])
+    return P
+  }
+  return {
+    encrypt: (M: Uint8Array) => cipher(M, EK),
+    decrypt: (C: Uint8Array) => cipher(C, DK),
+  }
+}
+
 /**
  * @description
  * ARIA block cipher algorithm.
@@ -251,30 +275,8 @@ function computeDK(EK: Uint8Array[], round: 12 | 14 | 16) {
  * @param {128 | 192 | 256} b - Key length (bits).
  */
 export function aria(b: 128 | 192 | 256) {
-  const round = b === 128 ? 12 : (b === 192 ? 14 : 16)
   return createCipher(
-    (K: Uint8Array) => {
-      if (K.byteLength !== b >> 3) {
-        throw new KitError(`Key length must be ${b >> 3} bytes`)
-      }
-      const { EK, DK } = KeyScheduling(K, round)
-      const cipher = (M: Uint8Array, RK: Uint8Array[]) => {
-        let P = M.slice(0)
-        let i = 0
-        while (i < round - 2) {
-          P = FO(P, RK[i++])
-          P = FE(P, RK[i++])
-        }
-        P = FO(P, RK[i++])
-        P = SL2(xor(P, RK[i++]))
-        P = xor(P, RK[i++])
-        return P
-      }
-      return {
-        encrypt: (M: Uint8Array) => cipher(M, EK),
-        decrypt: (C: Uint8Array) => cipher(C, DK),
-      }
-    },
+    (K: Uint8Array) => _aria(K, b),
     {
       ALGORITHM: `ARIA-${b}`,
       BLOCK_SIZE: 16,

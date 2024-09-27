@@ -112,6 +112,45 @@ function Cipher(M: Uint8Array, K: Uint8Array) {
   return permute((r << 32n) | l, FP)
 }
 
+function _des(K: Uint8Array) {
+  const key_set = generateKeys(K)
+  const inv_key_set = reverseKeys(key_set)
+  return {
+    encrypt: (M: Uint8Array) => {
+      const buffer = new ArrayBuffer(8)
+      const view = new DataView(buffer)
+      view.setBigUint64(0, Cipher(M, key_set), false)
+      return new Uint8Array(buffer)
+    },
+    decrypt: (C: Uint8Array) => {
+      const buffer = new ArrayBuffer(8)
+      const view = new DataView(buffer)
+      view.setBigUint64(0, Cipher(C, inv_key_set), false)
+      return new Uint8Array(buffer)
+    },
+  }
+}
+
+function _t_des(K: Uint8Array, l: number) {
+  if (K.byteLength !== l >> 3) {
+    throw new KitError(`Key length must be ${l >> 3} bytes`)
+  }
+  const K1 = K.subarray(0, 8)
+  const K2 = K.subarray(8, 16)
+  const K3 = l === 128 ? K1 : K.subarray(16, 24)
+  if (isEqual(K1, K2) || (l === 192 && (isEqual(K1, K3) || isEqual(K2, K3)))) {
+    console.warn('mima-kit: Weak key detected in 3DES')
+  }
+
+  const d1 = _des(K1)
+  const d2 = _des(K2)
+  const d3 = _des(K3)
+  return {
+    encrypt: (M: Uint8Array) => d3.encrypt(d2.decrypt(d1.encrypt(M))),
+    decrypt: (C: Uint8Array) => d1.decrypt(d2.encrypt(d3.decrypt(C))),
+  }
+}
+
 /**
  * @description
  * Data Encryption Standard (DES) block cipher algorithm.
@@ -119,24 +158,7 @@ function Cipher(M: Uint8Array, K: Uint8Array) {
  * 数据加密标准（DES）分组密码算法.
  */
 export const des = createCipher(
-  (K: Uint8Array) => {
-    const key_set = generateKeys(K)
-    const inv_key_set = reverseKeys(key_set)
-    return {
-      encrypt: (M: Uint8Array) => {
-        const buffer = new ArrayBuffer(8)
-        const view = new DataView(buffer)
-        view.setBigUint64(0, Cipher(M, key_set), false)
-        return new Uint8Array(buffer)
-      },
-      decrypt: (C: Uint8Array) => {
-        const buffer = new ArrayBuffer(8)
-        const view = new DataView(buffer)
-        view.setBigUint64(0, Cipher(C, inv_key_set), false)
-        return new Uint8Array(buffer)
-      },
-    }
-  },
+  _des,
   {
     ALGORITHM: 'DES',
     BLOCK_SIZE: 8,
@@ -150,33 +172,15 @@ export const des = createCipher(
  *
  * 三重数据加密标准（3DES）分组密码算法.
  *
- * @param {128 | 192} k - Key length (bits)
+ * @param {128 | 192} l - Key length (bits)
  */
-export function t_des(k: 128 | 192) {
+export function t_des(l: 128 | 192) {
   return createCipher(
-    (K: Uint8Array) => {
-      if (K.byteLength !== k >> 3) {
-        throw new KitError(`Key length must be ${k >> 3} bytes`)
-      }
-      const K1 = K.subarray(0, 8)
-      const K2 = K.subarray(8, 16)
-      const K3 = k === 128 ? K1 : K.subarray(16, 24)
-      if (isEqual(K1, K2) || (k === 192 && (isEqual(K1, K3) || isEqual(K2, K3)))) {
-        console.warn('mima-kit: Weak key detected in 3DES')
-      }
-
-      const d1 = des(K1)
-      const d2 = des(K2)
-      const d3 = des(K3)
-      return {
-        encrypt: (M: Uint8Array) => d3.encrypt(d2.decrypt(d1.encrypt(M))),
-        decrypt: (C: Uint8Array) => d1.decrypt(d2.encrypt(d3.decrypt(C))),
-      }
-    },
+    (K: Uint8Array) => _t_des(K, l),
     {
       ALGORITHM: '3DES',
       BLOCK_SIZE: 8,
-      KEY_SIZE: k >> 3,
+      KEY_SIZE: l >> 3,
     },
   )
 }

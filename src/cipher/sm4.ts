@@ -134,6 +134,15 @@ function cipher(M: Uint8Array, rk: Uint32Array) {
   return R
 }
 
+function _sm4(K: Uint8Array) {
+  const rk = expandKey(K)
+  const rkReversed = rk.toReversed()
+  return {
+    encrypt: (M: Uint8Array) => cipher(M, rk),
+    decrypt: (M: Uint8Array) => cipher(M, rkReversed),
+  }
+}
+
 /**
  * @description
  * SM4 block cipher algorithm.
@@ -141,14 +150,7 @@ function cipher(M: Uint8Array, rk: Uint32Array) {
  * SM4 分组密码算法.
  */
 export const sm4 = createCipher(
-  (K: Uint8Array) => {
-    const rk = expandKey(K)
-    const rkReversed = rk.toReversed()
-    return {
-      encrypt: (M: Uint8Array) => cipher(M, rk),
-      decrypt: (M: Uint8Array) => cipher(M, rkReversed),
-    }
-  },
+  _sm4,
   {
     ALGORITHM: 'SM4',
     BLOCK_SIZE: 16,

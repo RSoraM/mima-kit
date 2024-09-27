@@ -249,83 +249,91 @@ function initKeySchedule(K: Uint8Array) {
   return { Subkeys, SBox }
 }
 
+function _twofish(K: Uint8Array) {
+  if (K.byteLength !== 16 && K.byteLength !== 24 && K.byteLength !== 32) {
+    throw new KitError(`Twofish requires a key of length 16, 24, or 32 bytes`)
+  }
+  const { Subkeys, SBox } = initKeySchedule(K)
+
+  const encrypt = (M: Uint8Array) => {
+    const M32 = new Uint32Array(M.buffer, M.byteOffset)
+    // input whitening
+    let x0 = M32[0] ^ Subkeys[0]
+    let x1 = M32[1] ^ Subkeys[1]
+    let x2 = M32[2] ^ Subkeys[2]
+    let x3 = M32[3] ^ Subkeys[3]
+
+    let k = 8
+    // 16 rounds of encryption
+    for (let i = 0; i < 16; i += 2) {
+      let t0 = Fe32(SBox, x0, 0)
+      let t1 = Fe32(SBox, x1, 3)
+      x2 ^= t0 + t1 + Subkeys[k++]
+      x2 = rotateR32(x2, 1)
+      x3 = rotateL32(x3, 1)
+      x3 ^= t0 + 2 * t1 + Subkeys[k++]
+
+      t0 = Fe32(SBox, x2, 0)
+      t1 = Fe32(SBox, x3, 3)
+      x0 ^= t0 + t1 + Subkeys[k++]
+      x0 = rotateR32(x0, 1)
+      x1 = rotateL32(x1, 1)
+      x1 ^= t0 + 2 * t1 + Subkeys[k++]
+    }
+
+    // output whitening
+    x2 ^= Subkeys[4]
+    x3 ^= Subkeys[5]
+    x0 ^= Subkeys[6]
+    x1 ^= Subkeys[7]
+
+    return new Uint8Array(new Uint32Array([x2, x3, x0, x1]).buffer)
+  }
+  const decrypt = (C: Uint8Array) => {
+    const M32 = new Uint32Array(C.buffer, C.byteOffset)
+    // input whitening
+    let x2 = M32[0] ^ Subkeys[4]
+    let x3 = M32[1] ^ Subkeys[5]
+    let x0 = M32[2] ^ Subkeys[6]
+    let x1 = M32[3] ^ Subkeys[7]
+
+    let k = 39
+    // 16 rounds of decryption
+    for (let i = 0; i < 16; i += 2) {
+      let t0 = Fe32(SBox, x2, 0)
+      let t1 = Fe32(SBox, x3, 3)
+      x1 ^= t0 + 2 * t1 + Subkeys[k--]
+      x1 = rotateR32(x1, 1)
+      x0 = rotateL32(x0, 1)
+      x0 ^= t0 + t1 + Subkeys[k--]
+
+      t0 = Fe32(SBox, x0, 0)
+      t1 = Fe32(SBox, x1, 3)
+      x3 ^= t0 + 2 * t1 + Subkeys[k--]
+      x3 = rotateR32(x3, 1)
+      x2 = rotateL32(x2, 1)
+      x2 ^= t0 + t1 + Subkeys[k--]
+    }
+
+    // output whitening
+    x0 ^= Subkeys[0]
+    x1 ^= Subkeys[1]
+    x2 ^= Subkeys[2]
+    x3 ^= Subkeys[3]
+
+    return new Uint8Array(new Uint32Array([x0, x1, x2, x3]).buffer)
+  }
+  return { encrypt, decrypt }
+}
+
+/**
+ * @description
+ * Twofish block cipher algorithm.
+ *
+ * Twofish 分组密码算法.
+ */
 export const twofish = createCipher(
-  (K: Uint8Array) => {
-    if (K.byteLength !== 16 && K.byteLength !== 24 && K.byteLength !== 32) {
-      throw new KitError(`Twofish requires a key of length 16, 24, or 32 bytes`)
-    }
-    const { Subkeys, SBox } = initKeySchedule(K)
-
-    const encrypt = (M: Uint8Array) => {
-      const M32 = new Uint32Array(M.buffer, M.byteOffset)
-      // input whitening
-      let x0 = M32[0] ^ Subkeys[0]
-      let x1 = M32[1] ^ Subkeys[1]
-      let x2 = M32[2] ^ Subkeys[2]
-      let x3 = M32[3] ^ Subkeys[3]
-
-      let k = 8
-      // 16 rounds of encryption
-      for (let i = 0; i < 16; i += 2) {
-        let t0 = Fe32(SBox, x0, 0)
-        let t1 = Fe32(SBox, x1, 3)
-        x2 ^= t0 + t1 + Subkeys[k++]
-        x2 = rotateR32(x2, 1)
-        x3 = rotateL32(x3, 1)
-        x3 ^= t0 + 2 * t1 + Subkeys[k++]
-
-        t0 = Fe32(SBox, x2, 0)
-        t1 = Fe32(SBox, x3, 3)
-        x0 ^= t0 + t1 + Subkeys[k++]
-        x0 = rotateR32(x0, 1)
-        x1 = rotateL32(x1, 1)
-        x1 ^= t0 + 2 * t1 + Subkeys[k++]
-      }
-
-      // output whitening
-      x2 ^= Subkeys[4]
-      x3 ^= Subkeys[5]
-      x0 ^= Subkeys[6]
-      x1 ^= Subkeys[7]
-
-      return new Uint8Array(new Uint32Array([x2, x3, x0, x1]).buffer)
-    }
-    const decrypt = (C: Uint8Array) => {
-      const M32 = new Uint32Array(C.buffer, C.byteOffset)
-      // input whitening
-      let x2 = M32[0] ^ Subkeys[4]
-      let x3 = M32[1] ^ Subkeys[5]
-      let x0 = M32[2] ^ Subkeys[6]
-      let x1 = M32[3] ^ Subkeys[7]
-
-      let k = 39
-      // 16 rounds of decryption
-      for (let i = 0; i < 16; i += 2) {
-        let t0 = Fe32(SBox, x2, 0)
-        let t1 = Fe32(SBox, x3, 3)
-        x1 ^= t0 + 2 * t1 + Subkeys[k--]
-        x1 = rotateR32(x1, 1)
-        x0 = rotateL32(x0, 1)
-        x0 ^= t0 + t1 + Subkeys[k--]
-
-        t0 = Fe32(SBox, x0, 0)
-        t1 = Fe32(SBox, x1, 3)
-        x3 ^= t0 + 2 * t1 + Subkeys[k--]
-        x3 = rotateR32(x3, 1)
-        x2 = rotateL32(x2, 1)
-        x2 ^= t0 + t1 + Subkeys[k--]
-      }
-
-      // output whitening
-      x0 ^= Subkeys[0]
-      x1 ^= Subkeys[1]
-      x2 ^= Subkeys[2]
-      x3 ^= Subkeys[3]
-
-      return new Uint8Array(new Uint32Array([x0, x1, x2, x3]).buffer)
-    }
-    return { encrypt, decrypt }
-  },
+  _twofish,
   {
     ALGORITHM: 'Blowfish',
     BLOCK_SIZE: 16,

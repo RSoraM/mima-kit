@@ -328,13 +328,61 @@ function decrypt128(C: Uint8Array, S: Uint8Array, r: number) {
 
 // * ARC5 Algorithm
 
+function _arc5(K: Uint8Array, WORD_SIZE: 8 | 16 | 32 | 64 | 128, round: number) {
+  let S: Uint8Array
+  let _encrypt: (M: Uint8Array) => Uint8Array
+  let _decrypt: (C: Uint8Array) => Uint8Array
+  switch (WORD_SIZE) {
+    case 8:
+      S = setup8(K, round)
+      _encrypt = (M: Uint8Array) => encrypt8(M, S, round)
+      _decrypt = (C: Uint8Array) => decrypt8(C, S, round)
+      break
+    case 16:
+      S = setup16(K, round)
+      _encrypt = (M: Uint8Array) => encrypt16(M, S, round)
+      _decrypt = (C: Uint8Array) => decrypt16(C, S, round)
+      break
+    case 32:
+      S = setup32(K, round)
+      _encrypt = (M: Uint8Array) => encrypt32(M, S, round)
+      _decrypt = (C: Uint8Array) => decrypt32(C, S, round)
+      break
+    case 64:
+      S = setup64(K, round)
+      _encrypt = (M: Uint8Array) => encrypt64(M, S, round)
+      _decrypt = (C: Uint8Array) => decrypt64(C, S, round)
+      break
+    case 128:
+      S = setup128(K, round)
+      _encrypt = (M: Uint8Array) => encrypt128(M, S, round)
+      _decrypt = (C: Uint8Array) => decrypt128(C, S, round)
+      break
+    default:
+      throw new KitError('ARC5 requires a word size of 8, 16, 32, 64 or 128')
+  }
+  return {
+    encrypt: (M: Uint8Array) => {
+      if (M.byteLength !== WORD_SIZE >> 2) {
+        throw new KitError(`ARC5 requires a block of length ${WORD_SIZE >> 2} bytes`)
+      }
+      return _encrypt(M)
+    },
+    decrypt: (C: Uint8Array) => {
+      if (C.byteLength !== WORD_SIZE >> 2) {
+        throw new KitError(`ARC5 requires a block of length ${WORD_SIZE >> 2} bytes`)
+      }
+      return _decrypt(C)
+    },
+  }
+}
+
 /**
  * @description
  * ARC5 Algorithm recommended using a key length of at least 16 bytes
  *
  * ARC5 算法推荐使用长度至少为 16 字节的密钥
  *
- * @example
  * ```ts
  * const spec8 = arc5(8, 8) // ARC5-8/8
  * const spec16 = arc5(16, 12) // ARC5-16/12
@@ -351,54 +399,7 @@ export function arc5(WORD_SIZE: 8 | 16 | 32 | 64 | 128 = 32, round: number = 16)
     throw new KitError('ARC5 requires a positive number of rounds less than 256')
   }
   return createCipher(
-    (K: Uint8Array) => {
-      let S: Uint8Array
-      let _encrypt: (M: Uint8Array) => Uint8Array
-      let _decrypt: (C: Uint8Array) => Uint8Array
-      switch (WORD_SIZE) {
-        case 8:
-          S = setup8(K, round)
-          _encrypt = (M: Uint8Array) => encrypt8(M, S, round)
-          _decrypt = (C: Uint8Array) => decrypt8(C, S, round)
-          break
-        case 16:
-          S = setup16(K, round)
-          _encrypt = (M: Uint8Array) => encrypt16(M, S, round)
-          _decrypt = (C: Uint8Array) => decrypt16(C, S, round)
-          break
-        case 32:
-          S = setup32(K, round)
-          _encrypt = (M: Uint8Array) => encrypt32(M, S, round)
-          _decrypt = (C: Uint8Array) => decrypt32(C, S, round)
-          break
-        case 64:
-          S = setup64(K, round)
-          _encrypt = (M: Uint8Array) => encrypt64(M, S, round)
-          _decrypt = (C: Uint8Array) => decrypt64(C, S, round)
-          break
-        case 128:
-          S = setup128(K, round)
-          _encrypt = (M: Uint8Array) => encrypt128(M, S, round)
-          _decrypt = (C: Uint8Array) => decrypt128(C, S, round)
-          break
-        default:
-          throw new KitError('ARC5 requires a word size of 8, 16, 32, 64 or 128')
-      }
-      return {
-        encrypt: (M: Uint8Array) => {
-          if (M.byteLength !== WORD_SIZE >> 2) {
-            throw new KitError(`ARC5 requires a block of length ${WORD_SIZE >> 2} bytes`)
-          }
-          return _encrypt(M)
-        },
-        decrypt: (C: Uint8Array) => {
-          if (C.byteLength !== WORD_SIZE >> 2) {
-            throw new KitError(`ARC5 requires a block of length ${WORD_SIZE >> 2} bytes`)
-          }
-          return _decrypt(C)
-        },
-      }
-    },
+    (K: Uint8Array) => _arc5(K, WORD_SIZE, round),
     {
       ALGORITHM: `ARC5-${WORD_SIZE}/${round}`,
       BLOCK_SIZE: WORD_SIZE >> 1,
