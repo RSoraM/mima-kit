@@ -40,12 +40,18 @@
   - [Keyed Hash Algorithm](#keyed-hash-algorithm)
     - [HMAC](#hmac)
     - [KMAC](#kmac)
-- [Block Cipher Algorithm](#block-cipher-algorithm)
-  - [Cipher Algorithm](#cipher-algorithm)
+- [Symmetric Key Algorithm](#symmetric-key-algorithm)
+  - [Block Cipher Algorithm](#block-cipher-algorithm)
     - [SM4](#sm4)
     - [AES](#aes)
+    - [ARIA](#aria)
     - [DES](#des)
     - [3DES](#3des)
+    - [ARC5](#arc5)
+    - [Blowfish](#blowfish)
+    - [Twofish](#twofish)
+    - [TEA](#tea)
+    - [XTEA](#xtea)
   - [Padding Mode](#padding-mode)
     - [PKCS#7](#pkcs7)
     - [ANSI X9.23](#ansi-x923)
@@ -59,6 +65,11 @@
     - [OFB](#ofb)
     - [CTR](#ctr)
     - [GCM](#gcm)
+  - [Stream Cipher Algorithms](#stream-cipher-algorithms)
+    - [ZUC](#zuc)
+    - [ARC4](#arc4)
+    - [Salsa20](#salsa20)
+    - [Rabbit](#rabbit)
 - [License](#license)
 
 ## Install
@@ -268,15 +279,24 @@ kmac128XOF(256, config)('mima-kit')
 kmac256XOF(512, config)('mima-kit')
 ```
 
-# Block Cipher Algorithm
+# Symmetric Key Algorithm
 
-Typically, we combine `encryption algorithms`, `padding modes`, and `block modes` to form a complete `encryption scheme`. Since standalone `encryption algorithms` can only encrypt or decrypt single data blocks, they are not very meaningful when used alone.
+A symmetric key algorithm is an encryption algorithm that uses the same key for both encryption and decryption. It can be broadly categorized into: `block cipher` and `stream cipher`.
 
-`mima-kit` places the `combination` behavior within the `block modes` to achieve flexible reuse.
+## Block Cipher Algorithm
 
-## Cipher Algorithm
+Typically, we combine `block cipher`, `padding modes`, and `block modes` to form a complete `block cipher scheme`. This is because individual `block cipher` can only encrypt and decrypt single data blocks, making them less meaningful when used alone.
 
-Using the `cipher algorithm` alone does not make much sense. See [Block Mode](#block-mode) to learn how to combine `cipher algorithm`, `padding mode`, and `block mode`.
+`mima-kit` incorporates this `combination` behavior into the `block modes` to achieve flexible reuse. See [Block Modes](#block-modes) to learn how to combine `block cipher`, `block modes`, and `padding modes`.
+
+```typescript
+const k = ''
+const iv = ''
+const config: CBCConfig = { }
+const cbc_sm4 = cbc(sm4, config)(k, iv)
+const c = cbc_sm4.encrypt('mima-kit') // c: Hex string
+const m = cbc_sm4.decrypt(c) // m: UTF8 string
+```
 
 ### SM4
 
@@ -306,6 +326,23 @@ aes(256)(k).encrypt(m) // c
 aes(256)(k).decrypt(c) // m
 ```
 
+### ARIA
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+aria(128)(k).encrypt(m) // c
+aria(128)(k).decrypt(c) // m
+
+aria(192)(k).encrypt(m) // c
+aria(192)(k).decrypt(c) // m
+
+aria(256)(k).encrypt(m) // c
+aria(256)(k).decrypt(c) // m
+```
+
 ### DES
 
 ```typescript
@@ -331,9 +368,87 @@ t_des(192)(k).encrypt(m) // c
 t_des(192)(k).decrypt(c) // m
 ```
 
+### ARC5
+
+The `ARC5` algorithm is a parameterized algorithm that can accept keys with lengths of `0 < k.byteLength < 256`. After parameterization, the algorithm is denoted as `ARC5-w/r`, where `w` is the bit length of the working word, and `r` is the number of rounds.
+
+```typescript
+// Recommended parameters
+// +-----+----+
+// |   w |  r |
+// +-----+----+
+// |   8 |  8 |
+// |  16 | 12 |
+// |  32 | 16 | (default)
+// |  64 | 20 |
+// | 128 | 24 |
+// +-----+----+
+
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+const spec8 = arc5(8, 8) // ARC5-8/8
+const spec16 = arc5(16, 12) // ARC5-16/12
+const spec32 = arc5(32, 16) // ARC5-32/16 (default)
+const spec64 = arc5(64, 20) // ARC5-64/20
+const spec128 = arc5(128, 24) // ARC5-128/24
+
+spec32(k).encrypt(m) // c
+spec32(k).decrypt(c) // m
+```
+
+### Blowfish
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+blowfish(k).encrypt(m) // c
+blowfish(k).decrypt(c) // m
+```
+
+### Twofish
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+twofish(k).encrypt(m) // c
+twofish(k).decrypt(c) // m
+```
+
+### TEA
+
+You can pass a parameter representing the number of rounds to the `TEA` algorithm. The number of rounds for the `TEA` algorithm can be any positive integer, with a default of `32`.
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+tea(32)(k).encrypt(m) // c
+tea(32)(k).decrypt(c) // m
+```
+
+### XTEA
+
+You can pass a parameter representing the number of rounds to the `XTEA` algorithm. The number of rounds for the `XTEA` algorithm can be any positive integer, with a default of `32`.
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+xtea(32)(k).encrypt(m) // c
+xtea(32)(k).decrypt(c) // m
+```
+
 ## Padding Mode
 
-Using the `padding mode` alone does not make much sense. See [Block Mode](#block-mode) to learn how to combine `cipher algorithm`, `padding mode`, and `block mode`.
+Using the `padding mode` alone does not make much sense. See [Block Mode](#block-mode) to learn how to combine `block cipher`, `padding mode`, and `block mode`.
 
 ### PKCS#7
 
@@ -377,7 +492,7 @@ ZERO_PAD(p) // m
 
 ## Block Mode
 
-See `/test/index.test.ts` for more usage examples.
+See `/test/cipher.test.ts` for more usage examples.
 
 ### ECB
 
@@ -755,6 +870,143 @@ interface GCMConfig {
    */
   AUTH_TAG_CODEC?: Codec
 }
+```
+
+## Stream Cipher Algorithms
+
+Typically, `stream cipher` do not require complex configurations and generally only need a `key` and an `iv`.
+
+```typescript
+const k = ''
+const iv = ''
+const config: IVStreamCipherConfig = { }
+const cipher = salsa20(k, iv, config)
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
+```
+
+```typescript
+interface IVStreamCipherConfig {
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### ZUC
+
+`ZUC` is a stream cipher algorithm specified in the `3GPP` standard. It includes the confidentiality algorithm `128-EEA3` and the integrity algorithm `128-EIA3`. Since the `ZUC` algorithm is primarily used in mobile communications, its function interface differs from other stream cipher algorithms.
+
+See `/test/cipher.test.ts` for more usage examples.
+
+```typescript
+const k = new Uint8Array(16)
+const m = new Uint8Array(4)
+const c = new Uint8Array([0x27, 0xBE, 0xDE, 0x74])
+const mac = new Uint8Array([0xC8, 0xA9, 0x59, 0x5E])
+const params: ZUCParams = {
+  KEY: k,
+  M: m,
+  COUNTER: 0,
+  BEARER: 0,
+  DIRECTION: 0,
+  LENGTH: 1,
+}
+const config: ZUCConfig = { }
+// 128-EEA3 encrypt message
+eea3(params, config) // c
+// 128-EIA3 generate mac
+eia3(params, config) // mac
+// 128-EEA3 decrypt message
+params.M = c
+eea3(params, config) // m
+```
+
+### ARC4
+
+The `ARC4` algorithm can accept keys with lengths of `0 < k.byteLength < 256`, and the `ARC4` algorithm does not require an `iv`.
+
+```typescript
+const k = ''
+const config: StreamCipherConfig = { }
+const cipher = arc4(k, config)
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
+```
+
+```typescript
+interface StreamCipherConfig {
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### Salsa20
+
+The `Salsa20` algorithm can accept keys of length `16` or `32` bytes and an `iv` of `8` bytes.
+
+```typescript
+const k = ''
+const iv = ''
+const cipher = salsa20(k, iv)
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
+```
+
+### Rabbit
+
+The `Rabbit` algorithm can accept a key of length `16` bytes. For the `iv`, the `Rabbit` algorithm can accept an `iv` of length `0` or `8` bytes. When the `iv` length is `0` bytes, the `Rabbit` algorithm will skip the `iv Setup` step.
+
+```typescript
+const k = ''
+const iv = new Uint8Array(8)
+const cipher = rabbit(k, iv)
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
+
+// skip iv setup
+const cipher = rabbit(k, new Uint8Array(0))
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
 ```
 
 # License

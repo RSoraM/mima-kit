@@ -20,7 +20,7 @@ const { ANSI_X923, NoPadding } = cipherSuite
 
 describe('stream cipher', () => {
   // * RC4
-  it('rc4', () => {
+  it('arc4', () => {
     const k = 'Key'
     const m = 'Plaintext'
     const c = 'bbf316e8d940af0ad3'

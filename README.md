@@ -38,12 +38,18 @@
   - [带密钥的加密散列算法](#带密钥的加密散列算法)
     - [HMAC](#hmac)
     - [KMAC](#kmac)
-- [分组加密算法](#分组加密算法)
-  - [加密算法](#加密算法)
+- [对称密钥算法](#对称密钥算法)
+  - [分组密码算法](#分组密码算法)
     - [SM4](#sm4)
     - [AES](#aes)
+    - [ARIA](#aria)
     - [DES](#des)
     - [3DES](#3des)
+    - [ARC5](#arc5)
+    - [Blowfish](#blowfish)
+    - [Twofish](#twofish)
+    - [TEA](#tea)
+    - [XTEA](#xtea)
   - [填充模式](#填充模式)
     - [PKCS#7](#pkcs7)
     - [ANSI X9.23](#ansi-x923)
@@ -57,6 +63,11 @@
     - [OFB](#ofb)
     - [CTR](#ctr)
     - [GCM](#gcm)
+  - [流密码算法](#流密码算法)
+    - [ZUC](#zuc)
+    - [ARC4](#arc4)
+    - [Salsa20](#salsa20)
+    - [Rabbit](#rabbit)
 - [License](#license)
 
 ## 安装
@@ -266,11 +277,15 @@ kmac128XOF(256, config)('mima-kit')
 kmac256XOF(512, config)('mima-kit')
 ```
 
-# 分组加密算法
+# 对称密钥算法
 
-通常，我们会将 `加密算法`、 `填充模式` 和 `分组模式` 组合在一起，形成一个完整的 `加密方案`。因为单独的 `加密算法` 只能对单个数据块进行加解密，所以它们在单独使用时并没有太大的意义。
+对称密钥算法是一种使用相同密钥进行加密和解密的加密算法。大致可以分为：`分组密码算法` 和 `流密码算法`。
 
-`mima-kit` 将 `组合` 这一行为放在了 `分组模式` 中，以达到灵活复用的目的。
+## 分组密码算法
+
+通常，我们会将 `分组密码算法`、 `填充模式` 和 `分组模式` 组合在一起，形成一个完整的 `分组密码方案`。因为单独的 `分组密码算法` 只能对单个数据块进行加解密，所以它们在单独使用时并没有太大的意义。
+
+`mima-kit` 将 `组合` 这一行为放在了 `分组模式` 中，以达到灵活复用的目的。查看 [分组模式](#分组模式) 将 `分组密码算法`、`分组模式` 和 `填充模式` 组合在一起。
 
 ```typescript
 const k = ''
@@ -280,10 +295,6 @@ const cbc_sm4 = cbc(sm4, config)(k, iv)
 const c = cbc_sm4.encrypt('mima-kit') // c: Hex string
 const m = cbc_sm4.decrypt(c) // m: UTF8 string
 ```
-
-## 加密算法
-
-单独使用 `加密算法` 并没有太大的意义。查看 [分组模式](#分组模式) 将 `加密算法`、`分组模式` 和 `填充模式` 组合在一起。
 
 ### SM4
 
@@ -313,6 +324,23 @@ aes(256)(k).encrypt(m) // c
 aes(256)(k).decrypt(c) // m
 ```
 
+### ARIA
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+aria(128)(k).encrypt(m) // c
+aria(128)(k).decrypt(c) // m
+
+aria(192)(k).encrypt(m) // c
+aria(192)(k).decrypt(c) // m
+
+aria(256)(k).encrypt(m) // c
+aria(256)(k).decrypt(c) // m
+```
+
 ### DES
 
 ```typescript
@@ -338,9 +366,87 @@ t_des(192)(k).encrypt(m) // c
 t_des(192)(k).decrypt(c) // m
 ```
 
+### ARC5
+
+`ARC5` 算法是一个参数化的算法，可以接受长度为 `0 < k.byteLength < 256` 的密钥。参数化后算法标记为 `ARC5-w/r`，其中 `w` 是工作字的比特长度，`r` 是轮数。
+
+```typescript
+// 推荐的参数化配置
+// +-----+----+
+// |   w |  r |
+// +-----+----+
+// |   8 |  8 |
+// |  16 | 12 |
+// |  32 | 16 | (default)
+// |  64 | 20 |
+// | 128 | 24 |
+// +-----+----+
+
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+const spec8 = arc5(8, 8) // ARC5-8/8
+const spec16 = arc5(16, 12) // ARC5-16/12
+const spec32 = arc5(32, 16) // ARC5-32/16 (default)
+const spec64 = arc5(64, 20) // ARC5-64/20
+const spec128 = arc5(128, 24) // ARC5-128/24
+
+spec32(k).encrypt(m) // c
+spec32(k).decrypt(c) // m
+```
+
+### Blowfish
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+blowfish(k).encrypt(m) // c
+blowfish(k).decrypt(c) // m
+```
+
+### Twofish
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+twofish(k).encrypt(m) // c
+twofish(k).decrypt(c) // m
+```
+
+### TEA
+
+可以向 `TEA` 算法传递一个代表 `轮数` 的参数。`TEA` 算法的 `轮数` 可以任意正整数，默认使用 `32`。
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+tea(32)(k).encrypt(m) // c
+tea(32)(k).decrypt(c) // m
+```
+
+### XTEA
+
+可以向 `XTEA` 算法传递一个代表 `轮数` 的参数。`XTEA` 算法的 `轮数` 可以任意正整数，默认使用 `32`。
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+xtea(32)(k).encrypt(m) // c
+xtea(32)(k).decrypt(c) // m
+```
+
 ## 填充模式
 
-单独使用 `填充模式` 并没有太大的意义。查看 [分组模式](#分组模式) 将 `加密算法`、`分组模式` 和 `填充模式` 组合在一起。
+单独使用 `填充模式` 并没有太大的意义。查看 [分组模式](#分组模式) 将 `分组密码算法`、`分组模式` 和 `填充模式` 组合在一起。
 
 ### PKCS#7
 
@@ -384,7 +490,7 @@ ZERO_PAD(p) // m
 
 ## 分组模式
 
-查看 `/test/index.test.ts` 以获取更多使用示例。
+查看 `/test/cipher.test.ts` 以获取更多使用示例。
 
 ### ECB
 
@@ -762,6 +868,143 @@ interface GCMConfig {
    */
   AUTH_TAG_CODEC?: Codec
 }
+```
+
+## 流密码算法
+
+通常 `流密码算法` 不需要复杂的配置，一般只需要 `key` 和 `iv`。
+
+```typescript
+const k = ''
+const iv = ''
+const config: IVStreamCipherConfig = { }
+const cipher = salsa20(k, iv, config)
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
+```
+
+```typescript
+interface IVStreamCipherConfig {
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  IV_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### ZUC
+
+`ZUC` 是 `3GPP` 规范中的流密码算法，它包含机密性算法 `128-EEA3` 和完整性算法 `128-EIA3`。由于 `ZUC` 算法主要用于移动通信，所以函数接口和其他流密码算法有所不同。
+
+查看 `/test/cipher.test.ts` 以获取更多使用示例。
+
+```typescript
+const k = new Uint8Array(16)
+const m = new Uint8Array(4)
+const c = new Uint8Array([0x27, 0xBE, 0xDE, 0x74])
+const mac = new Uint8Array([0xC8, 0xA9, 0x59, 0x5E])
+const params: ZUCParams = {
+  KEY: k,
+  M: m,
+  COUNTER: 0,
+  BEARER: 0,
+  DIRECTION: 0,
+  LENGTH: 1,
+}
+const config: ZUCConfig = { }
+// 128-EEA3 加密消息
+eea3(params, config) // c
+// 128-EIA3 计算消息认证码
+eia3(params, config) // mac
+// 128-EEA3 解密消息
+params.M = c
+eea3(params, config) // m
+```
+
+### ARC4
+
+`ARC4` 算法可以接受长度为 `0 < k.byteLength < 256` 的密钥，同时 `ARC4` 算法不需要 `iv`。
+
+```typescript
+const k = ''
+const config: StreamCipherConfig = { }
+const cipher = arc4(k, config)
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
+```
+
+```typescript
+interface StreamCipherConfig {
+  /**
+   * @default HEX
+   */
+  KEY_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  ENCRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  ENCRYPT_OUTPUT_CODEC?: Codec
+  /**
+   * @default HEX
+   */
+  DECRYPT_INPUT_CODEC?: Codec
+  /**
+   * @default UTF8
+   */
+  DECRYPT_OUTPUT_CODEC?: Codec
+}
+```
+
+### Salsa20
+
+`Salsa20` 算法可以接受长度为 `16` 或 `32` 字节的密钥和 `8` 字节的 `iv`。
+
+```typescript
+const k = ''
+const iv = ''
+const cipher = salsa20(k, iv)
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
+```
+
+### Rabbit
+
+`Rabbit` 算法可以接受长度为 `16` 字节的密钥。对于 `iv`，`Rabbit` 算法可以接受长度为 `0` 或 `8` 字节的 `iv`。当 `iv` 长度为 `0` 字节时，`Rabbit` 算法会跳过 `iv Setup` 步骤。
+
+```typescript
+const k = ''
+const iv = new Uint8Array(8)
+const cipher = rabbit(k, iv)
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
+
+// skip iv setup
+const cipher = rabbit(k, new Uint8Array(0))
+const c = cipher.encrypt('mima-kit') // c: Hex string
+const m = cipher.decrypt(c) // m: UTF8 string
 ```
 
 # License
