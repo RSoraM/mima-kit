@@ -1,5 +1,5 @@
-import { KitError } from '../core/utils'
-import { createCipher } from '../core/cipher'
+import { KitError } from '../../core/utils'
+import { createCipher } from '../../core/cipher'
 
 // * Constants
 

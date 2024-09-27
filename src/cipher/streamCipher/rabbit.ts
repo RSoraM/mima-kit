@@ -1,5 +1,5 @@
-import { createIVStreamCipher } from '../core/cipher'
-import { KitError, resizeBuffer, rotateL32 } from '../core/utils'
+import { createIVStreamCipher } from '../../core/cipher'
+import { KitError, resizeBuffer, rotateL32 } from '../../core/utils'
 
 // * Constants
 

@@ -1,5 +1,5 @@
-import { createCipher } from '../core/cipher'
-import { KitError, rotateL32, rotateR32 } from '../core/utils'
+import { createCipher } from '../../core/cipher'
+import { KitError, rotateL32, rotateR32 } from '../../core/utils'
 
 // * Constants
 

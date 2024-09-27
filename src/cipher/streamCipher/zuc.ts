@@ -1,6 +1,6 @@
-import type { Codec } from '../core/codec'
-import { HEX, UTF8 } from '../core/codec'
-import { KitError, rotateL32, wrap } from '../core/utils'
+import type { Codec } from '../../core/codec'
+import { HEX, UTF8 } from '../../core/codec'
+import { KitError, rotateL32, wrap } from '../../core/utils'
 
 // * Constants
 

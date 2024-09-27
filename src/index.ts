@@ -68,41 +68,41 @@ export { pcbc, type PCBCConfig } from './core/cipher'
 export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4, NoPadding } from './core/cipher'
 
 // * SM4
-export { sm4 } from './cipher/sm4'
+export { sm4 } from './cipher/blockCipher/sm4'
 
 // * AES
-export { aes } from './cipher/aes'
+export { aes } from './cipher/blockCipher/aes'
 
 // * ARIA
-export { aria } from './cipher/aria'
+export { aria } from './cipher/blockCipher/aria'
 
 // * DES & 3DES
-export { des, t_des } from './cipher/des'
+export { des, t_des } from './cipher/blockCipher/des'
 
 // * ARC5
-export { arc5 } from './cipher/arc5'
+export { arc5 } from './cipher/blockCipher/arc5'
 
 // * Blowfish
-export { blowfish } from './cipher/blowfish'
+export { blowfish } from './cipher/blockCipher/blowfish'
 
 // * Twofish
-export { twofish } from './cipher/twofish'
+export { twofish } from './cipher/blockCipher/twofish'
 
 // * TEA
-export { tea, xtea } from './cipher/tea'
+export { tea, xtea } from './cipher/blockCipher/tea'
 
 // * Stream Cipher
 export type { StreamCipherConfig, IVStreamCipherConfig } from './core/cipher'
 
 // * ZUC
-export type { ZUCParams, ZUCConfig } from './cipher/zuc'
-export { eea3, eia3, zuc } from './cipher/zuc'
+export type { ZUCParams, ZUCConfig } from './cipher/streamCipher/zuc'
+export { eea3, eia3, zuc } from './cipher/streamCipher/zuc'
 
 // * ARC4
-export { arc4 } from './cipher/arc4'
+export { arc4 } from './cipher/streamCipher/arc4'
 
 // * Salsa20
-export { salsa20 } from './cipher/salsa20'
+export { salsa20 } from './cipher/streamCipher/salsa20'
 
 // * Rabbit
-export { rabbit } from './cipher/rabbit'
+export { rabbit } from './cipher/streamCipher/rabbit'

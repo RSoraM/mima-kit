@@ -1,5 +1,5 @@
-import { createStreamCipher } from '../core/cipher'
-import { KitError } from '../core/utils'
+import { createStreamCipher } from '../../core/cipher'
+import { KitError } from '../../core/utils'
 
 // * Functions
 
