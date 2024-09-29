@@ -11,6 +11,7 @@ export default antfu(
     rules: {
       // overrides
       'style/indent': 'off',
+      'style/max-statements-per-line': 'off',
     },
   },
 )
