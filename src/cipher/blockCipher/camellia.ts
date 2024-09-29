@@ -12,25 +12,18 @@ const SIGMA = new Uint32Array([0xA09E667F, 0x3BCC908B, 0xB67AE858, 0x4CAA73B2, 0
 
 // * Functions
 
-function ROTL128(s0: number, s1: number, s2: number, s3: number, bit: number) {
+function ROTL128(s: Uint32Array, bit: number) {
   const n = 32 - bit
-  const t0 = s0 << bit | s1 >>> n
-  const t1 = s1 << bit | s2 >>> n
-  const t2 = s2 << bit | s3 >>> n
-  const t3 = s3 << bit | s0 >>> n
-  return [t0, t1, t2, t3]
+  const t = s[3] << bit | s[0] >>> n
+  s[0] = s[0] << bit | s[1] >>> n
+  s[1] = s[1] << bit | s[2] >>> n
+  s[2] = s[2] << bit | s[3] >>> n
+  s[3] = t
 }
 
-function Camellia_Feistel(
-  s0: number,
-  s1: number,
-  s2: number,
-  s3: number,
-  kh: number,
-  kl: number,
-) {
-  const t0 = s0 ^ kh
-  const t1 = s1 ^ kl
+function Camellia_Feistel(sh: Uint32Array, sl: Uint32Array, kh: number, kl: number) {
+  const t0 = sh[0] ^ kh
+  const t1 = sh[1] ^ kl
   const t3
     = SBox1_1110[0xFF & (t0 >> 24)]
     ^ SBox2_0222[0xFF & (t0 >> 16)]
@@ -42,374 +35,419 @@ function Camellia_Feistel(
     ^ SBox4_4404[0xFF & (t1 >> 8)]
     ^ SBox3_3033[0xFF & (t1 >> 16)]
     ^ SBox2_0222[0xFF & (t1 >> 24)]
-  s2 ^= t2
-  s3 ^= t2 ^ rotateR32(t3, 8)
-
-  return [s2, s3]
+  sl[0] ^= t2
+  sl[1] ^= t2 ^ rotateR32(t3, 8)
 }
 
 // * Camellia Algorithm
 
 function KeySchedule(K: Uint8Array) {
   const KView = new DataView(K.buffer)
-  const k = new Uint32Array(68)
-  let s0: number, s1: number, s2: number, s3: number
-  s0 = k[0] = KView.getUint32(0, false)
-  s1 = k[1] = KView.getUint32(4, false)
-  s2 = k[2] = KView.getUint32(8, false)
-  s3 = k[3] = KView.getUint32(12, false)
+  const k = K.byteLength === 16 ? new Uint32Array(52) : new Uint32Array(68)
+  const s = new Uint32Array(4)
+  const sh = s.subarray(0, 2)
+  const sl = s.subarray(2, 4)
 
-  if (K.byteLength !== 16) {
-    s0 = k[8] = KView.getUint32(16, false)
-    s1 = k[9] = KView.getUint32(20, false)
-    if (K.byteLength === 24) {
-      s2 = k[10] = ~s0
-      s3 = k[11] = ~s1
-    }
-    else {
-      s2 = k[10] = KView.getUint32(24, false)
-      s3 = k[11] = KView.getUint32(28, false)
-    }
-    s0 ^= k[0]; s1 ^= k[1]; s2 ^= k[2]; s3 ^= k[3]
+  /* Map the key to the keyTable */
+  switch (K.byteLength) {
+    case 16:
+      mapKey128(KView, s, k)
+      break
+    case 24:
+      mapKey192(KView, s, k)
+      break
+    case 32:
+      mapKey256(KView, s, k)
+      break
   }
 
   /* Use the Feistel routine to scramble the key material */
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, SIGMA[0], SIGMA[1]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, SIGMA[2], SIGMA[3])
+  Camellia_Feistel(sh, sl, SIGMA[0], SIGMA[1])
+  Camellia_Feistel(sl, sh, SIGMA[2], SIGMA[3])
 
-  s0 ^= k[0]; s1 ^= k[1]; s2 ^= k[2]; s3 ^= k[3];
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, SIGMA[4], SIGMA[5]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, SIGMA[6], SIGMA[7])
+  s[0] ^= k[0]; s[1] ^= k[1]; s[2] ^= k[2]; s[3] ^= k[3]
+  Camellia_Feistel(sh, sl, SIGMA[4], SIGMA[5])
+  Camellia_Feistel(sl, sh, SIGMA[6], SIGMA[7])
 
   /* Fill the keyTable. Requires many block rotations. */
-  if (K.byteLength === 16) {
-    k[4] = s0; k[5] = s1; k[6] = s2; k[7] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KA <<< 15 */
-    k[12] = s0; k[13] = s1; k[14] = s2; k[15] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KA <<< 30 */
-    k[16] = s0; k[17] = s1; k[18] = s2; k[19] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KA <<< 45 */
-    k[24] = s0; k[25] = s1;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KA <<< 60 */
-    k[28] = s0; k[29] = s1; k[30] = s2; k[31] = s3;
-    [s0, s1, s2, s3] = [s1, s2, s3, s0];
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 2) /* KA <<< 94 */
-    k[40] = s0; k[41] = s1; k[42] = s2; k[43] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 17) /* KA <<<111 */
-    k[48] = s0; k[49] = s1; k[50] = s2; k[51] = s3
-
-    s0 = k[0]; s1 = k[1]; s2 = k[2]; s3 = k[3];
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KL <<< 15 */
-    k[8] = s0; k[9] = s1; k[10] = s2; k[11] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 30) /* KL <<< 45 */
-    k[20] = s0; k[21] = s1; k[22] = s2; k[23] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KL <<< 60 */
-    k[26] = s2; k[27] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 17) /* KL <<< 77 */
-    k[32] = s0; k[33] = s1; k[34] = s2; k[35] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 17) /* KL <<< 94 */
-    k[36] = s0; k[37] = s1; k[38] = s2; k[39] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 17) /* KL <<<111 */
-    k[44] = s0; k[45] = s1; k[46] = s2; k[47] = s3
-  }
-  else {
-    k[12] = s0; k[13] = s1; k[14] = s2; k[15] = s3
-    s0 ^= k[8]; s1 ^= k[9]; s2 ^= k[10]; s3 ^= k[11];
-    [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, SIGMA[8], SIGMA[9]);
-    [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, SIGMA[10], SIGMA[11])
-
-    k[4] = s0; k[5] = s1; k[6] = s2; k[7] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 30) /* KB <<< 30 */
-    k[20] = s0; k[21] = s1; k[22] = s2; k[23] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 30) /* KB <<< 60 */
-    k[40] = s0; k[41] = s1; k[42] = s2; k[43] = s3;
-    [s1, s2, s3, s0] = ROTL128(s1, s2, s3, s0, 19) /* KB <<<111 */
-    k[64] = s1; k[65] = s2; k[66] = s3; k[67] = s0
-
-    s0 = k[8]; s1 = k[9]; s2 = k[10]; s3 = k[11];
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KR <<< 15 */
-    k[8] = s0; k[9] = s1; k[10] = s2; k[11] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KR <<< 30 */
-    k[16] = s0; k[17] = s1; k[18] = s2; k[19] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 30) /* KR <<< 60 */
-    k[36] = s0; k[37] = s1; k[38] = s2; k[39] = s3;
-    [s0, s1, s2, s3] = [s1, s2, s3, s0];
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 2) /* KR <<< 94 */
-    k[52] = s0; k[53] = s1; k[54] = s2; k[55] = s3
-
-    s0 = k[12]; s1 = k[13]; s2 = k[14]; s3 = k[15];
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KA <<< 15 */
-    k[12] = s0; k[13] = s1; k[14] = s2; k[15] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 30) /* KA <<< 45 */
-    k[28] = s0; k[29] = s1; k[30] = s2; k[31] = s3
-    /* KA <<< 77 */
-    k[48] = s1; k[49] = s2; k[50] = s3; k[51] = s0;
-    [s0, s1, s2, s3] = [s1, s2, s3, s0];
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 17) /* KA <<< 94 */
-    k[56] = s0; k[57] = s1; k[58] = s2; k[59] = s3
-
-    s0 = k[0]; s1 = k[1]; s2 = k[2]; s3 = k[3];
-    [s0, s1, s2, s3] = [s1, s2, s3, s0];
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 13) /* KL <<< 45 */
-    k[24] = s0; k[25] = s1; k[26] = s2; k[27] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 15) /* KL <<< 60 */
-    k[32] = s0; k[33] = s1; k[34] = s2; k[35] = s3;
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 17) /* KL <<< 77 */
-    k[44] = s0; k[45] = s1; k[46] = s2; k[47] = s3;
-    [s0, s1, s2, s3] = [s1, s2, s3, s0];
-    [s0, s1, s2, s3] = ROTL128(s0, s1, s2, s3, 2) /* KL <<<111 */
-    k[60] = s0; k[61] = s1; k[62] = s2; k[63] = s3
+  switch (K.byteLength) {
+    case 16:
+      setup128(s, k)
+      break
+    case 24:
+    case 32:
+      setup256(s, k)
+      break
   }
 
-  return K.byteLength === 16 ? k.slice(0, 52) : k
+  return k
 }
-function _encrypt(M: Uint8Array, k: Uint32Array) {
-  if (M.byteLength !== 16) {
-    throw new KitError('camellia requires a block size of 16 bytes')
-  }
-  return k.length === 52 ? _encrypt128(M, k) : _encrypt256(M, k)
+function mapKey128(KView: DataView, s: Uint32Array, k: Uint32Array) {
+  s[0] = k[0] = KView.getUint32(0, false)
+  s[1] = k[1] = KView.getUint32(4, false)
+  s[2] = k[2] = KView.getUint32(8, false)
+  s[3] = k[3] = KView.getUint32(12, false)
 }
+function mapKey192(KView: DataView, s: Uint32Array, k: Uint32Array) {
+  mapKey128(KView, s, k)
+  s[0] = k[8] = KView.getUint32(16, false)
+  s[1] = k[9] = KView.getUint32(20, false)
+  s[2] = k[10] = ~s[0]
+  s[3] = k[11] = ~s[1]
+  s[0] ^= k[0]; s[1] ^= k[1]; s[2] ^= k[2]; s[3] ^= k[3]
+}
+function mapKey256(KView: DataView, s: Uint32Array, k: Uint32Array) {
+  mapKey192(KView, s, k)
+  s[0] = k[8] = KView.getUint32(16, false)
+  s[1] = k[9] = KView.getUint32(20, false)
+  s[2] = k[10] = KView.getUint32(24, false)
+  s[3] = k[11] = KView.getUint32(28, false)
+  s[0] ^= k[0]; s[1] ^= k[1]; s[2] ^= k[2]; s[3] ^= k[3]
+}
+function setup128(s: Uint32Array, k: Uint32Array) {
+  k[4] = s[0]; k[5] = s[1]; k[6] = s[2]; k[7] = s[3]
+  ROTL128(s, 15) /* KA <<< 15 */
+  k[12] = s[0]; k[13] = s[1]; k[14] = s[2]; k[15] = s[3]
+  ROTL128(s, 15) /* KA <<< 30 */
+  k[16] = s[0]; k[17] = s[1]; k[18] = s[2]; k[19] = s[3]
+  ROTL128(s, 15) /* KA <<< 45 */
+  k[24] = s[0]; k[25] = s[1]
+  ROTL128(s, 15) /* KA <<< 60 */
+  k[28] = s[0]; k[29] = s[1]; k[30] = s[2]; k[31] = s[3];
+  [s[0], s[1], s[2], s[3]] = [s[1], s[2], s[3], s[0]]
+  ROTL128(s, 2) /* KA <<< 94 */
+  k[40] = s[0]; k[41] = s[1]; k[42] = s[2]; k[43] = s[3]
+  ROTL128(s, 17) /* KA <<<111 */
+  k[48] = s[0]; k[49] = s[1]; k[50] = s[2]; k[51] = s[3]
+
+  s[0] = k[0]; s[1] = k[1]; s[2] = k[2]; s[3] = k[3]
+  ROTL128(s, 15) /* KL <<< 15 */
+  k[8] = s[0]; k[9] = s[1]; k[10] = s[2]; k[11] = s[3]
+  ROTL128(s, 30) /* KL <<< 45 */
+  k[20] = s[0]; k[21] = s[1]; k[22] = s[2]; k[23] = s[3]
+  ROTL128(s, 15) /* KL <<< 60 */
+  k[26] = s[2]; k[27] = s[3]
+  ROTL128(s, 17) /* KL <<< 77 */
+  k[32] = s[0]; k[33] = s[1]; k[34] = s[2]; k[35] = s[3]
+  ROTL128(s, 17) /* KL <<< 94 */
+  k[36] = s[0]; k[37] = s[1]; k[38] = s[2]; k[39] = s[3]
+  ROTL128(s, 17) /* KL <<<111 */
+  k[44] = s[0]; k[45] = s[1]; k[46] = s[2]; k[47] = s[3]
+}
+function setup256(s: Uint32Array, k: Uint32Array) {
+  const sh = s.subarray(0, 2)
+  const sl = s.subarray(2, 4)
+  k[12] = s[0]; k[13] = s[1]; k[14] = s[2]; k[15] = s[3]
+  s[0] ^= k[8]; s[1] ^= k[9]; s[2] ^= k[10]; s[3] ^= k[11]
+  Camellia_Feistel(sh, sl, SIGMA[8], SIGMA[9])
+  Camellia_Feistel(sl, sh, SIGMA[10], SIGMA[11])
+
+  k[4] = s[0]; k[5] = s[1]; k[6] = s[2]; k[7] = s[3]
+  ROTL128(s, 30) /* KB <<< 30 */
+  k[20] = s[0]; k[21] = s[1]; k[22] = s[2]; k[23] = s[3]
+  ROTL128(s, 30) /* KB <<< 60 */
+  k[40] = s[0]; k[41] = s[1]; k[42] = s[2]; k[43] = s[3];
+  [s[0], s[1], s[2], s[3]] = [s[1], s[2], s[3], s[0]]
+  ROTL128(s, 19) /* KB <<<111 */
+  k[64] = s[0]; k[65] = s[1]; k[66] = s[2]; k[67] = s[3]
+
+  s[0] = k[8]; s[1] = k[9]; s[2] = k[10]; s[3] = k[11]
+  ROTL128(s, 15) /* KR <<< 15 */
+  k[8] = s[0]; k[9] = s[1]; k[10] = s[2]; k[11] = s[3]
+  ROTL128(s, 15) /* KR <<< 30 */
+  k[16] = s[0]; k[17] = s[1]; k[18] = s[2]; k[19] = s[3]
+  ROTL128(s, 30) /* KR <<< 60 */
+  k[36] = s[0]; k[37] = s[1]; k[38] = s[2]; k[39] = s[3];
+  [s[0], s[1], s[2], s[3]] = [s[1], s[2], s[3], s[0]]
+  ROTL128(s, 2) /* KR <<< 94 */
+  k[52] = s[0]; k[53] = s[1]; k[54] = s[2]; k[55] = s[3]
+
+  s[0] = k[12]; s[1] = k[13]; s[2] = k[14]; s[3] = k[15]
+  ROTL128(s, 15) /* KA <<< 15 */
+  k[12] = s[0]; k[13] = s[1]; k[14] = s[2]; k[15] = s[3]
+  ROTL128(s, 30) /* KA <<< 45 */
+  k[28] = s[0]; k[29] = s[1]; k[30] = s[2]; k[31] = s[3]
+  /* KA <<< 77 */
+  k[48] = s[1]; k[49] = s[2]; k[50] = s[3]; k[51] = s[0];
+  [s[0], s[1], s[2], s[3]] = [s[1], s[2], s[3], s[0]]
+  ROTL128(s, 17) /* KA <<< 94 */
+  k[56] = s[0]; k[57] = s[1]; k[58] = s[2]; k[59] = s[3]
+
+  s[0] = k[0]; s[1] = k[1]; s[2] = k[2]; s[3] = k[3];
+  [s[0], s[1], s[2], s[3]] = [s[1], s[2], s[3], s[0]]
+  ROTL128(s, 13) /* KL <<< 45 */
+  k[24] = s[0]; k[25] = s[1]; k[26] = s[2]; k[27] = s[3]
+  ROTL128(s, 15) /* KL <<< 60 */
+  k[32] = s[0]; k[33] = s[1]; k[34] = s[2]; k[35] = s[3]
+  ROTL128(s, 17) /* KL <<< 77 */
+  k[44] = s[0]; k[45] = s[1]; k[46] = s[2]; k[47] = s[3];
+  [s[0], s[1], s[2], s[3]] = [s[1], s[2], s[3], s[0]]
+  ROTL128(s, 2) /* KL <<<111 */
+  k[60] = s[0]; k[61] = s[1]; k[62] = s[2]; k[63] = s[3]
+}
+
 function _encrypt128(M: Uint8Array, k: Uint32Array) {
   const C = M.slice(0)
   const CView = new DataView(C.buffer)
-  let s0: number, s1: number, s2: number, s3: number
-  s0 = k[0] ^ CView.getUint32(0, false)
-  s1 = k[1] ^ CView.getUint32(4, false)
-  s2 = k[2] ^ CView.getUint32(8, false)
-  s3 = k[3] ^ CView.getUint32(12, false);
+  const s = new Uint32Array(4)
+  const sh = s.subarray(0, 2)
+  const sl = s.subarray(2, 4)
+  s[0] = k[0] ^ CView.getUint32(0, false)
+  s[1] = k[1] ^ CView.getUint32(4, false)
+  s[2] = k[2] ^ CView.getUint32(8, false)
+  s[3] = k[3] ^ CView.getUint32(12, false)
 
   // GR 1
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[4], k[5]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[6], k[7]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[8], k[9]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[10], k[11]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[12], k[13]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[14], k[15])
-  s1 ^= rotateL32(s0 & k[16], 1)
-  s2 ^= s3 | k[19]
-  s0 ^= s1 | k[17]
-  s3 ^= rotateL32(s2 & k[18], 1);
+  Camellia_Feistel(sh, sl, k[4], k[5])
+  Camellia_Feistel(sl, sh, k[6], k[7])
+  Camellia_Feistel(sh, sl, k[8], k[9])
+  Camellia_Feistel(sl, sh, k[10], k[11])
+  Camellia_Feistel(sh, sl, k[12], k[13])
+  Camellia_Feistel(sl, sh, k[14], k[15])
+  s[1] ^= rotateL32(s[0] & k[16], 1)
+  s[2] ^= s[3] | k[19]
+  s[0] ^= s[1] | k[17]
+  s[3] ^= rotateL32(s[2] & k[18], 1)
   // GR 2
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[20], k[21]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[22], k[23]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[24], k[25]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[26], k[27]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[28], k[29]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[30], k[31])
-  s1 ^= rotateL32(s0 & k[32], 1)
-  s2 ^= s3 | k[35]
-  s0 ^= s1 | k[33]
-  s3 ^= rotateL32(s2 & k[34], 1);
+  Camellia_Feistel(sh, sl, k[20], k[21])
+  Camellia_Feistel(sl, sh, k[22], k[23])
+  Camellia_Feistel(sh, sl, k[24], k[25])
+  Camellia_Feistel(sl, sh, k[26], k[27])
+  Camellia_Feistel(sh, sl, k[28], k[29])
+  Camellia_Feistel(sl, sh, k[30], k[31])
+  s[1] ^= rotateL32(s[0] & k[32], 1)
+  s[2] ^= s[3] | k[35]
+  s[0] ^= s[1] | k[33]
+  s[3] ^= rotateL32(s[2] & k[34], 1)
   // GR 3
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[36], k[37]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[38], k[39]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[40], k[41]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[42], k[43]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[44], k[45]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[46], k[47])
-  s2 ^= k[48]
-  s3 ^= k[49]
-  s0 ^= k[50]
-  s1 ^= k[51]
+  Camellia_Feistel(sh, sl, k[36], k[37])
+  Camellia_Feistel(sl, sh, k[38], k[39])
+  Camellia_Feistel(sh, sl, k[40], k[41])
+  Camellia_Feistel(sl, sh, k[42], k[43])
+  Camellia_Feistel(sh, sl, k[44], k[45])
+  Camellia_Feistel(sl, sh, k[46], k[47])
+  s[2] ^= k[48]
+  s[3] ^= k[49]
+  s[0] ^= k[50]
+  s[1] ^= k[51]
 
-  CView.setUint32(0, s2, false)
-  CView.setUint32(4, s3, false)
-  CView.setUint32(8, s0, false)
-  CView.setUint32(12, s1, false)
+  CView.setUint32(0, s[2], false)
+  CView.setUint32(4, s[3], false)
+  CView.setUint32(8, s[0], false)
+  CView.setUint32(12, s[1], false)
   return C
 }
 function _encrypt256(M: Uint8Array, k: Uint32Array) {
   const C = M.slice(0)
   const CView = new DataView(C.buffer)
-  let s0: number, s1: number, s2: number, s3: number
-  s0 = k[0] ^ CView.getUint32(0, false)
-  s1 = k[1] ^ CView.getUint32(4, false)
-  s2 = k[2] ^ CView.getUint32(8, false)
-  s3 = k[3] ^ CView.getUint32(12, false);
+  const s = new Uint32Array(4)
+  const sh = s.subarray(0, 2)
+  const sl = s.subarray(2, 4)
+  s[0] = k[0] ^ CView.getUint32(0, false)
+  s[1] = k[1] ^ CView.getUint32(4, false)
+  s[2] = k[2] ^ CView.getUint32(8, false)
+  s[3] = k[3] ^ CView.getUint32(12, false)
 
   // GR 1
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[4], k[5]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[6], k[7]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[8], k[9]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[10], k[11]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[12], k[13]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[14], k[15])
-  s1 ^= rotateL32(s0 & k[16], 1)
-  s2 ^= s3 | k[19]
-  s0 ^= s1 | k[17]
-  s3 ^= rotateL32(s2 & k[18], 1);
+  Camellia_Feistel(sh, sl, k[4], k[5])
+  Camellia_Feistel(sl, sh, k[6], k[7])
+  Camellia_Feistel(sh, sl, k[8], k[9])
+  Camellia_Feistel(sl, sh, k[10], k[11])
+  Camellia_Feistel(sh, sl, k[12], k[13])
+  Camellia_Feistel(sl, sh, k[14], k[15])
+  s[1] ^= rotateL32(s[0] & k[16], 1)
+  s[2] ^= s[3] | k[19]
+  s[0] ^= s[1] | k[17]
+  s[3] ^= rotateL32(s[2] & k[18], 1)
   // GR 2
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[20], k[21]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[22], k[23]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[24], k[25]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[26], k[27]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[28], k[29]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[30], k[31])
-  s1 ^= rotateL32(s0 & k[32], 1)
-  s2 ^= s3 | k[35]
-  s0 ^= s1 | k[33]
-  s3 ^= rotateL32(s2 & k[34], 1);
+  Camellia_Feistel(sh, sl, k[20], k[21])
+  Camellia_Feistel(sl, sh, k[22], k[23])
+  Camellia_Feistel(sh, sl, k[24], k[25])
+  Camellia_Feistel(sl, sh, k[26], k[27])
+  Camellia_Feistel(sh, sl, k[28], k[29])
+  Camellia_Feistel(sl, sh, k[30], k[31])
+  s[1] ^= rotateL32(s[0] & k[32], 1)
+  s[2] ^= s[3] | k[35]
+  s[0] ^= s[1] | k[33]
+  s[3] ^= rotateL32(s[2] & k[34], 1)
   // GR 3
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[36], k[37]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[38], k[39]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[40], k[41]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[42], k[43]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[44], k[45]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[46], k[47])
-  s1 ^= rotateL32(s0 & k[48], 1)
-  s2 ^= s3 | k[51]
-  s0 ^= s1 | k[49]
-  s3 ^= rotateL32(s2 & k[50], 1);
+  Camellia_Feistel(sh, sl, k[36], k[37])
+  Camellia_Feistel(sl, sh, k[38], k[39])
+  Camellia_Feistel(sh, sl, k[40], k[41])
+  Camellia_Feistel(sl, sh, k[42], k[43])
+  Camellia_Feistel(sh, sl, k[44], k[45])
+  Camellia_Feistel(sl, sh, k[46], k[47])
+  s[1] ^= rotateL32(s[0] & k[48], 1)
+  s[2] ^= s[3] | k[51]
+  s[0] ^= s[1] | k[49]
+  s[3] ^= rotateL32(s[2] & k[50], 1)
   // GR 4
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[52], k[53]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[54], k[55]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[56], k[57]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[58], k[59]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[60], k[61]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[62], k[63])
-  s2 ^= k[64]
-  s3 ^= k[65]
-  s0 ^= k[66]
-  s1 ^= k[67]
+  Camellia_Feistel(sh, sl, k[52], k[53])
+  Camellia_Feistel(sl, sh, k[54], k[55])
+  Camellia_Feistel(sh, sl, k[56], k[57])
+  Camellia_Feistel(sl, sh, k[58], k[59])
+  Camellia_Feistel(sh, sl, k[60], k[61])
+  Camellia_Feistel(sl, sh, k[62], k[63])
+  s[2] ^= k[64]
+  s[3] ^= k[65]
+  s[0] ^= k[66]
+  s[1] ^= k[67]
 
-  CView.setUint32(0, s2, false)
-  CView.setUint32(4, s3, false)
-  CView.setUint32(8, s0, false)
-  CView.setUint32(12, s1, false)
+  CView.setUint32(0, s[2], false)
+  CView.setUint32(4, s[3], false)
+  CView.setUint32(8, s[0], false)
+  CView.setUint32(12, s[1], false)
   return C
 }
-function _decrypt(C: Uint8Array, k: Uint32Array) {
-  if (C.byteLength !== 16) {
-    throw new KitError('camellia requires a block size of 16 bytes')
-  }
-  return k.length === 52 ? _decrypt128(C, k) : _decrypt256(C, k)
-}
+
 function _decrypt128(C: Uint8Array, k: Uint32Array) {
   const M = C.slice(0)
   const MView = new DataView(M.buffer)
-  let s0: number, s1: number, s2: number, s3: number
-  s0 = k[48] ^ MView.getUint32(0, false)
-  s1 = k[49] ^ MView.getUint32(4, false)
-  s2 = k[50] ^ MView.getUint32(8, false)
-  s3 = k[51] ^ MView.getUint32(12, false);
+  const s = new Uint32Array(4)
+  const sh = s.subarray(0, 2)
+  const sl = s.subarray(2, 4)
+
+  s[0] = k[48] ^ MView.getUint32(0, false)
+  s[1] = k[49] ^ MView.getUint32(4, false)
+  s[2] = k[50] ^ MView.getUint32(8, false)
+  s[3] = k[51] ^ MView.getUint32(12, false)
 
   // GR1
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[46], k[47]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[44], k[45]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[42], k[43]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[40], k[41]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[38], k[39]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[36], k[37])
-  s1 ^= rotateL32(s0 & k[34], 1)
-  s2 ^= s3 | k[33]
-  s0 ^= s1 | k[35]
-  s3 ^= rotateL32(s2 & k[32], 1);
+  Camellia_Feistel(sh, sl, k[46], k[47])
+  Camellia_Feistel(sl, sh, k[44], k[45])
+  Camellia_Feistel(sh, sl, k[42], k[43])
+  Camellia_Feistel(sl, sh, k[40], k[41])
+  Camellia_Feistel(sh, sl, k[38], k[39])
+  Camellia_Feistel(sl, sh, k[36], k[37])
+  s[1] ^= rotateL32(s[0] & k[34], 1)
+  s[2] ^= s[3] | k[33]
+  s[0] ^= s[1] | k[35]
+  s[3] ^= rotateL32(s[2] & k[32], 1)
 
   // GR2
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[30], k[31]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[28], k[29]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[26], k[27]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[24], k[25]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[22], k[23]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[20], k[21])
-  s1 ^= rotateL32(s0 & k[18], 1)
-  s2 ^= s3 | k[17]
-  s0 ^= s1 | k[19]
-  s3 ^= rotateL32(s2 & k[16], 1);
+  Camellia_Feistel(sh, sl, k[30], k[31])
+  Camellia_Feistel(sl, sh, k[28], k[29])
+  Camellia_Feistel(sh, sl, k[26], k[27])
+  Camellia_Feistel(sl, sh, k[24], k[25])
+  Camellia_Feistel(sh, sl, k[22], k[23])
+  Camellia_Feistel(sl, sh, k[20], k[21])
+  s[1] ^= rotateL32(s[0] & k[18], 1)
+  s[2] ^= s[3] | k[17]
+  s[0] ^= s[1] | k[19]
+  s[3] ^= rotateL32(s[2] & k[16], 1)
 
   // GR3
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[14], k[15]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[12], k[13]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[10], k[11]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[8], k[9]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[6], k[7]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[4], k[5])
-  s2 ^= k[0]
-  s3 ^= k[1]
-  s0 ^= k[2]
-  s1 ^= k[3]
+  Camellia_Feistel(sh, sl, k[14], k[15])
+  Camellia_Feistel(sl, sh, k[12], k[13])
+  Camellia_Feistel(sh, sl, k[10], k[11])
+  Camellia_Feistel(sl, sh, k[8], k[9])
+  Camellia_Feistel(sh, sl, k[6], k[7])
+  Camellia_Feistel(sl, sh, k[4], k[5])
+  s[2] ^= k[0]
+  s[3] ^= k[1]
+  s[0] ^= k[2]
+  s[1] ^= k[3]
 
-  MView.setUint32(0, s2, false)
-  MView.setUint32(4, s3, false)
-  MView.setUint32(8, s0, false)
-  MView.setUint32(12, s1, false)
+  MView.setUint32(0, s[2], false)
+  MView.setUint32(4, s[3], false)
+  MView.setUint32(8, s[0], false)
+  MView.setUint32(12, s[1], false)
   return M
 }
 function _decrypt256(C: Uint8Array, k: Uint32Array) {
   const M = C.slice(0)
   const MView = new DataView(M.buffer)
-  let s0: number, s1: number, s2: number, s3: number
-  s0 = k[64] ^ MView.getUint32(0, false)
-  s1 = k[65] ^ MView.getUint32(4, false)
-  s2 = k[66] ^ MView.getUint32(8, false)
-  s3 = k[67] ^ MView.getUint32(12, false);
+  const s = new Uint32Array(4)
+  const sh = s.subarray(0, 2)
+  const sl = s.subarray(2, 4)
+
+  s[0] = k[64] ^ MView.getUint32(0, false)
+  s[1] = k[65] ^ MView.getUint32(4, false)
+  s[2] = k[66] ^ MView.getUint32(8, false)
+  s[3] = k[67] ^ MView.getUint32(12, false)
 
   // GR1
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[62], k[63]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[60], k[61]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[58], k[59]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[56], k[57]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[54], k[55]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[52], k[53])
-  s1 ^= rotateL32(s0 & k[50], 1)
-  s2 ^= s3 | k[49]
-  s0 ^= s1 | k[51]
-  s3 ^= rotateL32(s2 & k[48], 1);
+  Camellia_Feistel(sh, sl, k[62], k[63])
+  Camellia_Feistel(sl, sh, k[60], k[61])
+  Camellia_Feistel(sh, sl, k[58], k[59])
+  Camellia_Feistel(sl, sh, k[56], k[57])
+  Camellia_Feistel(sh, sl, k[54], k[55])
+  Camellia_Feistel(sl, sh, k[52], k[53])
+  s[1] ^= rotateL32(s[0] & k[50], 1)
+  s[2] ^= s[3] | k[49]
+  s[0] ^= s[1] | k[51]
+  s[3] ^= rotateL32(s[2] & k[48], 1)
 
   // GR2
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[46], k[47]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[44], k[45]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[42], k[43]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[40], k[41]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[38], k[39]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[36], k[37])
-  s1 ^= rotateL32(s0 & k[34], 1)
-  s2 ^= s3 | k[33]
-  s0 ^= s1 | k[35]
-  s3 ^= rotateL32(s2 & k[32], 1);
+  Camellia_Feistel(sh, sl, k[46], k[47])
+  Camellia_Feistel(sl, sh, k[44], k[45])
+  Camellia_Feistel(sh, sl, k[42], k[43])
+  Camellia_Feistel(sl, sh, k[40], k[41])
+  Camellia_Feistel(sh, sl, k[38], k[39])
+  Camellia_Feistel(sl, sh, k[36], k[37])
+  s[1] ^= rotateL32(s[0] & k[34], 1)
+  s[2] ^= s[3] | k[33]
+  s[0] ^= s[1] | k[35]
+  s[3] ^= rotateL32(s[2] & k[32], 1)
 
   // GR3
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[30], k[31]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[28], k[29]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[26], k[27]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[24], k[25]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[22], k[23]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[20], k[21])
-  s1 ^= rotateL32(s0 & k[18], 1)
-  s2 ^= s3 | k[17]
-  s0 ^= s1 | k[19]
-  s3 ^= rotateL32(s2 & k[16], 1);
+  Camellia_Feistel(sh, sl, k[30], k[31])
+  Camellia_Feistel(sl, sh, k[28], k[29])
+  Camellia_Feistel(sh, sl, k[26], k[27])
+  Camellia_Feistel(sl, sh, k[24], k[25])
+  Camellia_Feistel(sh, sl, k[22], k[23])
+  Camellia_Feistel(sl, sh, k[20], k[21])
+  s[1] ^= rotateL32(s[0] & k[18], 1)
+  s[2] ^= s[3] | k[17]
+  s[0] ^= s[1] | k[19]
+  s[3] ^= rotateL32(s[2] & k[16], 1)
 
   // GR4
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[14], k[15]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[12], k[13]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[10], k[11]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[8], k[9]);
-  [s2, s3] = Camellia_Feistel(s0, s1, s2, s3, k[6], k[7]);
-  [s0, s1] = Camellia_Feistel(s2, s3, s0, s1, k[4], k[5])
-  s2 ^= k[0]
-  s3 ^= k[1]
-  s0 ^= k[2]
-  s1 ^= k[3]
+  Camellia_Feistel(sh, sl, k[14], k[15])
+  Camellia_Feistel(sl, sh, k[12], k[13])
+  Camellia_Feistel(sh, sl, k[10], k[11])
+  Camellia_Feistel(sl, sh, k[8], k[9])
+  Camellia_Feistel(sh, sl, k[6], k[7])
+  Camellia_Feistel(sl, sh, k[4], k[5])
+  s[2] ^= k[0]
+  s[3] ^= k[1]
+  s[0] ^= k[2]
+  s[1] ^= k[3]
 
-  MView.setUint32(0, s2, false)
-  MView.setUint32(4, s3, false)
-  MView.setUint32(8, s0, false)
-  MView.setUint32(12, s1, false)
+  MView.setUint32(0, s[2], false)
+  MView.setUint32(4, s[3], false)
+  MView.setUint32(8, s[0], false)
+  MView.setUint32(12, s[1], false)
   return M
 }
 
-export const camellia = createCipher(
-  (K: Uint8Array) => {
-    const k = KeySchedule(K)
-    return {
-      encrypt: (M: Uint8Array) => _encrypt(M, k),
-      decrypt: (C: Uint8Array) => _decrypt(C, k),
-    }
-  },
-  {
-    ALGORITHM: 'Camellia',
-    KEY_SIZE: 32,
-    BLOCK_SIZE: 16,
-  },
-)
+function cipher(M: Uint8Array, k: Uint32Array, _cipher: typeof _encrypt128) {
+  if (M.byteLength !== 16) {
+    throw new KitError('camellia requires a block size of 16 bytes')
+  }
+  return _cipher(M, k)
+}
+
+function _camellia(K: Uint8Array, b: 128 | 192 | 256) {
+  if (K.byteLength !== b >>> 3) {
+    throw new KitError(`camellia-${b} requires a key size of ${b >>> 3} bytes`)
+  }
+  const k = KeySchedule(K)
+  const encrypt = b === 128
+    ? (M: Uint8Array) => cipher(M, k, _encrypt128)
+    : (M: Uint8Array) => cipher(M, k, _encrypt256)
+  const decrypt = b === 128
+    ? (C: Uint8Array) => cipher(C, k, _decrypt128)
+    : (C: Uint8Array) => cipher(C, k, _decrypt256)
+  return { encrypt, decrypt }
+}
+export function camellia(b: 128 | 192 | 256) {
+  return createCipher(
+    (K: Uint8Array) => _camellia(K, b),
+    {
+      ALGORITHM: `Camellia-${b}`,
+      BLOCK_SIZE: 16,
+      KEY_SIZE: b >>> 3,
+    },
+  )
+}
