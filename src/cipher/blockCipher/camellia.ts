@@ -441,6 +441,15 @@ function _camellia(K: Uint8Array, b: 128 | 192 | 256) {
     : (C: Uint8Array) => cipher(C, k, _decrypt256)
   return { encrypt, decrypt }
 }
+
+/**
+ * @description
+ * Camellia block cipher algorithm.
+ *
+ * Camellia 分组密码算法.
+ *
+ * @param {128 | 192 | 256} b - Key length (bits).
+ */
 export function camellia(b: 128 | 192 | 256) {
   return createCipher(
     (K: Uint8Array) => _camellia(K, b),

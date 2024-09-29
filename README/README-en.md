@@ -45,6 +45,7 @@
     - [SM4](#sm4)
     - [AES](#aes)
     - [ARIA](#aria)
+    - [Camellia](#camellia)
     - [DES](#des)
     - [3DES](#3des)
     - [ARC5](#arc5)
@@ -341,6 +342,23 @@ aria(192)(k).decrypt(c) // m
 
 aria(256)(k).encrypt(m) // c
 aria(256)(k).decrypt(c) // m
+```
+
+### Camellia
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+camellia(128)(k).encrypt(m) // c
+camellia(128)(k).decrypt(c) // m
+
+camellia(192)(k).encrypt(m) // c
+camellia(192)(k).decrypt(c) // m
+
+camellia(256)(k).encrypt(m) // c
+camellia(256)(k).decrypt(c) // m
 ```
 
 ### DES
