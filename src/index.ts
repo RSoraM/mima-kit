@@ -76,6 +76,9 @@ export { aes } from './cipher/blockCipher/aes'
 // * ARIA
 export { aria } from './cipher/blockCipher/aria'
 
+// * Camellia
+export { camellia } from './cipher/blockCipher/camellia'
+
 // * DES & 3DES
 export { des, t_des } from './cipher/blockCipher/des'
 
