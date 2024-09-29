@@ -11,9 +11,6 @@
     "type": "git",
     "url": "git+https://github.com/RSoraM/mima-kit.git"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "bugs": "https://github.com/RSoraM/mima-kit/issues",
   "keywords": [
     "cryptography",
