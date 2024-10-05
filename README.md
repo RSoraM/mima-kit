@@ -243,11 +243,11 @@ import type { ParallelHashConfig } from 'mima-kit'
 const config: ParallelHashConfig = {
   S: 'custom', // customization string
 }
-
-parallelHash128(256, config)('mima-kit')
-parallelHash256(512, config)('mima-kit')
-parallelHash128XOF(256, config)('mima-kit')
-parallelHash256XOF(512, config)('mima-kit')
+const blockSize = 1024
+parallelHash128(blockSize, 256, config)('mima-kit')
+parallelHash256(blockSize, 512, config)('mima-kit')
+parallelHash128XOF(blockSize, 256, config)('mima-kit')
+parallelHash256XOF(blockSize, 512, config)('mima-kit')
 ```
 
 ## 带密钥的加密散列算法
