@@ -402,7 +402,7 @@ export function arc5(WORD_SIZE: 8 | 16 | 32 | 64 | 128 = 32, round: number = 16)
     (K: Uint8Array) => _arc5(K, WORD_SIZE, round),
     {
       ALGORITHM: `ARC5-${WORD_SIZE}/${round}`,
-      BLOCK_SIZE: WORD_SIZE >> 1,
+      BLOCK_SIZE: WORD_SIZE >> 2,
       KEY_SIZE: 255,
     },
   )
