@@ -434,8 +434,14 @@ let k: Uint8Array
 let m: Uint8Array
 let c: Uint8Array
 
-twofish(k).encrypt(m) // c
-twofish(k).decrypt(c) // m
+twofish(128)(k).encrypt(m) // c
+twofish(128)(k).decrypt(x) // m
+
+twofish(192)(k).encrypt(m) // c
+twofish(192)(k).decrypt(c) // m
+
+twofish(256)(k).encrypt(m) // c
+twofish(256)(k).decrypt(c) // m
 ```
 
 ### TEA
