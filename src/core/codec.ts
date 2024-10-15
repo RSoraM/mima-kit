@@ -78,10 +78,9 @@ export const HEX: Codec = {
     return new Uint8Array(arr.map(h => Number.parseInt(h, 16)))
   },
   stringify(input: Uint8Array) {
-    const view = new DataView(input.buffer)
     let result = ''
-    for (let i = 0; i < view.byteLength; i++) {
-      result += view.getUint8(i).toString(16).padStart(2, '0')
+    for (let i = 0; i < input.length; i++) {
+      result += input[i].toString(16).padStart(2, '0')
     }
     return result
   },
@@ -168,28 +167,26 @@ function B64CommonParse(input: string, url: boolean) {
  * @param {boolean} url - 是否是 B64url 字符串
  */
 function B64CommonStringify(input: Uint8Array, url: boolean) {
-  const view = new DataView(input.buffer)
-
   let map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   map += url ? '-_' : '+/'
   let result = ''
   let i = 0
-  for (i = 0; i < view.byteLength - 2; i += 3) {
-    result += map[view.getUint8(i) >> 2]
-    result += map[((view.getUint8(i) & 3) << 4) | (view.getUint8(i + 1) >> 4)]
-    result += map[((view.getUint8(i + 1) & 15) << 2) | (view.getUint8(i + 2) >> 6)]
-    result += map[view.getUint8(i + 2) & 63]
+  for (i = 0; i < input.length - 2; i += 3) {
+    result += map[input[i] >> 2]
+    result += map[((input[i] & 3) << 4) | (input[i + 1] >> 4)]
+    result += map[((input[i + 1] & 15) << 2) | (input[i + 2] >> 6)]
+    result += map[input[i + 2] & 63]
   }
 
-  if (i === view.byteLength - 2) {
-    result += map[view.getUint8(i) >> 2]
-    result += map[((view.getUint8(i) & 3) << 4) | (view.getUint8(i + 1) >> 4)]
-    result += map[(view.getUint8(i + 1) & 15) << 2]
+  if (i === input.length - 2) {
+    result += map[input[i] >> 2]
+    result += map[((input[i] & 3) << 4) | (input[i + 1] >> 4)]
+    result += map[(input[i + 1] & 15) << 2]
     result += url ? '' : '='
   }
-  else if (i === view.byteLength - 1) {
-    result += map[view.getUint8(i) >> 2]
-    result += map[(view.getUint8(i) & 3) << 4]
+  else if (i === input.length - 1) {
+    result += map[input[i] >> 2]
+    result += map[(input[i] & 3) << 4]
     result += url ? '' : '=='
   }
   return result
