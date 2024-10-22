@@ -109,3 +109,5 @@ export { salsa20 } from './cipher/streamCipher/salsa20'
 
 // * Rabbit
 export { rabbit } from './cipher/streamCipher/rabbit'
+
+export { genPrime } from './core/prime'
