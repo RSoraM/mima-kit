@@ -103,12 +103,13 @@ export function lcm(a: bigint, b: bigint): bigint {
  * @param {bigint} n - modulus
  */
 export function modPow(x: bigint, y: bigint, n: bigint): bigint {
+  x %= n
   let r = 1n
-  while (y > 0) {
+  while (y > 0n) {
     if ((y & 1n) === 1n)
       r = r * x % n
-    y >>= 1n
     x = x * x % n
+    y >>= 1n
   }
   return r
 }
@@ -147,24 +148,21 @@ export function modInverse(x: bigint, n: bigint): bigint {
 
 /** bigint 转换为 Uint8Array */
 export function BIToU8(bigint: bigint): Uint8Array {
-  // 计算所需的字节数
-  let length = Math.ceil(bigint.toString(16).length >> 1)
-  const uint8Array = new Uint8Array(length)
+  const buffer: number[] = []
 
   // 将 bigint 转换为字节数组
-  length--
-  while (bigint > 0n) {
-    uint8Array[length--] = Number(bigint & 0xFFn)
+  for (let i = 0; bigint > 0n; i++) {
+    buffer[i] = Number(bigint & 0xFFn)
     bigint >>= 8n
   }
 
-  return uint8Array
+  return new Uint8Array(buffer.toReversed())
 }
 
 /** Uint8Array 转换为 bigint */
 export function U8ToBI(uint8Array: Uint8Array): bigint {
   let bigint = 0n
-  uint8Array.forEach(byte => bigint = (bigint << 8n) + BigInt(byte))
+  uint8Array.forEach(byte => bigint = (bigint << 8n) | BigInt(byte))
   return bigint
 }
 

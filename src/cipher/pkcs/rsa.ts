@@ -1,4 +1,4 @@
-import { genPrime, nextPrime } from '../../core/prime'
+import { genPrime } from '../../core/prime'
 import { BIToU8, KitError, U8ToBI, gcd, lcm, modInverse, modPow } from '../../core/utils'
 
 function genKeyPair(b: number): Required<KeyPair> {
@@ -8,9 +8,9 @@ function genKeyPair(b: number): Required<KeyPair> {
   const λ = lcm(p - 1n, q - 1n)
 
   // public key
-  let e = 65537n
-  while (gcd(e, λ) !== 1n) {
-    e = nextPrime(e)
+  const e = 65537n
+  if (gcd(e, λ) !== 1n) {
+    throw new KitError('Invalid public exponent')
   }
 
   // private key
