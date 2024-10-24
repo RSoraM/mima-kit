@@ -78,6 +78,96 @@ export function rotateR128(x: bigint, n: bigint) {
   return x & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
 }
 
+/** 求最大公约数 */
+export function gcd(a: bigint, b: bigint): bigint {
+  while (b !== 0n) {
+    const t = a % b
+    a = b
+    b = t
+  }
+  return a
+}
+
+/** 求最小公倍数 */
+export function lcm(a: bigint, b: bigint): bigint {
+  return a * b / gcd(a, b)
+}
+
+/**
+ * 模幂运算: x ^ y mod n
+ *
+ * Modular exponentiation: x ^ y mod n
+ *
+ * @param {bigint} x - base
+ * @param {bigint} y - exponent
+ * @param {bigint} n - modulus
+ */
+export function modPow(x: bigint, y: bigint, n: bigint): bigint {
+  let r = 1n
+  while (y > 0) {
+    if ((y & 1n) === 1n)
+      r = r * x % n
+    y >>= 1n
+    x = x * x % n
+  }
+  return r
+}
+
+/**
+ * 模逆运算: e ≡ x ^ -1 (mod n)
+ *
+ * Modular inverse operation: e ≡ x ^ -1 (mod n)
+ *
+ * @param {bigint} x - base
+ * @param {bigint} n - modulus
+ */
+export function modInverse(x: bigint, n: bigint): bigint {
+  let [modulus, inverse, current] = [n, 0n, 1n]
+
+  if (n === 1n)
+    return 0n
+
+  while (x > 1n) {
+    const quotient = x / n
+    let temp = n
+
+    n = x % n
+    x = temp
+    temp = inverse
+
+    inverse = current - quotient * inverse
+    current = temp
+  }
+
+  if (current < 0n)
+    current += modulus
+
+  return current
+}
+
+/** bigint 转换为 Uint8Array */
+export function BIToU8(bigint: bigint): Uint8Array {
+  // 计算所需的字节数
+  let length = Math.ceil(bigint.toString(16).length >> 1)
+  const uint8Array = new Uint8Array(length)
+
+  // 将 bigint 转换为字节数组
+  length--
+  while (bigint > 0n) {
+    uint8Array[length--] = Number(bigint & 0xFFn)
+    bigint >>= 8n
+  }
+
+  return uint8Array
+}
+
+/** Uint8Array 转换为 bigint */
+export function U8ToBI(uint8Array: Uint8Array): bigint {
+  let bigint = 0n
+  uint8Array.forEach(byte => bigint = (bigint << 8n) + BigInt(byte))
+  return bigint
+}
+
 /**
  * @description
  * Merging multiple ArrayBuffers
