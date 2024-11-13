@@ -94,6 +94,19 @@ export function lcm(a: bigint, b: bigint): bigint {
 }
 
 /**
+ * 求模: a mod b
+ *
+ * Modulo operation: a mod b
+ *
+ * @param {bigint} a - dividend
+ * @param {bigint} b - divisor
+ */
+export function mod(a: bigint, b: bigint): bigint {
+  const r = a % b
+  return r < 0n ? r + b : r
+}
+
+/**
  * 模幂运算: x ^ y mod n
  *
  * Modular exponentiation: x ^ y mod n
