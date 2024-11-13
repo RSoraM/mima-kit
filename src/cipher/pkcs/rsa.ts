@@ -1,5 +1,7 @@
 import { genPrime } from '../../core/prime'
-import { BIToU8, KitError, U8ToBI, gcd, lcm, modInverse, modPow } from '../../core/utils'
+import { BIToU8, KitError, U8ToBI, gcd, lcm, modInverse, modPow, wrap } from '../../core/utils'
+
+// * RSA Algorithm
 
 function genKeyPair(b: number): Required<KeyPair> {
   const p = genPrime(b)
@@ -94,12 +96,20 @@ function fromKeyPair(keyPair: KeyPair) {
   }
 }
 
-export const rsa: RSA = Object.assign(
+/**
+ * @description
+ * RSA Algorithm
+ *
+ * RSA 算法
+ */
+export const rsa = wrap<RSA>(
   (b: number = 1024) => fromKeyPair(genKeyPair(b)),
   {
     fromKeyPair,
   },
 )
+
+// * Interfaces
 
 interface KeyPair {
   n: bigint | Uint8Array
