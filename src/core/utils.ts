@@ -1,3 +1,8 @@
+import type { Codec } from './codec'
+import { UTF8 } from './codec'
+
+// * Math utility functions
+
 /** 8-bit 循环左移 */
 export function rotateL8(x: number, n: number) {
   x &= 0xFF
@@ -159,24 +164,100 @@ export function modInverse(x: bigint, n: bigint): bigint {
   return current
 }
 
-/** bigint 转换为 Uint8Array */
-export function BIToU8(bigint: bigint): Uint8Array {
-  const buffer: number[] = []
+// * Buffer utility functions
 
-  // 将 bigint 转换为字节数组
-  for (let i = 0; bigint > 0n; i++) {
-    buffer[i] = Number(bigint & 0xFFn)
-    bigint >>= 8n
+/**
+ * @extends Uint8Array
+ */
+export class U8 extends Uint8Array {
+  /**
+   * stringify U8 to encoded string
+   *
+   * 将 U8 编码为字符串
+   */
+  to(codec: Codec) {
+    return codec.stringify(this)
   }
 
-  return new Uint8Array(buffer.toReversed())
-}
+  /**
+   * Convert U8 to BigInt
+   *
+   * 将 U8 转换为 BigInt
+   */
+  toBI() {
+    let bigint = 0n
+    this.forEach(byte => bigint = (bigint << 8n) | BigInt(byte))
+    return bigint
+  }
 
-/** Uint8Array 转换为 bigint */
-export function U8ToBI(uint8Array: Uint8Array): bigint {
-  let bigint = 0n
-  uint8Array.forEach(byte => bigint = (bigint << 8n) | BigInt(byte))
-  return bigint
+  /**
+   * Convert U8 to Uint8Array
+   *
+   * 将 U8 转换为 Uint8Array
+   */
+  toUint8Array() {
+    return new Uint8Array(this)
+  }
+
+  /**
+   * Convert string to U8
+   *
+   * 将 字符串 转换为 U8
+   *
+   * @default
+   */
+  fromString(input: string, codec: Codec = UTF8) {
+    return codec.parse(input)
+  }
+
+  /**
+   * Convert BigInt to U8
+   *
+   * 将 BigInt 转换为 U8
+   */
+  fromBI(bigint: bigint) {
+    const buffer: number[] = []
+
+    // 将 bigint 转换为字节数组
+    for (let i = 0; bigint > 0n; i++) {
+      buffer[i] = Number(bigint & 0xFFn)
+      bigint >>= 8n
+    }
+
+    return new U8(buffer.toReversed())
+  }
+
+  filter(predicate: (value: number, index: number, array: Uint8Array) => any, thisArg?: any): U8 {
+    return new U8(super.filter(predicate, thisArg))
+  }
+
+  map(callbackfn: (value: number, index: number, array: Uint8Array) => number, thisArg?: any): U8 {
+    return new U8(super.map(callbackfn, thisArg))
+  }
+
+  toReversed(): U8 {
+    return new U8(super.reverse())
+  }
+
+  toSorted(compareFn?: ((a: number, b: number) => number) | undefined): U8 {
+    return new U8(super.sort(compareFn))
+  }
+
+  reverse(): U8 {
+    return new U8(super.reverse())
+  }
+
+  slice(start?: number, end?: number): U8 {
+    return new U8(super.slice(start, end))
+  }
+
+  subarray(begin?: number, end?: number): U8 {
+    return new U8(super.subarray(begin, end))
+  }
+
+  with(index: number, value: number): U8 {
+    return new U8(super.with(index, value))
+  }
 }
 
 /**
@@ -210,6 +291,8 @@ export function resizeBuffer(buffer: ArrayBuffer, size: number) {
   B.set(new Uint8Array(buffer))
   return B
 }
+
+// * Other utility functions
 
 export function wrap<T = any>(...args: any[]): T {
   if (args.length === 0) {

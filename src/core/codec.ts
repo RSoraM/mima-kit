@@ -1,4 +1,4 @@
-import { KitError } from './utils'
+import { KitError, U8 } from './utils'
 
 /**
  * @description
@@ -21,7 +21,7 @@ export interface Codec {
    *
    * @param {string} input - 输入字符串
    */
-  parse: (input: string) => Uint8Array
+  parse: (input: string) => U8
 
   /**
    * @description
@@ -49,7 +49,7 @@ export interface Codec {
  */
 export const UTF8: Codec = {
   parse(input: string) {
-    return new TextEncoder().encode(input)
+    return new U8(new TextEncoder().encode(input))
   },
   stringify(input: Uint8Array) {
     return new TextDecoder('utf-8').decode(input)
@@ -73,9 +73,9 @@ export const HEX: Codec = {
   parse(input: string) {
     const arr = input.match(/[\da-f]{2}/gi)
     if (arr == null) {
-      return new Uint8Array()
+      return new U8()
     }
-    return new Uint8Array(arr.map(h => Number.parseInt(h, 16)))
+    return new U8(arr.map(h => Number.parseInt(h, 16)))
   },
   stringify(input: Uint8Array) {
     let result = ''
@@ -101,7 +101,7 @@ export const HEX: Codec = {
  */
 export const B64: Codec = {
   parse(input: string) {
-    return B64CommonParse(input, false)
+    return new U8(B64CommonParse(input, false))
   },
   stringify(input: Uint8Array) {
     return B64CommonStringify(input, false)
@@ -123,7 +123,7 @@ export const B64: Codec = {
  */
 export const B64URL: Codec = {
   parse(input: string) {
-    return B64CommonParse(input, true)
+    return new U8(B64CommonParse(input, true))
   },
   stringify(input: Uint8Array) {
     return B64.stringify(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
@@ -224,7 +224,7 @@ export const CSV: Codec = {
 
     const coreValues = input.match(/(\S){2}/g)
     if (coreValues == null) {
-      return new Uint8Array()
+      return new U8()
     }
 
     let h = 0
@@ -257,7 +257,7 @@ export const CSV: Codec = {
       count++
     }
 
-    return new Uint8Array(result)
+    return new U8(result)
   },
   stringify(input: Uint8Array) {
     const rand = () => Math.random() >= 0.5
@@ -291,9 +291,4 @@ export const CSV: Codec = {
     return result
   },
   FORMAT: 'core-socialist-values',
-}
-
-export const Buffer = {
-  from: (input: string, codec: Codec) => codec.parse(input),
-  to: (input: Uint8Array, codec: Codec) => codec.stringify(input),
 }
