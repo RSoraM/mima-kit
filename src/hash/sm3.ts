@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { KitError, rotateL32 } from '../core/utils'
+import { KitError, U8, rotateL32 } from '../core/utils'
 
 // * Function
 const FF = (X: number, Y: number, Z: number, j: number) => j < 16 ? X ^ Y ^ Z : (X & Y) | (X & Z) | (Y & Z)
@@ -11,7 +11,7 @@ const P1 = (X: number) => X ^ rotateL32(X, 15) ^ rotateL32(X, 23)
 
 function digest(M: Uint8Array) {
   // * 初始化
-  const state = new Uint8Array(32)
+  const state = new U8(32)
   const stateView = new DataView(state.buffer)
   stateView.setUint32(0, 0x7380166F, false)
   stateView.setUint32(4, 0x4914B2B9, false)
@@ -116,22 +116,8 @@ function digest(M: Uint8Array) {
   return state
 }
 
-/**
- * @description
- * SM3 hash algorithm
- *
- * SM3 散列算法
- *
- * @example
- * ```ts
- * sm3('hello') // 'becbbfaae6548b8bf0cfcad5a27183cd1be6093b1cceccc303d9c61d0a645268'
- * sm3('hello', B64) // 'vsu/quZUi4vwz8rVonGDzRvmCTsczszDA9nGHQpkUmg='
- * ```
- */
 export const sm3 = createHash(
-  {
-    digest,
-  },
+  digest,
   {
     ALGORITHM: 'SM3',
     BLOCK_SIZE: 64,

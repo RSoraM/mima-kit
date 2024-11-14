@@ -268,10 +268,10 @@ export class U8 extends Uint8Array {
  */
 export function joinBuffer(...buffers: ArrayBuffer[]) {
   const byteTotal = buffers.reduce((acc, cur) => acc + cur.byteLength, 0)
-  const result = new Uint8Array(byteTotal)
+  const result = new U8(byteTotal)
   let offset = 0
   for (const buffer of buffers) {
-    result.set(new Uint8Array(buffer), offset)
+    result.set(new U8(buffer), offset)
     offset += buffer.byteLength
   }
   return result
@@ -287,8 +287,8 @@ export function joinBuffer(...buffers: ArrayBuffer[]) {
  * @param {number} size - byte
  */
 export function resizeBuffer(buffer: ArrayBuffer, size: number) {
-  const B = new Uint8Array(size)
-  B.set(new Uint8Array(buffer))
+  const B = new U8(size)
+  B.set(new U8(buffer))
   return B
 }
 

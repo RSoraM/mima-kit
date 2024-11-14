@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { KitError, rotateL32 } from '../core/utils'
+import { KitError, U8, rotateL32 } from '../core/utils'
 
 // * Constants
 
@@ -32,7 +32,7 @@ function ft(x: number, y: number, z: number, t: number) {
 
 function digest(M: Uint8Array) {
   // * 初始化
-  const state = new Uint8Array(20)
+  const state = new U8(20)
   const stateView = new DataView(state.buffer)
   stateView.setUint32(0, 0x67452301, false)
   stateView.setUint32(4, 0xEFCDAB89, false)
@@ -107,22 +107,8 @@ function digest(M: Uint8Array) {
   return state
 }
 
-/**
- * @description
- * SHA-1 hash algorithm
- *
- * SHA-1 散列算法
- *
- * @example
- * ```ts
- * sha1('hello') // 'aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d'
- * sha1('hello', B64) // 'qvTGHdzF6KLavt4PO0gs2a6pQ00='
- * ```
- */
 export const sha1 = createHash(
-  {
-    digest,
-  },
+  digest,
   {
     ALGORITHM: 'SHA-1',
     BLOCK_SIZE: 64,

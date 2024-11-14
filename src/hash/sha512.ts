@@ -1,6 +1,6 @@
 import { UTF8 } from '../core/codec'
 import { createHash } from '../core/hash'
-import { KitError, rotateR64 } from '../core/utils'
+import { KitError, U8, rotateR64 } from '../core/utils'
 
 // * Constants
 
@@ -39,7 +39,7 @@ function IVGen(t: number) {
     throw new KitError('t must not be 384')
   }
 
-  const state = new Uint8Array(64)
+  const state = new U8(64)
   const stateView = new DataView(state.buffer)
   stateView.setBigUint64(0, 0x6A09E667F3BCC908n ^ 0xA5A5A5A5A5A5A5A5n, false)
   stateView.setBigUint64(8, 0xBB67AE8584CAA73Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
@@ -59,7 +59,7 @@ function IVGen(t: number) {
  * @param {Uint8Array} state - 初始状态
  * @param {Uint8Array} M - 消息
  */
-function digest(state: Uint8Array, M: Uint8Array) {
+function digest(state: U8, M: Uint8Array) {
   // * 初始化
   state = state.slice(0)
   const stateView = new DataView(state.buffer)
@@ -146,7 +146,7 @@ function digest(state: Uint8Array, M: Uint8Array) {
 
 function sha384Digest(M: Uint8Array) {
   // * 初始化 SHA-384 状态
-  const state = new Uint8Array(64)
+  const state = new U8(64)
   const stateView = new DataView(state.buffer)
   stateView.setBigUint64(0, 0xCBBB9D5DC1059ED8n, false)
   stateView.setBigUint64(8, 0x629A292A367CD507n, false)
@@ -162,7 +162,7 @@ function sha384Digest(M: Uint8Array) {
 
 function sha512Digest(M: Uint8Array) {
   // * 初始化 SHA-512 状态
-  const state = new Uint8Array(64)
+  const state = new U8(64)
   const stateView = new DataView(state.buffer)
   stateView.setBigUint64(0, 0x6A09E667F3BCC908n, false)
   stateView.setBigUint64(8, 0xBB67AE8584CAA73Bn, false)
@@ -176,22 +176,8 @@ function sha512Digest(M: Uint8Array) {
   return digest(state, M)
 }
 
-/**
- * @description
- * SHA-384 hash algorithm is truncated versions of SHA-512
- *
- * SHA-384 散列算法 是 SHA-512 的截断版本
- *
- * @example
- * ```ts
- * sha384('hello') // '59e1748777448c69de6b800d7a33bbfb9ff1b463e44354c3553bcdb9c666fa90125a3c79f90397bdf5f6a13de828684f'
- * sha384('hello', B64) // 'WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP'
- * ```
- */
 export const sha384 = createHash(
-  {
-    digest: sha384Digest,
-  },
+  sha384Digest,
   {
     ALGORITHM: 'SHA-384',
     BLOCK_SIZE: 128,
@@ -199,22 +185,8 @@ export const sha384 = createHash(
   },
 )
 
-/**
- * @description
- * SHA-512 hash algorithm
- *
- * SHA-512 散列算法
- *
- * @example
- * ```ts
- * sha512('hello') // '9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043'
- * sha512('hello', B64) // 'm3HSJL1i83hdltRq0+o9czGb+8KJDKra4t/3JRlnPKcjI8PZm6XBHXx6zG4UuMXaDEZjR1wuXDre9G9zvN7AQw=='
- * ```
- */
 export const sha512 = createHash(
-  {
-    digest: sha512Digest,
-  },
+  sha512Digest,
   {
     ALGORITHM: 'SHA-512',
     BLOCK_SIZE: 128,
@@ -223,27 +195,14 @@ export const sha512 = createHash(
 )
 
 /**
- * @description
- * SHA-512/t hash algorithm is t-bit hash function base on SHA-512
- *
- * SHA-512/t 散列算法 是基于 SHA-512 的 t 位散列函数
- *
- * @example
- * ```ts
- * sha512t(224)('hello') // 'fe8509ed1fb7dcefc27e6ac1a80eddbec4cb3d2c6fe565244374061c'
- * sha512t(224)('hello', B64) // '/oUJ7R+33O/CfmrBqA7dvsTLPSxv5WUkQ3QGHA=='
- * ```
- *
- * @param {number} t - 截断长度 bit
+ * @param {number} t - 截断长度 bit / truncation length bit
  */
 export function sha512t(t: number) {
   // * 初始化 SHA-512/t 状态
   const status = IVGen(t)
 
   return createHash(
-    {
-      digest: (M: Uint8Array) => digest(status, M).slice(0, t >> 3),
-    },
+    (M: Uint8Array) => digest(status, M).slice(0, t >> 3),
     {
       ALGORITHM: `SHA-512/${t}`,
       BLOCK_SIZE: 128,

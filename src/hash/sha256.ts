@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { KitError, rotateR32 } from '../core/utils'
+import { KitError, U8, rotateR32 } from '../core/utils'
 
 // * Constants
 
@@ -20,7 +20,7 @@ const sigma1 = (x: number) => rotateR32(x, 17) ^ rotateR32(x, 19) ^ (x >>> 10)
  * @param {Uint8Array} state - 初始状态
  * @param {Uint8Array} M - 消息
  */
-function digest(state: Uint8Array, M: Uint8Array) {
+function digest(state: U8, M: Uint8Array) {
   // * 初始化
   state = state.slice(0)
   const stateView = new DataView(state.buffer)
@@ -107,7 +107,7 @@ function digest(state: Uint8Array, M: Uint8Array) {
 
 function sha224Digest(M: Uint8Array) {
   // * 初始化 SHA-224 状态
-  const state = new Uint8Array(32)
+  const state = new U8(32)
   const stateView = new DataView(state.buffer)
   stateView.setUint32(0, 0xC1059ED8, false)
   stateView.setUint32(4, 0x367CD507, false)
@@ -123,7 +123,7 @@ function sha224Digest(M: Uint8Array) {
 
 function sha256Digest(M: Uint8Array) {
   // * 初始化 SHA-256 状态
-  const state = new Uint8Array(32)
+  const state = new U8(32)
   const stateView = new DataView(state.buffer)
   stateView.setUint32(0, 0x6A09E667, false)
   stateView.setUint32(4, 0xBB67AE85, false)
@@ -137,22 +137,8 @@ function sha256Digest(M: Uint8Array) {
   return digest(state, M)
 }
 
-/**
- * @description
- * SHA-224 hash algorithm is truncated versions of SHA-256
- *
- * SHA-224 散列算法 是 SHA-256 的截断版本
- *
- * @example
- * ```ts
- * sha224('hello') // 'ea09ae9cc6768c50fcee903ed054556e5bfc8347907f12598aa24193'
- * sha224('hello', B64) // '6gmunMZ2jFD87pA+0FRVblv8g0eQfxJZiqJBkw=='
- * ```
- */
 export const sha224 = createHash(
-  {
-    digest: sha224Digest,
-  },
+  sha224Digest,
   {
     ALGORITHM: 'SHA-224',
     BLOCK_SIZE: 64,
@@ -160,22 +146,8 @@ export const sha224 = createHash(
   },
 )
 
-/**
- * @description
- * SHA-256 hash algorithm
- *
- * SHA-256 散列算法
- *
- * @example
- * ```ts
- * sha256('hello') // '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
- * sha256('hello', B64) // 'LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ='
- * ```
- */
 export const sha256 = createHash(
-  {
-    digest: sha256Digest,
-  },
+  sha256Digest,
   {
     ALGORITHM: 'SHA-256',
     BLOCK_SIZE: 64,

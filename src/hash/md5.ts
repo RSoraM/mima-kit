@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { rotateL32 } from '../core/utils'
+import { U8, rotateL32 } from '../core/utils'
 
 // * Constants
 
@@ -45,7 +45,7 @@ function II(a: number, b: number, c: number, d: number, m: number, s: number, k:
 
 function digest(M: Uint8Array) {
   // * 初始化
-  const state = new Uint8Array(16)
+  const state = new U8(16)
   const stateView = new DataView(state.buffer)
   stateView.setUint32(0, 0x67452301, true)
   stateView.setUint32(4, 0xEFCDAB89, true)
@@ -173,23 +173,8 @@ function digest(M: Uint8Array) {
   return state
 }
 
-/**
- * @description
- * MD5 hash algorithm
- *
- * MD5 散列算法
- *
- * @example
- * ```ts
- * md5.digest('hello') // Uint8Array
- * md5('hello') // '5d41402abc4b2a76b9719d911017c592'
- * md5('hello', B64) // 'XUQQArxLKnbpdJ2REBfFkA=='
- * ```
- */
 export const md5 = createHash(
-  {
-    digest,
-  },
+  digest,
   {
     ALGORITHM: 'MD5',
     BLOCK_SIZE: 64,
