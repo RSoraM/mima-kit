@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, rotateL32, rotateR32 } from '../../core/utils'
+import { KitError, U8, rotateL32, rotateR32 } from '../../core/utils'
 
 // * Constants
 
@@ -290,7 +290,7 @@ function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
     x0 ^= Subkeys[6]
     x1 ^= Subkeys[7]
 
-    return new Uint8Array(new Uint32Array([x2, x3, x0, x1]).buffer)
+    return new U8(new Uint32Array([x2, x3, x0, x1]).buffer)
   }
   const decrypt = (C: Uint8Array) => {
     if (C.byteLength !== 16) {
@@ -327,7 +327,7 @@ function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
     x2 ^= Subkeys[2]
     x3 ^= Subkeys[3]
 
-    return new Uint8Array(new Uint32Array([x0, x1, x2, x3]).buffer)
+    return new U8(new Uint32Array([x0, x1, x2, x3]).buffer)
   }
   return { encrypt, decrypt }
 }
@@ -343,10 +343,12 @@ function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
 export function twofish(b: 128 | 192 | 256) {
   return createCipher(
     (K: Uint8Array) => _twofish(K, b),
-  {
-    ALGORITHM: 'Twofish',
-    BLOCK_SIZE: 16,
-    KEY_SIZE: b >> 3,
-  },
-)
+    {
+      ALGORITHM: 'Twofish',
+      BLOCK_SIZE: 16,
+      KEY_SIZE: b >> 3,
+      MIN_KEY_SIZE: b >> 3,
+      MAX_KEY_SIZE: b >> 3,
+    },
+  )
 }

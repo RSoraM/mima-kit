@@ -1,4 +1,4 @@
-import { KitError } from '../../core/utils'
+import { KitError, U8 } from '../../core/utils'
 import { createCipher } from '../../core/cipher'
 
 // * Constants
@@ -120,13 +120,13 @@ function _des(K: Uint8Array) {
       const buffer = new ArrayBuffer(8)
       const view = new DataView(buffer)
       view.setBigUint64(0, Cipher(M, key_set), false)
-      return new Uint8Array(buffer)
+      return new U8(buffer)
     },
     decrypt: (C: Uint8Array) => {
       const buffer = new ArrayBuffer(8)
       const view = new DataView(buffer)
       view.setBigUint64(0, Cipher(C, inv_key_set), false)
-      return new Uint8Array(buffer)
+      return new U8(buffer)
     },
   }
 }
@@ -163,6 +163,8 @@ export const des = createCipher(
     ALGORITHM: 'DES',
     BLOCK_SIZE: 8,
     KEY_SIZE: 8,
+    MIN_KEY_SIZE: 8,
+    MAX_KEY_SIZE: 8,
   },
 )
 
@@ -181,6 +183,8 @@ export function t_des(l: 128 | 192) {
       ALGORITHM: '3DES',
       BLOCK_SIZE: 8,
       KEY_SIZE: l >> 3,
+      MIN_KEY_SIZE: l >> 3,
+      MAX_KEY_SIZE: l >> 3,
     },
   )
 }

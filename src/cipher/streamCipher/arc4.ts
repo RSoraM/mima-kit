@@ -1,5 +1,5 @@
 import { createStreamCipher } from '../../core/cipher'
-import { KitError } from '../../core/utils'
+import { KitError, U8 } from '../../core/utils'
 
 // * Functions
 
@@ -20,7 +20,7 @@ function KSA(K: Uint8Array) {
 
 function cipher(M: Uint8Array, SBox: Uint8Array) {
   SBox = SBox.slice(0)
-  const result = new Uint8Array(M.byteLength)
+  const result = new U8(M.byteLength)
   let i = 0
   let j = 0
   M.forEach((_, k) => {
@@ -30,6 +30,17 @@ function cipher(M: Uint8Array, SBox: Uint8Array) {
     result[k] = M[k] ^ SBox[(SBox[i] + SBox[j]) % 256]
   })
   return result
+}
+
+function _arc4(K: Uint8Array) {
+  if (K.byteLength < 5 || K.byteLength > 256) {
+    throw new KitError(`RC4 requires a key of length 5 to 256 bytes`)
+  }
+  const SBox = KSA(K)
+  return {
+    encrypt: (M: Uint8Array) => cipher(M, SBox),
+    decrypt: (M: Uint8Array) => cipher(M, SBox),
+  }
 }
 
 /**
@@ -45,18 +56,11 @@ function cipher(M: Uint8Array, SBox: Uint8Array) {
  * ```
  */
 export const arc4 = createStreamCipher(
-  (K: Uint8Array) => {
-    if (K.byteLength < 1 || K.byteLength > 256) {
-      throw new KitError(`RC4 requires a key of length 1 to 256 bytes`)
-    }
-    const SBox = KSA(K)
-    return {
-      encrypt: (M: Uint8Array) => cipher(M, SBox),
-      decrypt: (M: Uint8Array) => cipher(M, SBox),
-    }
-  },
+  _arc4,
   {
     ALGORITHM: `ARC4`,
-    KEY_SIZE: 256,
+    KEY_SIZE: 16,
+    MIN_KEY_SIZE: 5,
+    MAX_KEY_SIZE: 256,
   },
 )

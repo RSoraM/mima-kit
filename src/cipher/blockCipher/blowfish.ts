@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError } from '../../core/utils'
+import { KitError, U8 } from '../../core/utils'
 
 // * Blowfish Algorithm
 
@@ -82,7 +82,7 @@ function _blowfish(K: Uint8Array) {
       [C0, C1] = _encrypt(C0, C1)
       CView.setUint32(0, C0, false)
       CView.setUint32(4, C1, false)
-      return C
+      return new U8(C)
     },
     decrypt: (C: Uint8Array) => {
       if (C.byteLength !== 8) {
@@ -95,7 +95,7 @@ function _blowfish(K: Uint8Array) {
       [M0, M1] = _decrypt(M0, M1)
       MView.setUint32(0, M0, false)
       MView.setUint32(4, M1, false)
-      return M
+      return new U8(M)
     },
   }
 }
@@ -111,6 +111,8 @@ export const blowfish = createCipher(
   {
     ALGORITHM: 'Blowfish',
     BLOCK_SIZE: 8,
-    KEY_SIZE: 56,
+    KEY_SIZE: 16,
+    MIN_KEY_SIZE: 4,
+    MAX_KEY_SIZE: 56,
   },
 )

@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, resizeBuffer, rotateL128, rotateL16, rotateL32, rotateL64, rotateL8, rotateR128, rotateR16, rotateR32, rotateR64, rotateR8 } from '../../core/utils'
+import { KitError, U8, resizeBuffer, rotateL128, rotateL16, rotateL32, rotateL64, rotateL8, rotateR128, rotateR16, rotateR32, rotateR64, rotateR8 } from '../../core/utils'
 
 // const Eul = [0xB7, 0xE1, 0x51, 0x62, 0x8A, 0xED, 0x2A, 0x6A, 0xBF, 0x71, 0x58, 0x80, 0x9C, 0xF4, 0xF3, 0xC7, 0x62, 0xE7, 0x16, 0x0F, 0x38, 0xB4, 0xDA, 0x56, 0xA7, 0x84, 0xD9, 0x04, 0x51, 0x90, 0xCF, 0xEF]
 // const Phi = [0x9E, 0x37, 0x79, 0xB9, 0x7F, 0x4A, 0x7C, 0x15, 0xF3, 0x9C, 0xC0, 0x60, 0x5C, 0xED, 0xC8, 0x34, 0x10, 0x82, 0x27, 0x6B, 0xF3, 0xA2, 0x72, 0x51, 0xF8, 0x6C, 0x6A, 0x11, 0xD0, 0xC1, 0x8E, 0x95]
@@ -366,13 +366,13 @@ function _arc5(K: Uint8Array, WORD_SIZE: 8 | 16 | 32 | 64 | 128, round: number) 
       if (M.byteLength !== WORD_SIZE >> 2) {
         throw new KitError(`ARC5 requires a block of length ${WORD_SIZE >> 2} bytes`)
       }
-      return _encrypt(M)
+      return new U8(_encrypt(M))
     },
     decrypt: (C: Uint8Array) => {
       if (C.byteLength !== WORD_SIZE >> 2) {
         throw new KitError(`ARC5 requires a block of length ${WORD_SIZE >> 2} bytes`)
       }
-      return _decrypt(C)
+      return new U8(_decrypt(C))
     },
   }
 }
@@ -403,7 +403,9 @@ export function arc5(WORD_SIZE: 8 | 16 | 32 | 64 | 128 = 32, round: number = 16)
     {
       ALGORITHM: `ARC5-${WORD_SIZE}/${round}`,
       BLOCK_SIZE: WORD_SIZE >> 2,
-      KEY_SIZE: 255,
+      KEY_SIZE: 16,
+      MIN_KEY_SIZE: 1,
+      MAX_KEY_SIZE: 255,
     },
   )
 }

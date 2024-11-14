@@ -1,10 +1,11 @@
+// * Utils
+export { U8 } from './core/utils'
+
 // * Codec
 export type { Codec } from './core/codec'
 export { UTF8, HEX, B64, B64URL, CSV } from './core/codec'
 
 // * Hash Utils
-export type { HashDescription, HashScheme } from './core/hash'
-export type { TupleHashDescription, TupleHashScheme } from './core/hash'
 export { createHash, createTupleHash } from './core/hash'
 
 // * MD5
@@ -39,12 +40,10 @@ export { kmac128, kmac128XOF } from './hash/sha3Derived'
 export { kmac256, kmac256XOF } from './hash/sha3Derived'
 
 // * TupleHash
-export type { TupleHashConfig } from './hash/sha3Derived'
 export { tupleHash128, tupleHash128XOF } from './hash/sha3Derived'
 export { tupleHash256, tupleHash256XOF } from './hash/sha3Derived'
 
 // * ParallelHash
-export type { ParallelHashConfig } from './hash/sha3Derived'
 export { parallelHash128, parallelHash128XOF } from './hash/sha3Derived'
 export { parallelHash256, parallelHash256XOF } from './hash/sha3Derived'
 
@@ -52,17 +51,16 @@ export { parallelHash256, parallelHash256XOF } from './hash/sha3Derived'
 export { sm3 } from './hash/sm3'
 
 // * HMAC
-export type { HMACScheme } from './hash/hmac'
 export { hmac } from './hash/hmac'
 
 // * Block Cipher Modes
-export { ecb, type ECBConfig } from './core/cipher'
-export { cbc, type CBCConfig } from './core/cipher'
-export { cfb, type CFBConfig } from './core/cipher'
-export { ofb, type OFBConfig } from './core/cipher'
-export { ctr, type CTRConfig } from './core/cipher'
-export { gcm, type GCMConfig } from './core/cipher'
-export { pcbc, type PCBCConfig } from './core/cipher'
+export { ecb } from './core/cipher'
+export { cbc } from './core/cipher'
+export { cfb } from './core/cipher'
+export { ofb } from './core/cipher'
+export { ctr } from './core/cipher'
+export { gcm } from './core/cipher'
+export { pcbc } from './core/cipher'
 
 // * Block Cipher Padding
 export { PKCS7, ZERO_PAD, ANSI_X923, ISO7816_4, NoPadding } from './core/cipher'
@@ -94,11 +92,8 @@ export { twofish } from './cipher/blockCipher/twofish'
 // * TEA
 export { tea, xtea } from './cipher/blockCipher/tea'
 
-// * Stream Cipher
-export type { StreamCipherConfig, IVStreamCipherConfig } from './core/cipher'
-
 // * ZUC
-export type { ZUCParams, ZUCConfig } from './cipher/streamCipher/zuc'
+export type { ZUCParams } from './cipher/streamCipher/zuc'
 export { eea3, eia3, zuc } from './cipher/streamCipher/zuc'
 
 // * ARC4

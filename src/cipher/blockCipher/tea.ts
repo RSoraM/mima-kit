@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError } from '../../core/utils'
+import { KitError, U8 } from '../../core/utils'
 
 // * Constants
 
@@ -25,7 +25,7 @@ function _tea(K: Uint8Array, round: number) {
       C32[0] += ((C32[1] << 4) + K32[0]) ^ (C32[1] + sum) ^ ((C32[1] >>> 5) + K32[1])
       C32[1] += ((C32[0] << 4) + K32[2]) ^ (C32[0] + sum) ^ ((C32[0] >>> 5) + K32[3])
     }
-    return C
+    return new U8(C)
   }
   const decrypt = (C: Uint8Array) => {
     if (C.byteLength !== 8) {
@@ -39,7 +39,7 @@ function _tea(K: Uint8Array, round: number) {
       M32[0] -= ((M32[1] << 4) + K32[0]) ^ (M32[1] + sum) ^ ((M32[1] >>> 5) + K32[1])
       sum -= DELTA
     }
-    return M
+    return new U8(M)
   }
   return { encrypt, decrypt }
 }
@@ -62,7 +62,7 @@ function _xtea(K: Uint8Array, round: number) {
       sum += DELTA
       C32[1] += (C32[0] << 4 ^ C32[0] >>> 5) + C32[0] ^ sum + K32[(sum >>> 11) & 3]
     }
-    return C
+    return new U8(C)
   }
   const decrypt = (C: Uint8Array) => {
     if (C.byteLength !== 8) {
@@ -76,7 +76,7 @@ function _xtea(K: Uint8Array, round: number) {
       sum -= DELTA
       M32[0] -= ((M32[1] << 4 ^ M32[1] >>> 5) + M32[1]) ^ (sum + K32[sum & 3])
     }
-    return M
+    return new U8(M)
   }
   return { encrypt, decrypt }
 }
@@ -99,6 +99,8 @@ export function tea(round: number = 32) {
       ALGORITHM: 'TEA',
       BLOCK_SIZE: 8,
       KEY_SIZE: 16,
+      MIN_KEY_SIZE: 16,
+      MAX_KEY_SIZE: 16,
     },
   )
 }
@@ -121,6 +123,8 @@ export function xtea(round: number = 32) {
       ALGORITHM: 'XTEA',
       BLOCK_SIZE: 8,
       KEY_SIZE: 16,
+      MIN_KEY_SIZE: 16,
+      MAX_KEY_SIZE: 16,
     },
   )
 }

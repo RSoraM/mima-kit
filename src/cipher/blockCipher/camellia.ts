@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, rotateL32, rotateR32 } from '../../core/utils'
+import { KitError, U8, rotateL32, rotateR32 } from '../../core/utils'
 
 // * Constants
 
@@ -425,7 +425,7 @@ function cipher(M: Uint8Array, k: Uint32Array, _cipher: typeof _encrypt128) {
   if (M.byteLength !== 16) {
     throw new KitError('camellia requires a block size of 16 bytes')
   }
-  return _cipher(M, k)
+  return new U8(_cipher(M, k))
 }
 
 function _camellia(K: Uint8Array, b: 128 | 192 | 256) {
@@ -457,6 +457,8 @@ export function camellia(b: 128 | 192 | 256) {
       ALGORITHM: `Camellia-${b}`,
       BLOCK_SIZE: 16,
       KEY_SIZE: b >>> 3,
+      MIN_KEY_SIZE: b >>> 3,
+      MAX_KEY_SIZE: b >>> 3,
     },
   )
 }

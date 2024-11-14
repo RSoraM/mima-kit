@@ -1,4 +1,4 @@
-import { KitError } from '../../core/utils'
+import { KitError, U8 } from '../../core/utils'
 import { createCipher } from '../../core/cipher'
 
 // * Constants
@@ -67,7 +67,7 @@ function Cipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   if (M.byteLength !== 16) {
     throw new KitError(`Message length must be 16 bytes`)
   }
-  const S = M.slice(0)
+  const S = new U8(M.slice(0))
 
   const AddRoundKey = (W: Uint8Array) => {
     for (let i = 0; i < S.byteLength; i++) {
@@ -136,7 +136,7 @@ function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   if (M.byteLength !== 16) {
     throw new KitError(`Message length must be 16 bytes`)
   }
-  const S = M.slice(0)
+  const S = new U8(M.slice(0))
 
   const AddRoundKey = (W: Uint8Array) => {
     for (let i = 0; i < S.byteLength; i++) {
@@ -198,7 +198,7 @@ function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   InvSubBytes()
   AddRoundKey(W.subarray(0, 16))
 
-  return new Uint8Array(S.buffer)
+  return S
 }
 
 function _aes(K: Uint8Array, b: 128 | 192 | 256) {
@@ -229,6 +229,8 @@ export function aes(b: 128 | 192 | 256) {
       ALGORITHM: `AES-${b}`,
       BLOCK_SIZE: 16,
       KEY_SIZE: b >> 3,
+      MIN_KEY_SIZE: b >> 3,
+      MAX_KEY_SIZE: b >> 3,
     },
   )
 }

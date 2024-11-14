@@ -1,5 +1,5 @@
 import { createIVStreamCipher } from '../../core/cipher'
-import { KitError, resizeBuffer, rotateL32 } from '../../core/utils'
+import { KitError, U8, resizeBuffer, rotateL32 } from '../../core/utils'
 
 // * Functions
 
@@ -88,6 +88,35 @@ function expand(K: Uint8Array, iv: Uint8Array) {
 
 // * Salsa20 Algorithm
 
+function _salsa20(K: Uint8Array, iv: Uint8Array) {
+  let E = expand(K, iv)
+  let S = hash(E)
+  let current = 1
+
+  const inc64 = (E: Uint8Array) => {
+    const E64 = new BigUint64Array(E.buffer)
+    E64[4] += 1n
+    return E
+  }
+  const cipher = (M: Uint8Array) => {
+    const BLOCK_TOTAL = (M.byteLength >> 6) + 1
+    if (current > BLOCK_TOTAL) {
+      return new U8(M.map((byte, i) => byte ^ S[i]))
+    }
+    S = resizeBuffer(S, BLOCK_TOTAL << 6)
+    while (BLOCK_TOTAL > current) {
+      E = inc64(E)
+      S.set(hash(E), current << 6)
+      current++
+    }
+    return new U8(M.map((byte, i) => byte ^ S[i]))
+  }
+  return {
+    encrypt: (M: Uint8Array) => cipher(M),
+    decrypt: (C: Uint8Array) => cipher(C),
+  }
+}
+
 /**
  * @description
  * Salsa20 stream cipher
@@ -101,37 +130,14 @@ function expand(K: Uint8Array, iv: Uint8Array) {
  * ```
  */
 export const salsa20 = createIVStreamCipher(
-  (K: Uint8Array, iv: Uint8Array) => {
-    let E = expand(K, iv)
-    let S = hash(E)
-    let current = 1
-
-    const inc64 = (E: Uint8Array) => {
-      const E64 = new BigUint64Array(E.buffer)
-      E64[4] += 1n
-      return E
-    }
-    const cipher = (M: Uint8Array) => {
-      const BLOCK_TOTAL = (M.byteLength >> 6) + 1
-      if (current > BLOCK_TOTAL) {
-        return M.map((byte, i) => byte ^ S[i])
-      }
-      S = resizeBuffer(S, BLOCK_TOTAL << 6)
-      while (BLOCK_TOTAL > current) {
-        E = inc64(E)
-        S.set(hash(E), current << 6)
-        current++
-      }
-      return M.map((byte, i) => byte ^ S[i])
-    }
-    return {
-      encrypt: (M: Uint8Array) => cipher(M),
-      decrypt: (C: Uint8Array) => cipher(C),
-    }
-  },
+  _salsa20,
   {
     ALGORITHM: 'Salsa20',
     KEY_SIZE: 32,
+    MIN_KEY_SIZE: 16,
+    MAX_KEY_SIZE: 32,
     IV_SIZE: 8,
+    MIN_IV_SIZE: 8,
+    MAX_IV_SIZE: 8,
   },
 )

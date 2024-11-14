@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError } from '../../core/utils'
+import { KitError, U8 } from '../../core/utils'
 
 // * Constants
 
@@ -258,7 +258,7 @@ function _aria(K: Uint8Array, b: 128 | 192 | 256) {
     P = FO(P, RK[i++])
     P = SL2(xor(P, RK[i++]))
     P = xor(P, RK[i++])
-    return P
+    return new U8(P)
   }
   return {
     encrypt: (M: Uint8Array) => cipher(M, EK),
@@ -281,6 +281,8 @@ export function aria(b: 128 | 192 | 256) {
       ALGORITHM: `ARIA-${b}`,
       BLOCK_SIZE: 16,
       KEY_SIZE: b >> 3,
+      MIN_KEY_SIZE: 16,
+      MAX_KEY_SIZE: 32,
     },
   )
 }

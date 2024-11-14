@@ -1,4 +1,4 @@
-import { KitError, rotateL32 } from '../../core/utils'
+import { KitError, U8, rotateL32 } from '../../core/utils'
 import { createCipher } from '../../core/cipher'
 
 // * Constants
@@ -125,7 +125,7 @@ function cipher(M: Uint8Array, rk: Uint32Array) {
     X3 = X_
   }
 
-  const R = new Uint8Array(16)
+  const R = new U8(16)
   const RView = new DataView(R.buffer)
   RView.setUint32(0, X3, false)
   RView.setUint32(4, X2, false)
@@ -155,5 +155,7 @@ export const sm4 = createCipher(
     ALGORITHM: 'SM4',
     BLOCK_SIZE: 16,
     KEY_SIZE: 16,
+    MIN_KEY_SIZE: 16,
+    MAX_KEY_SIZE: 16,
   },
 )
