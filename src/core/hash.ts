@@ -75,6 +75,12 @@ export const createTupleHash = (digest: TupleDigest, description: TupleHashDescr
 // * 密钥散列函数
 
 export interface KeyHashDescription extends HashDescription {
+  /**
+   * Recommended key size (byte)
+   *
+   * 推荐的密钥大小 (字节)
+   */
+  KEY_SIZE: number
 }
 export interface KeyHash extends KeyHashDescription {
   (K: Uint8Array): Hash

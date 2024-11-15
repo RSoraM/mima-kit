@@ -1,4 +1,4 @@
-import type { KeyHash } from '../core/hash'
+import type { KeyHash, KeyHashDescription } from '../core/hash'
 import { UTF8 } from '../core/codec'
 import { createHash, createTupleHash } from '../core/hash'
 import { KitError, joinBuffer, wrap } from '../core/utils'
@@ -264,12 +264,14 @@ export function cShake256(d: number, config: cSHAKEConfig = {}) {
  *
  * @param {number} d - 输出长度 bit / output length bit
  * @param {Uint8Array} S - 自定义参数 / customization
+ * @param {number} k_size - 推荐密钥大小 bit / recommended key size bit
  */
-export function kmac128(d: number, S = new Uint8Array(0)): KeyHash {
-  const description = {
+export function kmac128(d: number, S = new Uint8Array(0), k_size: number = 128): KeyHash {
+  const description: KeyHashDescription = {
     ALGORITHM: `KMAC128/${d}`,
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
+    KEY_SIZE: k_size >> 3,
   }
   const digest = (K: Uint8Array, M: Uint8Array) => {
     const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 168)
@@ -293,12 +295,14 @@ export function kmac128(d: number, S = new Uint8Array(0)): KeyHash {
  *
  * @param {number} d - 输出长度 bit / output length bit
  * @param {Uint8Array} S - 自定义参数 / customization
+ * @param {number} k_size - 推荐密钥大小 bit / recommended key size bit
  */
-export function kmac256(d: number, S = new Uint8Array(0)): KeyHash {
-  const description = {
+export function kmac256(d: number, S = new Uint8Array(0), k_size: number = 256): KeyHash {
+  const description: KeyHashDescription = {
     ALGORITHM: `KMAC256/${d}`,
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
+    KEY_SIZE: k_size >> 3,
   }
   const digest = (K: Uint8Array, M: Uint8Array) => {
     const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 136)
@@ -322,12 +326,14 @@ export function kmac256(d: number, S = new Uint8Array(0)): KeyHash {
  *
  * @param {number} d - 输出长度 bit / output length bit
  * @param {Uint8Array} S - 自定义参数 / customization
+ * @param {number} k_size - 推荐密钥大小 bit / recommended key size bit
  */
-export function kmac128XOF(d: number, S = new Uint8Array(0)): KeyHash {
-  const description = {
+export function kmac128XOF(d: number, S = new Uint8Array(0), k_size: number = 128): KeyHash {
+  const description: KeyHashDescription = {
     ALGORITHM: `KMAC128XOF/${d}`,
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
+    KEY_SIZE: k_size >> 3,
   }
   const digest = (K: Uint8Array, M: Uint8Array) => {
     const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 168)
@@ -351,12 +357,14 @@ export function kmac128XOF(d: number, S = new Uint8Array(0)): KeyHash {
  *
  * @param {number} d - 输出长度 bit / output length bit
  * @param {Uint8Array} S - 自定义参数 / customization
+ * @param {number} k_size - 推荐密钥大小 bit / recommended key size bit
  */
-export function kmac256XOF(d: number, S = new Uint8Array(0)): KeyHash {
-  const description = {
+export function kmac256XOF(d: number, S = new Uint8Array(0), k_size: number = 256): KeyHash {
+  const description: KeyHashDescription = {
     ALGORITHM: `KMAC256XOF/${d}`,
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
+    KEY_SIZE: k_size >> 3,
   }
   const digest = (K: Uint8Array, M: Uint8Array) => {
     const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 136)

@@ -1,4 +1,4 @@
-import type { Hash, HashDescription, KeyHash } from '../core/hash'
+import type { Hash, KeyHash, KeyHashDescription } from '../core/hash'
 import { createHash } from '../core/hash'
 import { joinBuffer, wrap } from '../core/utils'
 
@@ -17,20 +17,31 @@ function _hmac(hash: Hash, K: Uint8Array, M: Uint8Array) {
 }
 
 /**
+ * FIPS.198-1: 散列消息认证码 (HMAC).
+ *
  * FIPS.198-1: The Keyed-Hash Message Authentication Code (HMAC).
  *
- * FIPS.198-1: 散列消息认证码 (HMAC).
+ * 如果 `d_size` 大于散列算法的摘要大小, 则回退到散列算法的摘要大小.
+ *
+ * If `d_size` is greater than the digest size of the hash algorithm, it falls back to the digest size of the hash algorithm.
+ *
+ * @param {Hash} hash - 散列算法 / hash algorithm
+ * @param {number} [d_size] - 摘要大小 (bit) / digest size (bit)
+ * @param {number} [k_size] - 推荐密钥大小 (bit) / recommended key size (bit)
  */
-export function hmac(hash: Hash): KeyHash {
+export function hmac(hash: Hash, d_size?: number, k_size?: number): KeyHash {
   const { ALGORITHM, BLOCK_SIZE, DIGEST_SIZE } = hash
-  const description: HashDescription = {
-    ALGORITHM: `HMAC-${ALGORITHM}`,
+  d_size = d_size ? Math.min(d_size >> 3, DIGEST_SIZE) : DIGEST_SIZE
+  k_size = k_size ? k_size >> 3 : BLOCK_SIZE
+  const description: KeyHashDescription = {
+    ALGORITHM: `HMAC-${ALGORITHM}-${d_size << 3}`,
     BLOCK_SIZE,
-    DIGEST_SIZE,
+    DIGEST_SIZE: d_size,
+    KEY_SIZE: k_size,
   }
   return wrap(
     (K: Uint8Array) => {
-      const digest = (M: Uint8Array) => _hmac(hash, K, M)
+      const digest = (M: Uint8Array) => _hmac(hash, K, M).slice(0, d_size)
       return createHash(digest, description)
     },
     description,
