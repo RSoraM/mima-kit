@@ -200,13 +200,12 @@ export class U8 extends Uint8Array {
   }
 
   /**
-   * Convert string to U8
+   * Convert string to U8 (default encoding: UTF-8)
    *
-   * 将 字符串 转换为 U8
+   * 将 字符串 转换为 U8 (默认编码: UTF-8)
    *
-   * @default
    */
-  fromString(input: string, codec: Codec = UTF8) {
+  static fromString(input: string, codec = UTF8) {
     return codec.parse(input)
   }
 
@@ -215,7 +214,7 @@ export class U8 extends Uint8Array {
    *
    * 将 BigInt 转换为 U8
    */
-  fromBI(bigint: bigint) {
+  static fromBI(bigint: bigint) {
     const buffer: number[] = []
 
     // 将 bigint 转换为字节数组
@@ -227,12 +226,23 @@ export class U8 extends Uint8Array {
     return new U8(buffer.toReversed())
   }
 
+  static from(arrayLike: ArrayLike<number>): U8
+  static from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): U8
+  static from<T>(arrayLike: ArrayLike<T>, mapfn: (v: T, k: number) => number, thisArg?: any): U8
+  static from(arrayLike: any, mapfn?: any, thisArg?: any): U8 {
+    return new U8(super.from(arrayLike, mapfn, thisArg))
+  }
+
   filter(predicate: (value: number, index: number, array: Uint8Array) => any, thisArg?: any): U8 {
     return new U8(super.filter(predicate, thisArg))
   }
 
   map(callbackfn: (value: number, index: number, array: Uint8Array) => number, thisArg?: any): U8 {
     return new U8(super.map(callbackfn, thisArg))
+  }
+
+  static of(...items: number[]): U8 {
+    return new U8(super.of(...items))
   }
 
   toReversed(): U8 {
