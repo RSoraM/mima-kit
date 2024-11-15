@@ -1,6 +1,7 @@
+import type { KeyHash } from '../core/hash'
 import { UTF8 } from '../core/codec'
 import { createHash, createTupleHash } from '../core/hash'
-import { KitError, joinBuffer } from '../core/utils'
+import { KitError, joinBuffer, wrap } from '../core/utils'
 import { Keccak_c, shake128, shake256 } from './sha3'
 
 // * Encode and Padding Function
@@ -254,25 +255,6 @@ export function cShake256(d: number, config: cSHAKEConfig = {}) {
 
 // * KMAC
 
-export interface KMACConfig {
-  /**
-   * key
-   *
-   * 密钥
-   *
-   * @default ''
-   */
-  K?: Uint8Array
-  /**
-   * customization
-   *
-   * 自定义参数
-   *
-   * @default ''
-   */
-  S?: Uint8Array
-}
-
 /**
  * Keccak 消息认证码 (KMAC) 算法
  * `KMAC128` 是 `KMAC` 的变体, 由 `cSHAKE128` 构建
@@ -281,25 +263,24 @@ export interface KMACConfig {
  * `KMAC128` is a variant of `KMAC`, build from `cSHAKE128`
  *
  * @param {number} d - 输出长度 bit / output length bit
- * @param {KMACConfig} config - 配置 / config
+ * @param {Uint8Array} S - 自定义参数 / customization
  */
-export function kmac128(d: number, config: KMACConfig = {}) {
-  const { K = new Uint8Array(), S = new Uint8Array() } = config
-  const digest = (M: Uint8Array) => {
+export function kmac128(d: number, S = new Uint8Array(0)): KeyHash {
+  const description = {
+    ALGORITHM: `KMAC128/${d}`,
+    BLOCK_SIZE: 168,
+    DIGEST_SIZE: d >> 3,
+  }
+  const digest = (K: Uint8Array, M: Uint8Array) => {
     const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 168)
     X.push(...bytepad(encodeString(K), 168))
     X.push(M)
     X.push(rightEncode(d))
     return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
   }
-
-  return createHash(
-    digest,
-    {
-      ALGORITHM: `KMAC128/${d}`,
-      BLOCK_SIZE: 168,
-      DIGEST_SIZE: d >> 3,
-    },
+  return wrap(
+    (K: Uint8Array) => createHash((M: Uint8Array) => digest(K, M), description),
+    description,
   )
 }
 
@@ -311,25 +292,24 @@ export function kmac128(d: number, config: KMACConfig = {}) {
  * `KMAC256` is a variant of `KMAC`, build from `cSHAKE256`
  *
  * @param {number} d - 输出长度 bit / output length bit
- * @param {KMACConfig} config - 配置 / config
+ * @param {Uint8Array} S - 自定义参数 / customization
  */
-export function kmac256(d: number, config: KMACConfig = {}) {
-  const { K = new Uint8Array(), S = new Uint8Array() } = config
-  const digest = (M: Uint8Array) => {
+export function kmac256(d: number, S = new Uint8Array(0)): KeyHash {
+  const description = {
+    ALGORITHM: `KMAC256/${d}`,
+    BLOCK_SIZE: 136,
+    DIGEST_SIZE: d >> 3,
+  }
+  const digest = (K: Uint8Array, M: Uint8Array) => {
     const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 136)
     X.push(...bytepad(encodeString(K), 136))
     X.push(M)
     X.push(rightEncode(d))
     return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
   }
-
-  return createHash(
-    digest,
-    {
-      ALGORITHM: `KMAC256/${d}`,
-      BLOCK_SIZE: 136,
-      DIGEST_SIZE: d >> 3,
-    },
+  return wrap(
+    (K: Uint8Array) => createHash((M: Uint8Array) => digest(K, M), description),
+    description,
   )
 }
 
@@ -341,25 +321,24 @@ export function kmac256(d: number, config: KMACConfig = {}) {
  * `KMAC128XOF` is a XOF mode of `KMAC128`, build from `cSHAKE128`
  *
  * @param {number} d - 输出长度 bit / output length bit
- * @param {KMACConfig} config - 配置 / config
+ * @param {Uint8Array} S - 自定义参数 / customization
  */
-export function kmac128XOF(d: number, config: KMACConfig = {}) {
-  const { K = new Uint8Array(), S = new Uint8Array() } = config
-  const digest = (M: Uint8Array) => {
+export function kmac128XOF(d: number, S = new Uint8Array(0)): KeyHash {
+  const description = {
+    ALGORITHM: `KMAC128XOF/${d}`,
+    BLOCK_SIZE: 168,
+    DIGEST_SIZE: d >> 3,
+  }
+  const digest = (K: Uint8Array, M: Uint8Array) => {
     const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 168)
     X.push(...bytepad(encodeString(K), 168))
     X.push(M)
     X.push(rightEncode(0))
     return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
   }
-
-  return createHash(
-    digest,
-    {
-      ALGORITHM: `KMAC128XOF/${d}`,
-      BLOCK_SIZE: 168,
-      DIGEST_SIZE: d >> 3,
-    },
+  return wrap(
+    (K: Uint8Array) => createHash((M: Uint8Array) => digest(K, M), description),
+    description,
   )
 }
 
@@ -371,25 +350,24 @@ export function kmac128XOF(d: number, config: KMACConfig = {}) {
  * `KMAC256XOF` is a XOF mode of `KMAC256`, build from `cSHAKE256`
  *
  * @param {number} d - 输出长度 bit / output length bit
- * @param {KMACConfig} config - 配置 / config
+ * @param {Uint8Array} S - 自定义参数 / customization
  */
-export function kmac256XOF(d: number, config: KMACConfig = {}) {
-  const { K = new Uint8Array(), S = new Uint8Array() } = config
-  const digest = (M: Uint8Array) => {
+export function kmac256XOF(d: number, S = new Uint8Array(0)): KeyHash {
+  const description = {
+    ALGORITHM: `KMAC256XOF/${d}`,
+    BLOCK_SIZE: 136,
+    DIGEST_SIZE: d >> 3,
+  }
+  const digest = (K: Uint8Array, M: Uint8Array) => {
     const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], 136)
     X.push(...bytepad(encodeString(K), 136))
     X.push(M)
     X.push(rightEncode(0))
     return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
   }
-
-  return createHash(
-    digest,
-    {
-      ALGORITHM: `KMAC256XOF/${d}`,
-      BLOCK_SIZE: 136,
-      DIGEST_SIZE: d >> 3,
-    },
+  return wrap(
+    (K: Uint8Array) => createHash((M: Uint8Array) => digest(K, M), description),
+    description,
   )
 }
 

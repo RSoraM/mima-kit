@@ -27,7 +27,6 @@ export interface HashDescription {
   DIGEST_SIZE: number
 }
 export interface Hash extends Digest, HashDescription {
-  digest: Digest
 }
 /**
  * 散列算法包装器,
@@ -45,7 +44,7 @@ export interface Hash extends Digest, HashDescription {
  * const hash = createHash(digest, description)
  * ```
  */
-export const createHash = (digest: Digest, description: HashDescription): Hash => wrap(digest, { digest, ...description })
+export const createHash = (digest: Digest, description: HashDescription): Hash => wrap(digest, description)
 
 // * 元组散列函数包装器
 
@@ -72,3 +71,11 @@ export interface TupleHash extends TupleDigest, TupleHashDescription {
  * ```
  */
 export const createTupleHash = (digest: TupleDigest, description: TupleHashDescription): TupleHash => wrap(digest, { digest, ...description })
+
+// * 密钥散列函数
+
+export interface KeyHashDescription extends HashDescription {
+}
+export interface KeyHash extends KeyHashDescription {
+  (K: Uint8Array): Hash
+}

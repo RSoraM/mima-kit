@@ -1,13 +1,6 @@
-import type { Hash, HashDescription } from '../core/hash'
+import type { Hash, HashDescription, KeyHash } from '../core/hash'
 import { createHash } from '../core/hash'
 import { joinBuffer, wrap } from '../core/utils'
-
-export interface HMAC {
-  (hash: Hash): HashDescription & {
-    (K: Uint8Array): Hash
-  }
-  ALGORITHM: string
-}
 
 function _hmac(hash: Hash, K: Uint8Array, M: Uint8Array) {
   const { BLOCK_SIZE } = hash
@@ -24,27 +17,22 @@ function _hmac(hash: Hash, K: Uint8Array, M: Uint8Array) {
 }
 
 /**
- * @description
  * FIPS.198-1: The Keyed-Hash Message Authentication Code (HMAC).
  *
  * FIPS.198-1: 散列消息认证码 (HMAC).
- *
- * @param {HMACConfig} scheme - HMAC scheme
  */
-export const hmac: HMAC = wrap(
-  (hash: Hash) => {
-    const { ALGORITHM, BLOCK_SIZE, DIGEST_SIZE } = hash
-    const description: HashDescription = {
-      ALGORITHM: `HMAC-${ALGORITHM}`,
-      BLOCK_SIZE,
-      DIGEST_SIZE,
-    }
-    return wrap(
-      (K: Uint8Array) => createHash((M: Uint8Array) => _hmac(hash, K, M), description),
-      description,
-    )
-  },
-  {
-    ALGORITHM: 'HMAC',
-  },
-)
+export function hmac(hash: Hash): KeyHash {
+  const { ALGORITHM, BLOCK_SIZE, DIGEST_SIZE } = hash
+  const description: HashDescription = {
+    ALGORITHM: `HMAC-${ALGORITHM}`,
+    BLOCK_SIZE,
+    DIGEST_SIZE,
+  }
+  return wrap(
+    (K: Uint8Array) => {
+      const digest = (M: Uint8Array) => _hmac(hash, K, M)
+      return createHash(digest, description)
+    },
+    description,
+  )
+}
