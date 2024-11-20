@@ -1,5 +1,7 @@
-import type { Digest } from './hash'
-import { KitError, U8ToBI, mod, modInverse } from './utils'
+import type { BlockCipher } from './cipher'
+import type { Digest, KeyHash } from './hash'
+import type { KDF } from './kdf'
+import { KitError, U8, genRandomBI, joinBuffer, mod, modInverse, modPrimeSquare } from './utils'
 
 // * Constants
 
@@ -129,7 +131,11 @@ export const secp521r1: FpECParams = {
 
 // * Functions
 
-/** 素域运算 */
+/**
+ * 素域运算
+ *
+ * Prime Field Operations
+ */
 function Fp(p: bigint) {
   const plus = (...args: bigint[]) => args.reduce((acc, cur) => mod(acc + cur, p))
   const multiply = (...args: bigint[]) => args.reduce((acc, cur) => mod(acc * cur, p))
@@ -144,10 +150,15 @@ function Fp(p: bigint) {
   return { plus, multiply, subtract, divide }
 }
 
-/** 素域椭圆曲线运算 */
+/**
+ * 素域椭圆曲线运算
+ *
+ * Prime Field Elliptic Curve Operations
+ */
 function FpEC(curve: FpECParams) {
-  const { p, a } = curve
+  const { p, a, b, n, n_bit_length } = curve
   const { plus, multiply, subtract, divide } = Fp(p)
+  const n_byte_length = n_bit_length >> 3
 
   const addPoint = (A: FpECPoint, B: FpECPoint): FpECPoint => {
     const [x1, y1] = [A.x, A.y]
@@ -205,43 +216,72 @@ function FpEC(curve: FpECParams) {
       return mulPoint(addPoint(P, P), k / 2n)
     }
   }
-
-  return { addPoint, mulPoint }
-}
-
-/** 生成随机大整数 */
-function genRandomBI(max: bigint, byte: number = 0): bigint {
-  let result = 0n
-
-  // 计算字节数
-  let _byte = 0
-  for (let _ = max; _ > 0; _ >>= 8n) {
-    _byte++
+  const isLegalPoint = (P: FpECPoint): boolean => {
+    // P != O
+    if (P.isInfinity) {
+      return false
+    }
+    // P(x, y) ∈ E
+    const { x, y } = P
+    if (!x || !y || x >= p || y >= p) {
+      return false
+    }
+    // y^2 = x^3 + ax + b
+    if (mod(y * y - x * x * x - a * x - b, p) !== 0n) {
+      return false
+    }
+    // nP = O
+    if (!mulPoint(P, n).isInfinity) {
+      return false
+    }
+    return true
   }
-  if (byte > _byte) {
-    throw new KitError('Byte length exceeds the maximum value')
+  const pointToU8 = (point: FpECPoint, compress = false): U8 => {
+    if (point.isInfinity) {
+      return new U8([0x00])
+    }
+    const PC = new U8([compress ? 0x02 | Number(point.y & 1n) : 0x04])
+    const X1 = U8.fromBI(point.x)
+    const Y1 = compress ? new U8() : U8.fromBI(point.y)
+    return joinBuffer(PC, X1, Y1)
+  }
+  const U8ToPoint = (buffer: Uint8Array): FpECPoint => {
+    const u8 = U8.from(buffer)
+    const PC = BigInt(u8[0])
+    if (PC === 0x00n) {
+      return { isInfinity: true, x: 0n, y: 0n }
+    }
+    if (PC !== 0x02n && PC !== 0x03n && PC !== 0x04n) {
+      throw new KitError('Invalid point conversion')
+    }
+    // 无压缩
+    if (PC === 0x04n) {
+      const x = u8.slice(1, n_byte_length + 1).toBI()
+      const y = u8.slice(n_byte_length + 1).toBI()
+      return { isInfinity: false, x, y }
+    }
+    // 解压缩
+    else {
+      const x = u8.slice(1).toBI()
+
+      let y = 0n
+      y = x * x * x + a * x + b
+      y = modPrimeSquare(y, p)
+      y = (y & 1n) === (PC & 1n) ? y : p - y
+
+      return { isInfinity: false, x, y }
+    }
   }
 
-  // 使用指定字节数
-  byte = byte || _byte
-
-  // 生成随机数
-  const buffer = new Uint8Array(byte)
-  do {
-    crypto.getRandomValues(buffer)
-    result = U8ToBI(buffer)
-  } while (result >= max)
-
-  return result
+  return { addPoint, mulPoint, isLegalPoint, pointToU8, U8ToPoint }
 }
 
 // * EC Algorithms
 
 /**
- * @description
- * Generate Elliptic Curve Key Pair
- *
  * 生成椭圆曲线密钥对
+ *
+ * Generate Elliptic Curve Key Pair
  */
 export function genECKeyPair(curve: FpECParams): Required<ECKeyPair> {
   const { G, n, n_bit_length } = curve
@@ -253,16 +293,15 @@ export function genECKeyPair(curve: FpECParams): Required<ECKeyPair> {
   // public key
   const Q = mulPoint(G, d)
 
-  return { d, Q }
+  return { curve, d, Q }
 }
 
 /**
- * @description
- * Elliptic Curve Digital Signature Algorithm
- *
  * 椭圆曲线数字签名算法
+ *
+ * Elliptic Curve Digital Signature Algorithm
  */
-export function ECDSA(curve: FpECParams, hash: Digest) {
+export function ecdsa(curve: FpECParams, hash: Digest) {
   const { n, G, n_mask } = curve
   const { mulPoint, addPoint } = FpEC(curve)
 
@@ -274,7 +313,7 @@ export function ECDSA(curve: FpECParams, hash: Digest) {
     let r = 0n
     let s = 0n
 
-    let z = U8ToBI(hash(M))
+    let z = U8.from(hash(M)).toBI()
     while (z > n_mask) {
       z = z >> 1n
     }
@@ -306,7 +345,7 @@ export function ECDSA(curve: FpECParams, hash: Digest) {
       return false
     }
 
-    let z = U8ToBI(hash(M))
+    let z = U8.from(hash(M)).toBI()
     while (z > n_mask) {
       z = z >> 1n
     }
@@ -323,30 +362,101 @@ export function ECDSA(curve: FpECParams, hash: Digest) {
 }
 
 /**
- * @description
- * Elliptic Curve Diffie-Hellman Key Agreement Algorithm
- *
  * 椭圆曲线迪菲-赫尔曼, 密钥协商算法
  *
- * @param {FpECParams} curve - 椭圆曲线参数
- * @param {ECPrivateKey} d - 己方的私钥
- * @param {ECPublicKey} Q - 对方的公钥
+ * Elliptic Curve Diffie-Hellman Key Agreement Algorithm
+ *
+ * @param {FpECParams} curve - 椭圆曲线参数 / Elliptic curve parameters
+ * @param {ECPrivateKey} d - 己方的私钥 / Self private key
+ * @param {ECPublicKey} Q - 对方的公钥 / Counterparty public key
  */
-export function ECDH(curve: FpECParams, d: ECPrivateKey, Q: ECPublicKey) {
+export function ecdh(curve: FpECParams, d: ECPrivateKey, Q: ECPublicKey) {
   const { mulPoint } = FpEC(curve)
-  return mulPoint(Q, d)
+  const S = mulPoint(Q, d)
+  if (S.isInfinity) {
+    throw new KitError('Public key not available')
+  }
+  return S
+}
+
+/**
+ * 椭圆曲线集成加密标准
+ *
+ * Elliptic Curve Integrated Encryption Scheme
+ */
+export function ecies(curve: FpECParams, cipher: BlockCipher, KDF: KDF, k_hash: KeyHash) {
+  const { pointToU8 } = FpEC(curve)
+  const kE_size = cipher.KEY_SIZE
+  const kM_size = k_hash.KEY_SIZE
+
+  /**
+   * @param {ECKeyPair} encryption - 加密者的密钥对 / Encryptor's key pair
+   * @param {ECKeyPair} decryption - 解密者的密钥对 / Decryptor's key pair
+   * @param {Uint8Array} M - 明文 / Plaintext
+   * @param {Uint8Array} S1 - 附加信息1 / Additional information 1
+   * @param {Uint8Array} S2 - 附加信息2 / Additional information 2
+   */
+  function encrypt(encryption: ECKeyPair, decryption: ECKeyPair, M: Uint8Array, S1 = new Uint8Array(0), S2 = new Uint8Array(0)) {
+    if (encryption.d === undefined) {
+      throw new KitError('Missing necessary parameters to encrypt')
+    }
+    const S = U8.fromBI(ecdh(curve, encryption.d, decryption.Q).x)
+    const K = KDF((kE_size + kM_size) << 3, joinBuffer(S, S1))
+    const KE = K.slice(0, kE_size)
+    const KM = K.slice(kE_size, kE_size + kM_size)
+    const R = pointToU8(encryption.Q)
+    const c = cipher(KE).encrypt(M)
+    const d = k_hash(KM)(joinBuffer(c, S2))
+    return joinBuffer(R, c, d)
+  }
+  /**
+   * @param {ECKeyPair} encryption - 加密者的密钥对 / Encryptor's key pair
+   * @param {ECKeyPair} decryption - 解密者的密钥对 / Decryptor's key pair
+   * @param {Uint8Array} C - 密文 / Ciphertext
+   * @param {Uint8Array} S1 - 附加信息1 / Additional information 1
+   * @param {Uint8Array} S2 - 附加信息2 / Additional information 2
+   */
+  function decrypt(encryption: ECKeyPair, decryption: ECKeyPair, C: Uint8Array, S1 = new Uint8Array(0), S2 = new Uint8Array(0)) {
+    if (decryption.d === undefined) {
+      throw new KitError('Missing necessary parameters to decrypt')
+    }
+    const R_size = curve.n_bit_length >> 2
+    const d_size = k_hash.DIGEST_SIZE
+    const c_size = C.length - R_size - d_size
+    const c = C.slice(R_size, R_size + c_size)
+    const d = C.slice(R_size + c_size)
+    const S = U8.fromBI(ecdh(curve, decryption.d, encryption.Q).x)
+    const K = KDF((kE_size + kM_size) << 3, joinBuffer(S, S1))
+    const KE = K.slice(0, kE_size)
+    const KM = K.slice(kE_size, kE_size + kM_size)
+    const d_ = k_hash(KM)(joinBuffer(c, S2))
+    if (d !== d_) {
+      throw new KitError('Invalid ciphertext')
+    }
+    return cipher(KE).decrypt(c)
+  }
+
+  return { encrypt, decrypt }
 }
 
 // * Interfaces
 
-/** 伪射坐标表示的椭圆曲线的点 */
+/**
+ * 伪射坐标表示的椭圆曲线的点
+ *
+ * Affine Coordinates of Elliptic Curve Point
+ */
 interface FpECPoint {
   isInfinity?: boolean
   x: bigint
   y: bigint
 }
 
-/** 素域椭圆曲线参数 */
+/**
+ * 素域椭圆曲线参数
+ *
+ * Prime Field Elliptic Curve Parameters
+ */
 interface FpECParams {
   /** Prime */
   readonly p: bigint
@@ -362,21 +472,51 @@ interface FpECParams {
   readonly n_bit_length: number
 }
 
-/** 素域椭圆曲线私钥 */
+/**
+ * 素域椭圆曲线私钥
+ *
+ * Prime Field Elliptic Curve Private Key
+ */
 type ECPrivateKey = bigint
 
-/** 素域椭圆曲线公钥 */
+/**
+ * 素域椭圆曲线公钥
+ *
+ * Prime Field Elliptic Curve Public Key
+ */
 type ECPublicKey = FpECPoint
 
-/** 椭圆曲线密钥对 */
+/**
+ * 椭圆曲线密钥对
+ *
+ * Elliptic Curve Key Pair
+ */
 interface ECKeyPair {
-  /** Private key */
+  /**
+   * 椭圆曲线参数
+   *
+   * Elliptic curve parameters
+   */
+  readonly curve: FpECParams
+  /**
+   * 私钥
+   *
+   * Private key
+   */
   d?: ECPrivateKey
-  /** Public key */
+  /**
+   * 公钥
+   *
+   * Public key
+   */
   Q: ECPublicKey
 }
 
-/** 椭圆曲线数字签名 */
+/**
+ * 椭圆曲线数字签名
+ *
+ * Elliptic Curve Digital Signature Algorithm
+ */
 interface ECSignature {
   r: bigint
   s: bigint

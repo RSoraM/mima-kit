@@ -1,5 +1,5 @@
 import { genPrime } from '../../core/prime'
-import { BIToU8, KitError, U8ToBI, gcd, lcm, modInverse, modPow, wrap } from '../../core/utils'
+import { KitError, U8, gcd, lcm, modInverse, modPow, wrap } from '../../core/utils'
 
 // * RSA Algorithm
 
@@ -22,26 +22,26 @@ function genKeyPair(b: number): Required<KeyPair> {
 }
 
 function encrypt(M: Uint8Array, n: bigint, e: bigint): Uint8Array {
-  const m = U8ToBI(M)
+  const m = U8.from(M).toBI()
   const c = modPow(m, e, n)
-  return BIToU8(c)
+  return U8.fromBI(c)
 }
 
 function decrypt(C: Uint8Array, n: bigint, d: bigint): Uint8Array {
-  const c = U8ToBI(C)
+  const c = U8.from(C).toBI()
   const m = modPow(c, d, n)
-  return BIToU8(m)
+  return U8.fromBI(m)
 }
 
 function sign(H: Uint8Array, n: bigint, d: bigint): Uint8Array {
-  const h = U8ToBI(H)
+  const h = U8.from(H).toBI()
   const s = modPow(h, d, n)
-  return BIToU8(s)
+  return U8.fromBI(s)
 }
 
 function verify(H: Uint8Array, S: Uint8Array, n: bigint, e: bigint): boolean {
-  const h = U8ToBI(H)
-  const s = U8ToBI(S)
+  const h = U8.from(H).toBI()
+  const s = U8.from(S).toBI()
   const m = modPow(s, e, n)
   return m === h
 }
@@ -49,11 +49,12 @@ function verify(H: Uint8Array, S: Uint8Array, n: bigint, e: bigint): boolean {
 function fromKeyPair(keyPair: KeyPair) {
   let { n, d, e } = keyPair
   return {
+    key: keyPair,
     encrypt: (M: Uint8Array) => {
       // 公钥加密
       if (e) {
-        n = typeof n === 'bigint' ? n : U8ToBI(n)
-        e = typeof e === 'bigint' ? e : U8ToBI(e)
+        n = typeof n === 'bigint' ? n : U8.from(n).toBI()
+        e = typeof e === 'bigint' ? e : U8.from(e).toBI()
         return encrypt(M, n, e)
       }
 
@@ -63,8 +64,8 @@ function fromKeyPair(keyPair: KeyPair) {
     decrypt: (C: Uint8Array) => {
       // 私钥解密
       if (d) {
-        n = typeof n === 'bigint' ? n : U8ToBI(n)
-        d = typeof d === 'bigint' ? d : U8ToBI(d)
+        n = typeof n === 'bigint' ? n : U8.from(n).toBI()
+        d = typeof d === 'bigint' ? d : U8.from(d).toBI()
         return decrypt(C, n, d)
       }
 
@@ -74,8 +75,8 @@ function fromKeyPair(keyPair: KeyPair) {
     sign: (H: Uint8Array) => {
       // 私钥签名
       if (d) {
-        n = typeof n === 'bigint' ? n : U8ToBI(n)
-        d = typeof d === 'bigint' ? d : U8ToBI(d)
+        n = typeof n === 'bigint' ? n : U8.from(n).toBI()
+        d = typeof d === 'bigint' ? d : U8.from(d).toBI()
         return sign(H, n, d)
       }
 
@@ -85,8 +86,8 @@ function fromKeyPair(keyPair: KeyPair) {
     verify: (H: Uint8Array, S: Uint8Array) => {
       // 公钥验证
       if (e) {
-        n = typeof n === 'bigint' ? n : U8ToBI(n)
-        e = typeof e === 'bigint' ? e : U8ToBI(e)
+        n = typeof n === 'bigint' ? n : U8.from(n).toBI()
+        e = typeof e === 'bigint' ? e : U8.from(e).toBI()
         return verify(H, S, n, e)
       }
 
@@ -134,6 +135,7 @@ interface Verifyable {
 
 interface FromKeyPair {
   (keyPair: KeyPair): {
+    key: KeyPair
     encrypt: Encryptable
     decrypt: Decryptable
     sign: Signable
