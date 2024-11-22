@@ -84,6 +84,20 @@ export function rotateR128(x: bigint, n: bigint) {
 }
 
 /**
+ * 获取大整数的比特长度
+ *
+ * Get the bit length of a BigInt
+ */
+export function getBIBits(n: bigint) {
+  let bytes = 0
+  while (n > 0) {
+    bytes++
+    n >>= 1n
+  }
+  return bytes
+}
+
+/**
  * 生成随机大整数
  *
  * Generate Random BigInt
@@ -397,7 +411,6 @@ export class U8 extends Uint8Array {
 }
 
 /**
- * @description
  * Merging multiple ArrayBuffers
  *
  * 合并多个 ArrayBuffer
@@ -414,7 +427,6 @@ export function joinBuffer(...buffers: ArrayBuffer[]) {
 }
 
 /**
- * @description
  * resize ArrayBuffer
  *
  * 调整 ArrayBuffer 大小
@@ -426,6 +438,32 @@ export function resizeBuffer(buffer: ArrayBuffer, size: number) {
   const B = new U8(size)
   B.set(new U8(buffer))
   return B
+}
+
+export class Counter extends U8 {
+  /**
+   * @param {number} offset - 计数器偏移 / counter offset
+   * @param {number} length - 计数器长度 / counter length
+   */
+  inc(offset?: number, length?: number) {
+    // 如果不提供偏移，则默认计数器从 0 开始
+    offset = offset || 0
+    if (offset < 0 || offset >= this.length) {
+      throw new KitError('Invalid counter offset')
+    }
+    // 如果不提供长度，则默认计数器长度为剩余长度
+    length = length || this.length - offset
+    if (length < 0 || offset + length > this.length) {
+      throw new KitError('Invalid counter length')
+    }
+    for (let i = offset + length - 1; i >= offset; i--) {
+      if (this[i] < 0xFF) {
+        this[i] += 1
+        break
+      }
+      this[i] = 0
+    }
+  }
 }
 
 // * Other utility functions

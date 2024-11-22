@@ -1,4 +1,4 @@
-import { KitError, U8, joinBuffer, wrap } from './utils'
+import { Counter, KitError, U8, joinBuffer, wrap } from './utils'
 
 // * 公共接口
 
@@ -291,14 +291,6 @@ export const NoPadding = createPadding(
 )
 
 // * 工作模式
-
-function inc32(ctr: Uint8Array) {
-  const view = new DataView(ctr.buffer)
-  let counter = view.getUint32(ctr.byteLength - 4, false)
-  counter = (counter + 1) % 0xFFFFFFFF
-  view.setUint32(ctr.byteLength - 4, counter, false)
-  return ctr
-}
 
 export interface ModeBaseInfo {
   ALGORITHM: string
@@ -616,32 +608,27 @@ export const ofb = wrap<OFBMode>(
       const c = cipher(K)
       let prev = c.encrypt(iv)
       let S = prev
-      let current = 1
-      const squeeze = (count: number) => {
-        if (current > count) {
+      let SByte = BLOCK_SIZE
+      const squeeze = (TByte: number) => {
+        if (SByte > TByte) {
           return S
         }
-        let offset = S.byteLength
-        const buffer = new U8(count * BLOCK_SIZE)
-        buffer.set(S)
-        while (current < count) {
+        const buffer = [S]
+        while (SByte < TByte) {
           prev = c.encrypt(prev)
-          buffer.set(prev, offset)
-          offset += BLOCK_SIZE
-          current++
+          buffer.push(prev)
+          SByte += BLOCK_SIZE
         }
-        S = buffer
+        S = joinBuffer(...buffer)
         return S
       }
       const encrypt = (M: Uint8Array) => {
         const P = padding(M, BLOCK_SIZE)
-        const BLOCK_TOTAL = Math.ceil(P.byteLength / BLOCK_SIZE)
-        S = squeeze(BLOCK_TOTAL)
+        S = squeeze(P.byteLength)
         return P.map((_, i) => _ ^ S[i])
       }
       const decrypt = (C: Uint8Array) => {
-        const BLOCK_TOTAL = Math.ceil(C.byteLength / BLOCK_SIZE)
-        S = squeeze(BLOCK_TOTAL)
+        S = squeeze(C.byteLength)
         return padding(C.map((_, i) => _ ^ S[i]))
       }
       return wrap({ encrypt, decrypt }, info)
@@ -685,34 +672,29 @@ export const ctr = wrap<CTRMode>(
         throw new KitError('nonce(iv) length must be equal to block size')
       }
       const c = cipher(K)
-      let counter = iv.slice(0)
-      let current = 1
-      let S = c.encrypt(counter)
-      const squeeze = (count: number) => {
-        if (current > count) {
+      const counter = new Counter(iv.slice())
+      let S = new U8()
+      let SByte = 0
+      const squeeze = (TByte: number) => {
+        if (SByte > TByte) {
           return S
         }
-        let offset = S.byteLength
-        const buffer = new U8(count * BLOCK_SIZE)
-        buffer.set(S)
-        while (current < count) {
-          counter = inc32(counter)
-          buffer.set(c.encrypt(counter), offset)
-          offset += BLOCK_SIZE
-          current++
+        const buffer = [S]
+        while (SByte < TByte) {
+          buffer.push(c.encrypt(counter))
+          counter.inc()
+          SByte += BLOCK_SIZE
         }
-        S = buffer
+        S = joinBuffer(...buffer)
         return S
       }
       const encrypt = (M: Uint8Array) => {
         const P = padding(M, BLOCK_SIZE)
-        const BLOCK_TOTAL = Math.ceil(P.byteLength / BLOCK_SIZE)
-        S = squeeze(BLOCK_TOTAL)
+        S = squeeze(P.byteLength)
         return P.map((_, i) => _ ^ S[i])
       }
       const decrypt = (C: Uint8Array) => {
-        const BLOCK_TOTAL = Math.ceil(C.byteLength / BLOCK_SIZE)
-        S = squeeze(BLOCK_TOTAL)
+        S = squeeze(C.byteLength)
         return padding(C.map((_, i) => _ ^ S[i]))
       }
       return wrap({ encrypt, decrypt }, info)
@@ -828,42 +810,37 @@ export const gcm = wrap<GCMMode>(
     const suite = (K: Uint8Array, iv: Uint8Array) => {
       const c = cipher(K)
       const H = c.encrypt(new Uint8Array(BLOCK_SIZE))
-      let IV = new Uint8Array(16)
+      let IV = new Counter(16)
       if (iv.byteLength === 12) {
         IV.set(iv)
         IV[15] = 1
       }
       else {
-        IV = GHASH(H, new Uint8Array(), iv.slice(0))
+        IV = new Counter(GHASH(H, new Uint8Array(), iv.slice(0)))
       }
       let S = c.encrypt(IV)
-      let current = 0
-      const squeeze = (count: number) => {
-        if (current > count) {
+      let SByte = 0
+      const squeeze = (TByte: number) => {
+        if (SByte > TByte) {
           return S
         }
-        let offset = S.byteLength
-        const buffer = new U8((count + 1) * BLOCK_SIZE)
-        buffer.set(S)
-        while (current < count) {
-          IV = inc32(IV)
-          buffer.set(c.encrypt(IV), offset)
-          offset += BLOCK_SIZE
-          current++
+        const buffer = [S]
+        while (SByte < TByte) {
+          IV.inc()
+          buffer.push(c.encrypt(IV))
+          SByte += BLOCK_SIZE
         }
-        S = buffer
+        S = joinBuffer(...buffer)
         return S
       }
       const encrypt = (M: Uint8Array) => {
         const P = padding(M, BLOCK_SIZE)
-        const BLOCK_TOTAL = Math.ceil(P.byteLength / BLOCK_SIZE)
-        S = squeeze(BLOCK_TOTAL)
-        return P.map((_, i) => _ ^ S[i + 16])
+        S = squeeze(P.byteLength)
+        return P.map((_, i) => _ ^ S[i + BLOCK_SIZE])
       }
       const decrypt = (C: Uint8Array) => {
-        const BLOCK_TOTAL = Math.ceil(C.byteLength / BLOCK_SIZE)
-        S = squeeze(BLOCK_TOTAL)
-        return padding(C.map((_, i) => _ ^ S[i + 16]))
+        S = squeeze(C.byteLength)
+        return padding(C.map((_, i) => _ ^ S[i + BLOCK_SIZE]))
       }
       const sign = (C: Uint8Array, A: Uint8Array = new Uint8Array()) => {
         const T = GHASH(H, A, C)

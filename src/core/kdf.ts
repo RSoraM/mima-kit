@@ -1,14 +1,6 @@
 import type { Hash, KeyHash } from './hash'
 import type { U8 } from './utils'
-import { joinBuffer } from './utils'
-
-function inc32(ctr: Uint8Array) {
-  const view = new DataView(ctr.buffer)
-  let counter = view.getUint32(0, false)
-  counter = (counter + 1) % 0xFFFFFFFF
-  view.setUint32(0, counter, false)
-  return ctr
-}
+import { Counter, joinBuffer } from './utils'
 
 export interface KDF {
   /**
@@ -29,12 +21,12 @@ export function ANSI_X963_KDF(hash: Hash): KDF {
   return (k_bit: number, ikm: Uint8Array, info = new Uint8Array(0)) => {
     /** Output Keying Material */
     const okm: Uint8Array[] = []
-    const counter = new Uint8Array([0, 0, 0, 1])
 
-    for (let bits = 0; bits < k_bit; bits += d_bit) {
+    const counter = new Counter([0, 0, 0, 1])
+    for (let okm_bit = 0; okm_bit < k_bit; okm_bit += d_bit) {
       const data = joinBuffer(ikm, counter, info)
       okm.push(hash(data))
-      inc32(counter)
+      counter.inc()
     }
 
     return joinBuffer(...okm).slice(0, k_bit >> 3)
@@ -47,22 +39,22 @@ export function ANSI_X963_KDF(hash: Hash): KDF {
  * HKDF 密钥派生函数
  */
 export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE)): KDF {
+  const d_bit = k_hash.DIGEST_SIZE << 3
   return (k_bit: number, ikm: Uint8Array, info = new Uint8Array(0)) => {
-    const k_byte = k_bit >> 3
     /** Pseudo-Random Key */
     const prk = k_hash(salt)(ikm)
     /** Output Keying Material */
     const okm: Uint8Array[] = []
-    const counter = new Uint8Array([1])
 
+    const counter = new Uint8Array([1])
     let prv = new Uint8Array(0)
-    for (let bytes = 0; bytes < k_byte; bytes += k_hash.DIGEST_SIZE) {
+    for (let okm_bit = 0; okm_bit < k_bit; okm_bit += d_bit) {
       prv = k_hash(prk)(joinBuffer(prv, info, counter))
       okm.push(prv)
       counter[0]++
     }
 
-    return joinBuffer(...okm).slice(0, k_byte)
+    return joinBuffer(...okm).slice(0, k_bit >> 3)
   }
 }
 
@@ -72,25 +64,27 @@ export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE))
  * PBKDF2 密码基础密钥派生函数
  */
 export function pbkdf2(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE), iterations = 1000): KDF {
+  const d_bit = k_hash.DIGEST_SIZE << 3
   return (k_bit: number, ikm: Uint8Array, info = new Uint8Array(0)) => {
-    const k_byte = k_bit >> 3
+    ikm = joinBuffer(ikm, info)
+
     /** Output Keying Material */
     const okm: Uint8Array[] = []
-    const counter = new Uint8Array([0, 0, 0, 1])
 
-    ikm = joinBuffer(ikm, info)
-    for (let bytes = 0; bytes < k_byte; bytes += k_hash.DIGEST_SIZE) {
-      const T = new Uint8Array(k_hash.DIGEST_SIZE)
-
-      let U = joinBuffer(salt, counter)
+    let T: Uint8Array
+    let U: Uint8Array
+    const counter = new Counter([0, 0, 0, 1])
+    for (let okm_bit = 0; okm_bit < k_bit; okm_bit += d_bit) {
+      T = new Uint8Array(k_hash.DIGEST_SIZE)
+      U = joinBuffer(salt, counter)
       for (let i = 0; i < iterations; i++) {
         U = k_hash(ikm)(U)
-        T.forEach((_, i) => T[i] ^= U[i])
+        T.forEach((_, j) => T[j] ^= U[j])
       }
-      inc32(counter)
       okm.push(T)
+      counter.inc()
     }
 
-    return joinBuffer(...okm).slice(0, k_byte)
+    return joinBuffer(...okm).slice(0, k_bit >> 3)
   }
 }
