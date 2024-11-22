@@ -1,4 +1,4 @@
-import { U8ToBI, modPow } from './utils'
+import { U8, modPow } from './utils'
 
 // * Constants
 
@@ -89,9 +89,9 @@ export function genPrime(b: number): bigint {
   }
 
   // using Web Crypto API
-  const buffer = new Uint8Array(b >> 3)
+  const buffer = new U8(b >> 3)
   crypto.getRandomValues(buffer)
-  const prime = U8ToBI(buffer) | 1n
+  const prime = buffer.toBI() | 1n
   if (isProbablePrime(prime))
     return prime
   else
