@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      asn1js:
+        specifier: ^3.0.5
+        version: 3.0.5
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^2.27.3
@@ -29,9 +33,6 @@ importers:
       '@vitest/browser':
         specifier: ^2.0.5
         version: 2.0.5(playwright@1.47.0)(typescript@5.5.4)(vitest@2.0.5)(webdriverio@9.0.9)
-      asn1js:
-        specifier: ^3.0.5
-        version: 3.0.5
       bumpp:
         specifier: ^9.5.2
         version: 9.5.2

@@ -67,6 +67,9 @@
     "prepare": "simple-git-hooks",
     "test:browser": "vitest"
   },
+  "dependencies": {
+    "asn1js": "^3.0.5"
+  },
   "devDependencies": {
     "@antfu/eslint-config": "^2.27.3",
     "@antfu/ni": "^0.21.12",
@@ -75,7 +78,6 @@
     "@types/node": "^20.16.5",
     "@vitejs/plugin-vue": "^5.1.3",
     "@vitest/browser": "^2.0.5",
-    "asn1js": "^3.0.5",
     "bumpp": "^9.5.2",
     "eslint": "^8.57.0",
     "esno": "^4.7.0",
