@@ -354,16 +354,14 @@ export class U8 extends Uint8Array {
    *
    * 将 BigInt 转换为 U8
    */
-  static fromBI(bigint: bigint) {
-    const buffer: number[] = []
-
-    // 将 bigint 转换为字节数组
-    for (let i = 0; bigint > 0n; i++) {
+  static fromBI(bigint: bigint, length?: number) {
+    length = length || (getBIBits(bigint) + 7) >> 3
+    const buffer = new U8(length)
+    for (let i = buffer.length - 1; i >= 0; i--) {
       buffer[i] = Number(bigint & 0xFFn)
       bigint >>= 8n
     }
-
-    return new U8(buffer.toReversed())
+    return buffer
   }
 
   static from(arrayLike: ArrayLike<number>): U8

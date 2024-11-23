@@ -35,7 +35,6 @@ export type { cSHAKEConfig } from './hash/sha3Derived'
 export { cShake128, cShake256 } from './hash/sha3Derived'
 
 // * KMAC
-export type { KMACConfig } from './hash/sha3Derived'
 export { kmac128, kmac128XOF } from './hash/sha3Derived'
 export { kmac256, kmac256XOF } from './hash/sha3Derived'
 

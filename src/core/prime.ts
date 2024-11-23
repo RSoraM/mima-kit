@@ -90,7 +90,9 @@ export function genPrime(b: number): bigint {
 
   // using Web Crypto API
   const buffer = new U8(b >> 3)
-  crypto.getRandomValues(buffer)
+  while (buffer[0] < 0x80) {
+    crypto.getRandomValues(buffer)
+  }
   const prime = buffer.toBI() | 1n
   if (isProbablePrime(prime))
     return prime
