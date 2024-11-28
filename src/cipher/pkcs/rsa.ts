@@ -1,4 +1,3 @@
-import type { Cipherable } from '../../core/cipher'
 import { genPrime } from '../../core/prime'
 import { KitError, U8, gcd, lcm, mod, modInverse, modPow } from '../../core/utils'
 
@@ -24,11 +23,13 @@ export interface RSAPrivateKey extends RSAPublicKey {
   qInv: bigint
 }
 
-export interface RSACipherable extends Cipherable {
+export interface RSACipherable {
+  encrypt: (M: Uint8Array) => bigint
+  decrypt: (C: Uint8Array) => bigint
 }
 export interface RSAVerifiable {
-  sign: (M: Uint8Array) => Uint8Array
-  verify: (S: Uint8Array) => Uint8Array
+  sign: (M: Uint8Array) => bigint
+  verify: (S: Uint8Array) => bigint
 }
 
 // * RSA Algorithm
@@ -133,10 +134,10 @@ function genKey(b: number): RSAPrivateKey {
 }
 
 function fromKey(key: Partial<RSAPrivateKey>): RSACipherable & RSAVerifiable {
-  const encrypt = (M: Uint8Array) => U8.fromBI(encryptionPrimitive(key, M))
-  const decrypt = (C: Uint8Array) => U8.fromBI(decryptionPrimitive(key, C))
-  const sign = (M: Uint8Array) => U8.fromBI(signaturePrimitive(key, M))
-  const verify = (S: Uint8Array) => U8.fromBI(verificationPrimitive(key, S))
+  const encrypt = (M: Uint8Array) => encryptionPrimitive(key, M)
+  const decrypt = (C: Uint8Array) => decryptionPrimitive(key, C)
+  const sign = (M: Uint8Array) => signaturePrimitive(key, M)
+  const verify = (S: Uint8Array) => verificationPrimitive(key, S)
   return {
     ...key,
     encrypt,
