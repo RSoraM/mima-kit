@@ -147,10 +147,18 @@ function fromKey(key: Partial<RSAPrivateKey>): RSACipherable & RSAVerifiable {
 }
 
 /**
+ * 根据 RSA 私钥长度生成 RSA 密钥对, 并返回 RSA 加密原语和签名原语
+ *
+ * Generate RSA key pair according to RSA private key length, and return RSA encryption primitive and signature primitive
+ *
  * @param {number} b - RSA 私钥长度 / RSA private key length
  */
 export function rsa(b: number): RSACipherable & RSAVerifiable & RSAPrivateKey
 /**
+ * 根据 RSA 公钥或私钥生成 RSA 加密原语和验证原语
+ *
+ * Generate RSA encryption primitive and verification primitive according to RSA public or private key
+ *
  * @param {RSAPrivateKey | RSAPublicKey} key - RSA 公钥或私钥 / RSA public or private key
  */
 export function rsa<T extends RSAPrivateKey | RSAPublicKey>(key: T): RSACipherable & RSAVerifiable & T
