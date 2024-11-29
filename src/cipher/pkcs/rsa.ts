@@ -24,11 +24,31 @@ export interface RSAPrivateKey extends RSAPublicKey {
 }
 
 export interface RSACipherable {
+  /**
+   * 使用 RSA 加密原语加密消息
+   *
+   * Encrypt message using RSA encryption primitive
+   */
   encrypt: (M: Uint8Array) => bigint
+  /**
+   * 使用 RSA 解密原语解密密文
+   *
+   * Decrypt ciphertext using RSA decryption primitive
+   */
   decrypt: (C: Uint8Array) => bigint
 }
 export interface RSAVerifiable {
+  /**
+   * 使用 RSA 签名原语对消息签名
+   *
+   * Sign message using RSA signature primitive
+   */
   sign: (M: Uint8Array) => bigint
+  /**
+   * 使用 RSA 验证原语验证签名
+   *
+   * Verify signature using RSA verification primitive
+   */
   verify: (S: Uint8Array) => bigint
 }
 
