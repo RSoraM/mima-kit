@@ -143,6 +143,7 @@ export const sha224 = createHash(
     ALGORITHM: 'SHA-224',
     BLOCK_SIZE: 64,
     DIGEST_SIZE: 28,
+    OID: '2.16.840.1.101.3.4.2.4',
   },
 )
 
@@ -152,5 +153,6 @@ export const sha256 = createHash(
     ALGORITHM: 'SHA-256',
     BLOCK_SIZE: 64,
     DIGEST_SIZE: 32,
+    OID: '2.16.840.1.101.3.4.2.1',
   },
 )

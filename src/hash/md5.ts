@@ -179,5 +179,6 @@ export const md5 = createHash(
     ALGORITHM: 'MD5',
     BLOCK_SIZE: 64,
     DIGEST_SIZE: 16,
+    OID: '1.2.840.113549.2.5',
   },
 )

@@ -182,6 +182,7 @@ export const sha384 = createHash(
     ALGORITHM: 'SHA-384',
     BLOCK_SIZE: 128,
     DIGEST_SIZE: 48,
+    OID: '2.16.840.1.101.3.4.2.2',
   },
 )
 
@@ -191,6 +192,7 @@ export const sha512 = createHash(
     ALGORITHM: 'SHA-512',
     BLOCK_SIZE: 128,
     DIGEST_SIZE: 64,
+    OID: '2.16.840.1.101.3.4.2.3',
   },
 )
 
@@ -201,12 +203,19 @@ export function sha512t(t: number) {
   // * 初始化 SHA-512/t 状态
   const status = IVGen(t)
 
+  let OID: string | undefined
+  if (t === 224)
+    OID = '2.16.840.1.101.3.4.2.5'
+  if (t === 256)
+    OID = '2.16.840.1.101.3.4.2.6'
+
   return createHash(
     (M: Uint8Array) => digest(status, M).slice(0, t >> 3),
     {
       ALGORITHM: `SHA-512/${t}`,
       BLOCK_SIZE: 128,
       DIGEST_SIZE: t >> 3,
+      OID,
     },
   )
 }

@@ -113,5 +113,6 @@ export const sha1 = createHash(
     ALGORITHM: 'SHA-1',
     BLOCK_SIZE: 64,
     DIGEST_SIZE: 20,
+    OID: '1.3.14.3.2.26',
   },
 )

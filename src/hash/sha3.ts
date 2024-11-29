@@ -110,6 +110,7 @@ export const sha3_224 = createHash(
     ALGORITHM: 'SHA3-224',
     BLOCK_SIZE: 144,
     DIGEST_SIZE: 28,
+    OID: '2.16.840.1.101.3.4.2.7',
   },
 )
 
@@ -119,6 +120,7 @@ export const sha3_256 = createHash(
     ALGORITHM: 'SHA3-256',
     BLOCK_SIZE: 136,
     DIGEST_SIZE: 32,
+    OID: '2.16.840.1.101.3.4.2.8',
   },
 )
 
@@ -128,6 +130,7 @@ export const sha3_384 = createHash(
     ALGORITHM: 'SHA3-384',
     BLOCK_SIZE: 104,
     DIGEST_SIZE: 48,
+    OID: '2.16.840.1.101.3.4.2.9',
   },
 )
 
@@ -137,6 +140,7 @@ export const sha3_512 = createHash(
     ALGORITHM: 'SHA3-512',
     BLOCK_SIZE: 72,
     DIGEST_SIZE: 64,
+    OID: '2.16.840.1.101.3.4.2.10',
   },
 )
 

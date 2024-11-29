@@ -25,6 +25,7 @@ export interface HashDescription {
    * 摘要大小 (byte)
    */
   DIGEST_SIZE: number
+  OID?: string
 }
 export interface Hash extends Digest, HashDescription {
 }

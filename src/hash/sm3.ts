@@ -122,5 +122,6 @@ export const sm3 = createHash(
     ALGORITHM: 'SM3',
     BLOCK_SIZE: 64,
     DIGEST_SIZE: 32,
+    OID: '1.2.156.10197.1.401',
   },
 )
