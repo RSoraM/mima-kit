@@ -25,7 +25,14 @@ export function mgf1(hash: Hash): MGF {
 // * Encryption Scheme
 
 /**
- * OAEP 1.2.840.113549.1.1.7
+ * 最优非对称加密填充的 RSA 加密方案 (OAEP)
+ *
+ * RSA Encryption Scheme with Optimal Asymmetric Encryption Padding (OAEP)
+ *
+ * @param {RSAPublicKey | RSAPrivateKey} key - RSA 公钥或私钥 / RSA public or private key
+ * @param {Hash} [hash] - 散列函数 / Hash function
+ * @param {MGF} [mgf] - 掩码生成函数 / Mask generation function
+ * @param {Uint8Array} [label] - 标签 / Label
  */
 export function pkcs1_es_oaep(
   key: RSAPublicKey | RSAPrivateKey,
@@ -92,7 +99,11 @@ export function pkcs1_es_oaep(
 }
 
 /**
- * PKCS#1-v1.5 1.2.840.113549.1.1.1
+ * RSA 加密方案 (PKCS#1 v1.5)
+ *
+ * RSA Encryption Scheme (PKCS#1 v1.5)
+ *
+ * @param {RSAPublicKey | RSAPrivateKey} key - RSA 公钥或私钥 / RSA public or private key
  */
 export function pkcs1_es_1_5(
   key: RSAPublicKey | RSAPrivateKey,
@@ -134,6 +145,16 @@ export function pkcs1_es_1_5(
 
 // * Signature Scheme with Appendix
 
+/**
+ * 基于 概率签名方案 的 RSA 附录签名方案 (PSS)
+ *
+ * RSA Signature Scheme with Appendix - Probabilistic Signature Scheme (PSS)
+ *
+ * @param {RSAPublicKey | RSAPrivateKey} key - RSA 公钥或私钥 / RSA public or private key
+ * @param {Hash} [hash] - 散列函数 / Hash function
+ * @param {MGF} [mgf] - 掩码生成函数 / Mask generation function
+ * @param {number} [sLen] - 盐长度 / Salt length
+ */
 export function pkcs1_ssa_pss(
   key: RSAPublicKey | RSAPrivateKey,
   hash: Hash = sha1,
@@ -160,6 +181,14 @@ export function pkcs1_ssa_pss(
   return { sign, verify }
 }
 
+/**
+ * RSA 附录签名方案 (PKCS#1 v1.5)
+ *
+ * RSA Signature Scheme with Appendix (PKCS#1 v1.5)
+ *
+ * @param {RSAPublicKey | RSAPrivateKey} key - RSA 公钥或私钥 / RSA public or private key
+ * @param {Hash} [hash] - 散列函数 / Hash function
+ */
 export function pkcs1_ssa_1_5(
   key: RSAPublicKey | RSAPrivateKey,
   hash: Hash = sha1,
