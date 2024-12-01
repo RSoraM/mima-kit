@@ -101,7 +101,7 @@ function rightEncode(x: number | bigint): Uint8Array {
  * @param {string | Uint8Array} input - 输入
  */
 function encodeString(input: string | Uint8Array) {
-  input = typeof input === 'string' ? UTF8.parse(input) : input
+  input = typeof input === 'string' ? UTF8(input) : input
   return [leftEncode(input.byteLength << 3), input]
 }
 

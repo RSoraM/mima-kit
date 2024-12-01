@@ -316,7 +316,7 @@ export class U8 extends Uint8Array {
    * 将 U8 编码为字符串
    */
   to(codec: Codec) {
-    return codec.stringify(this)
+    return codec(this)
   }
 
   /**
@@ -346,7 +346,7 @@ export class U8 extends Uint8Array {
    *
    */
   static fromString(input: string, codec = UTF8) {
-    return codec.parse(input)
+    return codec(input)
   }
 
   /**

@@ -23,9 +23,9 @@ const { ANSI_X923, NoPadding } = cipherSuite
 describe('stream cipher', () => {
   // * RC4
   it('arc4', () => {
-    const k = UTF8.parse('Password')
-    const m = UTF8.parse('Plaintext')
-    const c = HEX.parse('70830E0E2C1AC34177')
+    const k = UTF8('Password')
+    const m = UTF8('Plaintext')
+    const c = HEX('70830E0E2C1AC34177')
 
     const cipher = arc4(k)
     expect(cipher.encrypt(m)).toMatchObject(c)
@@ -33,10 +33,10 @@ describe('stream cipher', () => {
   })
   // * Salsa20
   it('salsa20', () => {
-    const k = UTF8.parse('2b7e151628aed2a6abf7158809cf4f3c')
-    const iv = UTF8.parse('cafebabe')
-    const m = UTF8.parse('meowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeow')
-    const c = B64.parse('heP0vh0o4kkRZVkf1R9CQ8VsUZEM8TIX1ZDra/1xbrp7nX4csbbLRcyFkofzddSqnjmP20LEQVLQy6kPMUOJuO8jb/soNNDmsS/AczPsUVJZ2MzRKFXwi2aeM1GEv1iuWJConhfqqEjVQXre7WGGSsh3CxnmUNN10r2mTzm/tNSarH8Wy4s4RmmWrHsPOY2WEiyAvMIdVq+X8UATk7GXtpL4Z8CXnrswFp7Cd+M28C8u9hjt6taYC9+4DJc=')
+    const k = UTF8('2b7e151628aed2a6abf7158809cf4f3c')
+    const iv = UTF8('cafebabe')
+    const m = UTF8('meowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeowmeow')
+    const c = B64('heP0vh0o4kkRZVkf1R9CQ8VsUZEM8TIX1ZDra/1xbrp7nX4csbbLRcyFkofzddSqnjmP20LEQVLQy6kPMUOJuO8jb/soNNDmsS/AczPsUVJZ2MzRKFXwi2aeM1GEv1iuWJConhfqqEjVQXre7WGGSsh3CxnmUNN10r2mTzm/tNSarH8Wy4s4RmmWrHsPOY2WEiyAvMIdVq+X8UATk7GXtpL4Z8CXnrswFp7Cd+M28C8u9hjt6taYC9+4DJc=')
 
     const cipher = salsa20(k, iv)
     expect(cipher.encrypt(m)).toMatchObject(c)
@@ -295,7 +295,7 @@ describe('block cipher', () => {
     // source: https://www.schneier.com/wp-content/uploads/2015/12/vectors-2.txt
     const k = new U8(16)
     const m = new U8(8)
-    const c = new U8(HEX.parse('4EF997456198DD78'))
+    const c = HEX('4EF997456198DD78')
 
     const bf = blowfish(k)
     expect(bf.encrypt(m)).toMatchObject(c)
@@ -306,19 +306,19 @@ describe('block cipher', () => {
     // source: https://www.schneier.com/wp-content/uploads/2015/12/ecb_ival.txt
     const k = new U8(16)
     const m = new U8(16)
-    const c = new U8(HEX.parse('9F589F5CF6122C32B6BFEC2F2AE8C35A'))
+    const c = HEX('9F589F5CF6122C32B6BFEC2F2AE8C35A')
     const tf = twofish(128)(k)
     expect(tf.encrypt(m)).toMatchObject(c)
     expect(tf.decrypt(c)).toMatchObject(m)
 
-    const k192 = new U8(HEX.parse('0123456789ABCDEFFEDCBA98765432100011223344556677'))
-    const c192 = new U8(HEX.parse('CFD1D2E5A9BE9CDF501F13B892BD2248'))
+    const k192 = HEX('0123456789ABCDEFFEDCBA98765432100011223344556677')
+    const c192 = HEX('CFD1D2E5A9BE9CDF501F13B892BD2248')
     const tf192 = twofish(192)(k192)
     expect(tf192.encrypt(m)).toMatchObject(c192)
     expect(tf192.decrypt(c192)).toMatchObject(m)
 
-    const k256 = new U8(HEX.parse('0123456789ABCDEFFEDCBA987654321000112233445566778899AABBCCDDEEFF'))
-    const c256 = new U8(HEX.parse('37527BE0052334B89F0CFCCAE87CFA20'))
+    const k256 = HEX('0123456789ABCDEFFEDCBA987654321000112233445566778899AABBCCDDEEFF')
+    const c256 = HEX('37527BE0052334B89F0CFCCAE87CFA20')
     const tf256 = twofish(256)(k256)
     expect(tf256.encrypt(m)).toMatchObject(c256)
     expect(tf256.decrypt(c256)).toMatchObject(m)
@@ -347,9 +347,9 @@ describe('block cipher', () => {
 describe('mode', () => {
   // * ECB-SM4
   it('ecb-sm4', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('cd5a3e21a3c5fbeb05a819c67469703b49597aa5bc280694147d3145f8269bdb')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('cd5a3e21a3c5fbeb05a819c67469703b49597aa5bc280694147d3145f8269bdb')
 
     const ecb_sm4 = ecb(sm4)(k)
     expect(ecb_sm4.encrypt(m)).toMatchObject(c)
@@ -357,10 +357,10 @@ describe('mode', () => {
   })
   // * CBC-SM4
   it('cbc-sm4', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('ac1e00f787097325407c4686cf80273bd1ec1f8de32343df8d9b245b04e58014')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('ac1e00f787097325407c4686cf80273bd1ec1f8de32343df8d9b245b04e58014')
 
     const cbc_sm4 = cbc(sm4, ANSI_X923)(k, iv)
     expect(cbc_sm4.encrypt(m)).toMatchObject(c)
@@ -368,10 +368,10 @@ describe('mode', () => {
   })
   // * PCBC-SM4
   it('pcbc-sm4', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('ac1e00f787097325407c4686cf80273b189865931ac1ce2d99577a2c8d685c77')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('ac1e00f787097325407c4686cf80273b189865931ac1ce2d99577a2c8d685c77')
 
     const pcbc_sm4 = pcbc(sm4)(k, iv)
     expect(pcbc_sm4.encrypt(m)).toMatchObject(c)
@@ -379,10 +379,10 @@ describe('mode', () => {
   })
   // * CFB-SM4
   it('cfb-sm4', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('e38ec4c9fb65e1da9ba25c2f35840c123c171e4d8e26c1d54e7038aa4a8e9e65')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c123c171e4d8e26c1d54e7038aa4a8e9e65')
 
     const cfb_sm4 = cfb(sm4)(k, iv)
     expect(cfb_sm4.encrypt(m)).toMatchObject(c)
@@ -390,10 +390,10 @@ describe('mode', () => {
   })
   // * CFB-SM4-Stream
   it('cfb-sm4-stream', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('e38ec4c9fb65e1da9ba25c2f35840c123c')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c123c')
 
     const cfb_sm4 = cfb(sm4, NoPadding)(k, iv)
     expect(cfb_sm4.encrypt(m)).toMatchObject(c)
@@ -401,10 +401,10 @@ describe('mode', () => {
   })
   // * OFB-SM4
   it('ofb-sm4', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('e38ec4c9fb65e1da9ba25c2f35840c1222d0dc374e57e74de38c562c8e0d2e3f')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c1222d0dc374e57e74de38c562c8e0d2e3f')
 
     const ofb_sm4 = ofb(sm4)(k, iv)
     expect(ofb_sm4.encrypt(m)).toMatchObject(c)
@@ -412,10 +412,10 @@ describe('mode', () => {
   })
   // * OFB-SM4-Stream
   it('ofb-sm4-stream', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('e38ec4c9fb65e1da9ba25c2f35840c1222')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c1222')
 
     const ofb_sm4 = ofb(sm4, NoPadding)(k, iv)
     expect(ofb_sm4.encrypt(m)).toMatchObject(c)
@@ -423,10 +423,10 @@ describe('mode', () => {
   })
   // * CTR-SM4
   it('ctr-sm4', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('e38ec4c9fb65e1da9ba25c2f35840c1226cd921b5c89efd7008b46c4a73c908a')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c1226cd921b5c89efd7008b46c4a73c908a')
 
     const ctr_sm4 = ctr(sm4)(k, iv)
     expect(ctr_sm4.encrypt(m)).toMatchObject(c)
@@ -434,10 +434,10 @@ describe('mode', () => {
   })
   // * CTR-SM4-Stream
   it('ctr-sm4-stream', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const c = HEX.parse('e38ec4c9fb65e1da9ba25c2f35840c1226')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c1226')
 
     const ctr_sm4 = ctr(sm4, NoPadding)(k, iv)
     expect(ctr_sm4.encrypt(m)).toMatchObject(c)
@@ -445,12 +445,12 @@ describe('mode', () => {
   })
   // * GCM-SM4
   it('gcm-sm4', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const a = HEX.parse('feedfacedeadbeeffeedfacedeadbeefabaddad2')
-    const c = HEX.parse('1f5490b2105791a5ae8e5eff3fc75438d6a512a9f89a8b0afac8e7fdba78a331')
-    const t = HEX.parse('082c1baa5c841297f6397d8b213a34e8')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const a = HEX('feedfacedeadbeeffeedfacedeadbeefabaddad2')
+    const c = HEX('1f5490b2105791a5ae8e5eff3fc75438d6a512a9f89a8b0afac8e7fdba78a331')
+    const t = HEX('082c1baa5c841297f6397d8b213a34e8')
 
     const gcm_sm4 = gcm(sm4)(k, iv)
     expect(gcm_sm4.encrypt(m)).toMatchObject(c)
@@ -460,12 +460,12 @@ describe('mode', () => {
   })
   // * GCM-SM4-Stream
   it('gcm-sm4-stream', () => {
-    const k = HEX.parse('8586c1e4007b4ac8ea156616bb813986')
-    const iv = HEX.parse('060d358b88e62a5287b1df4dddf016b3')
-    const m = UTF8.parse('meow, 喵， 🐱')
-    const a = HEX.parse('feedfacedeadbeeffeedfacedeadbeefabaddad2')
-    const c = HEX.parse('1f5490b2105791a5ae8e5eff3fc75438d6')
-    const t = HEX.parse('8dc65670d665f16a045c2931245fc639')
+    const k = HEX('8586c1e4007b4ac8ea156616bb813986')
+    const iv = HEX('060d358b88e62a5287b1df4dddf016b3')
+    const m = UTF8('meow, 喵， 🐱')
+    const a = HEX('feedfacedeadbeeffeedfacedeadbeefabaddad2')
+    const c = HEX('1f5490b2105791a5ae8e5eff3fc75438d6')
+    const t = HEX('8dc65670d665f16a045c2931245fc639')
 
     const gcm_sm4 = gcm(sm4, NoPadding)(k, iv)
     expect(gcm_sm4.encrypt(m)).toMatchObject(c)

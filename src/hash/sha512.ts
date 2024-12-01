@@ -50,7 +50,7 @@ function IVGen(t: number) {
   stateView.setBigUint64(48, 0x1F83D9ABFB41BD6Bn ^ 0xA5A5A5A5A5A5A5A5n, false)
   stateView.setBigUint64(56, 0x5BE0CD19137E2179n ^ 0xA5A5A5A5A5A5A5A5n, false)
 
-  return digest(state, UTF8.parse(`SHA-512/${t}`))
+  return digest(state, UTF8(`SHA-512/${t}`))
 }
 
 // * Algorithm
