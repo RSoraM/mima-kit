@@ -476,12 +476,11 @@ export const pcbc = wrap<PCBCMode>(
         const C = new U8(P.byteLength)
         const prev = IV.slice(0)
         for (let i = 0; i < P.byteLength; i += BLOCK_SIZE) {
-          // TODO can be subarray?
-          const B = P.slice(i, i + BLOCK_SIZE)
+          const B = P.subarray(i, i + BLOCK_SIZE)
           prev.forEach((_, i) => prev[i] ^= B[i])
           const _C = c.encrypt(prev)
           C.set(_C, i)
-          _C.forEach((_, i) => prev[i] = _C[i] ^ B[i])
+          prev.forEach((_, i) => prev[i] = _C[i] ^ B[i])
         }
         return C
       }
