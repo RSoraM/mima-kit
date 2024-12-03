@@ -378,7 +378,7 @@ export interface CBCMode extends ModeBaseInfo {
    */
   (cipher: BlockCipher, padding?: Padding): {
     (K: Uint8Array, iv: Uint8Array): Cipherable & CBCModeInfo
-  }
+  } & BlockCipherInfo
 }
 /**
  * Cipher Block Chaining mode.
@@ -442,7 +442,7 @@ export interface PCBCModeInfo extends CBCModeInfo {
 export interface PCBCMode extends ModeBaseInfo {
   (cipher: BlockCipher, padding?: Padding): {
     (K: Uint8Array, iv: Uint8Array): Cipherable & PCBCModeInfo
-  }
+  } & BlockCipherInfo
 }
 /**
  * Propagating Cipher Block Chaining mode.
@@ -515,7 +515,7 @@ export interface CFBMode extends ModeBaseInfo {
    */
   (cipher: BlockCipher, padding?: Padding): {
     (K: Uint8Array, iv: Uint8Array): Cipherable & CFBModeInfo
-  }
+  } & BlockCipherInfo
 }
 /**
  * Cipher Feedback mode.
@@ -580,7 +580,7 @@ export interface OFBMode extends ModeBaseInfo {
    */
   (cipher: BlockCipher, padding?: Padding): {
     (K: Uint8Array, iv: Uint8Array): Cipherable & OFBModeInfo
-  }
+  } & BlockCipherInfo
 }
 /**
  * Output Feedback mode.
@@ -646,7 +646,7 @@ export interface CTRMode extends ModeBaseInfo {
    */
   (cipher: BlockCipher, padding?: Padding): {
     (K: Uint8Array, iv: Uint8Array): Cipherable & CTRModeInfo
-  }
+  } & BlockCipherInfo
 }
 /**
  * Counter mode.
@@ -729,7 +729,7 @@ export interface GCMMode extends GCMModeBaseInfo {
    */
   (cipher: BlockCipher, padding?: Padding, tag_size?: number): {
     (K: Uint8Array, iv: Uint8Array): Cipherable & Verifiable & GCMModeInfo
-  }
+  } & BlockCipherInfo
 }
 function GF128Mul(X: Uint8Array, Y: Uint8Array) {
   // R: E1000000000000000000000000000000
