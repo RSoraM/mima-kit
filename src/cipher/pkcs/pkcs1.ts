@@ -1,7 +1,7 @@
 import * as asn from 'asn1js'
 import type { Hash } from '../../core/hash'
 import { Counter, KitError, U8, getBIBits, joinBuffer } from '../../core/utils'
-import { sha1 } from '../../hash/sha1'
+import { sha256 } from '../../hash/sha256'
 import type { RSAPrivateKey, RSAPublicKey } from './rsa'
 import { rsa } from './rsa'
 
@@ -30,13 +30,13 @@ export function mgf1(hash: Hash): MGF {
  * RSA Encryption Scheme with Optimal Asymmetric Encryption Padding (OAEP)
  *
  * @param {RSAPublicKey | RSAPrivateKey} key - RSA 公钥或私钥 / RSA public or private key
- * @param {Hash} [hash] - 散列函数 / Hash function
- * @param {MGF} [mgf] - 掩码生成函数 / Mask generation function
- * @param {Uint8Array} [label] - 标签 / Label
+ * @param {Hash} [hash] - 散列函数 / Hash function (default: SHA-256)
+ * @param {MGF} [mgf] - 掩码生成函数 / Mask generation function (default: MGF1)
+ * @param {Uint8Array} [label] - 标签 / Label (default: empty)
  */
 export function pkcs1_es_oaep(
   key: RSAPublicKey | RSAPrivateKey,
-  hash: Hash = sha1,
+  hash: Hash = sha256,
   mgf = mgf1(hash),
   label = new Uint8Array(),
 ) {
@@ -151,13 +151,13 @@ export function pkcs1_es_1_5(
  * RSA Signature Scheme with Appendix - Probabilistic Signature Scheme (PSS)
  *
  * @param {RSAPublicKey | RSAPrivateKey} key - RSA 公钥或私钥 / RSA public or private key
- * @param {Hash} [hash] - 散列函数 / Hash function
- * @param {MGF} [mgf] - 掩码生成函数 / Mask generation function
- * @param {number} [sLen] - 盐长度 / Salt length
+ * @param {Hash} [hash] - 散列函数 / Hash function (default: SHA-256)
+ * @param {MGF} [mgf] - 掩码生成函数 / Mask generation function (default: MGF1)
+ * @param {number} [sLen] - 盐长度 / Salt length (default: hash.DIGEST_SIZE)
  */
 export function pkcs1_ssa_pss(
   key: RSAPublicKey | RSAPrivateKey,
-  hash: Hash = sha1,
+  hash: Hash = sha256,
   mgf = mgf1(hash),
   sLen = hash.DIGEST_SIZE,
 ) {
@@ -187,11 +187,11 @@ export function pkcs1_ssa_pss(
  * RSA Signature Scheme with Appendix (PKCS#1 v1.5)
  *
  * @param {RSAPublicKey | RSAPrivateKey} key - RSA 公钥或私钥 / RSA public or private key
- * @param {Hash} [hash] - 散列函数 / Hash function
+ * @param {Hash} [hash] - 散列函数 / Hash function (default: SHA-256)
  */
 export function pkcs1_ssa_1_5(
   key: RSAPublicKey | RSAPrivateKey,
-  hash: Hash = sha1,
+  hash: Hash = sha256,
 ) {
   const modBits = getBIBits(key.n)
   const k = (modBits + 7) >> 3
@@ -215,7 +215,7 @@ export function pkcs1_ssa_1_5(
 // * Encoding Method for Signatures with Appendix
 
 function emsa_pss(
-  hash: Hash = sha1,
+  hash: Hash = sha256,
   mgf = mgf1(hash),
   sLen = hash.DIGEST_SIZE,
 ) {
@@ -275,7 +275,7 @@ function emsa_pss(
 function emsa_1_5(
   M: Uint8Array,
   emLen: number,
-  hash: Hash = sha1,
+  hash: Hash = sha256,
 ) {
   const H = hash(M)
   const digestAlgorithm = new asn.Sequence({
