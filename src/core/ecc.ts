@@ -1,133 +1,11 @@
-import type { BlockCipher } from './cipher'
+import { aes } from '../cipher/blockCipher/aes'
+import { hmac } from '../hash/hmac'
+import { sha256 } from '../hash/sha256'
+import { type BlockCipher, type BlockCipherInfo, cbc } from './cipher'
+import type { FpECParams, FpECPoint } from './eccParams'
 import type { Digest, KeyHash } from './hash'
-import type { KDF } from './kdf'
-import { KitError, U8, genRandomBI, joinBuffer, mod, modInverse, modPrimeSquare } from './utils'
-
-// * Constants
-
-export const sm2p256v1: FpECParams = {
-  p: 0xFFFFFFFE_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_00000000_FFFFFFFF_FFFFFFFFn,
-  a: 0xFFFFFFFE_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_00000000_FFFFFFFF_FFFFFFFCn,
-  b: 0x28E9FA9E_9D9F5E34_4D5A9E4B_CF6509A7_F39789F5_15AB8F92_DDBCBD41_4D940E93n,
-  G: {
-    x: 0x32C4AE2C_1F198119_5F990446_6A39C994_8FE30BBF_F2660BE1_715A4589_334C74C7n,
-    y: 0xBC3736A2_F4F6779C_59BDCEE3_6B692153_D0A9877C_C62A4740_02DF32E5_2139F0A0n,
-  },
-  n: 0xFFFFFFFE_FFFFFFFF_FFFFFFFF_FFFFFFFF_7203DF6B_21C6052B_53BBF409_39D54123n,
-  n_mask: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 256,
-}
-
-export const secp192k1: FpECParams = {
-  p: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_FFFFEE37n,
-  a: 0x00000000_00000000_00000000_00000000_00000000_00000000n,
-  b: 0x00000000_00000000_00000000_00000000_00000000_00000003n,
-  G: {
-    x: 0xDB4FF10E_C057E9AE_26B07D02_80B7F434_1DA5D1B1_EAE06C7Dn,
-    y: 0x9B2F2F6D_9C5628A7_844163D0_15BE8634_4082AA88_D95E2F9Dn,
-  },
-  n: 0xFFFFFFFF_FFFFFFFF_FFFFFFFE_26F2FC17_0F69466A_74DEFD8Dn,
-  n_mask: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 192,
-}
-
-export const secp192r1: FpECParams = {
-  p: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_FFFFFFFF_FFFFFFFFn,
-  a: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_FFFFFFFF_FFFFFFFCn,
-  b: 0x64210519_E59C80E7_0FA7E9AB_72243049_FEB8DEEC_C146B9B1n,
-  S: 0x3045AE6F_C8422F64_ED579528_D38120EA_E12196D5n,
-  G: {
-    x: 0x188DA80E_B03090F6_7CBF20EB_43A18800_F4FF0AFD_82FF1012n,
-    y: 0x07192B95_FFC8DA78_631011ED_6B24CDD5_73F977A1_1E794811n,
-  },
-  n: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_99DEF836_146BC9B1_B4D22831n,
-  n_mask: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 192,
-}
-
-export const secp224k1: FpECParams = {
-  p: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_FFFFE56Dn,
-  a: 0x00000000_00000000_00000000_00000000_00000000_00000000_00000000n,
-  b: 0x00000000_00000000_00000000_00000000_00000000_00000000_00000005n,
-  G: {
-    x: 0xA1455B33_4DF099DF_30FC28A1_69A467E9_E47075A9_0F7E650E_B6B7A45Cn,
-    y: 0x7E089FED_7FBA3442_82CAFBD6_F7E319F7_C0B0BD59_E2CA4BDB_556D61A5n,
-  },
-  n: 0x01_00000000_00000000_00000000_0001DCE8_D2EC6184_CAF0A971_769FB1F7n,
-  n_mask: 0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 225,
-}
-
-export const secp224r1: FpECParams = {
-  p: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_00000000_00000000_00000001n,
-  a: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_FFFFFFFF_FFFFFFFF_FFFFFFFEn,
-  b: 0xB4050A85_0C04B3AB_F5413256_5044B0B7_D7BFD8BA_270B3943_2355FFB4n,
-  S: 0xBD713447_99D5C7FC_DC45B59F_A3B9AB8F_6A948BC5n,
-  G: {
-    x: 0xB70E0CBD_6BB4BF7F_321390B9_4A03C1D3_56C21122_343280D6_115C1D21n,
-    y: 0xBD376388_B5F723FB_4C22DFE6_CD4375A0_5A074764_44D58199_85007E34n,
-  },
-  n: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFF16A2_E0B8F03E_13DD2945_5C5C2A3Dn,
-  n_mask: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 224,
-
-}
-
-export const secp256k1: FpECParams = {
-  p: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_FFFFFC2Fn,
-  a: 0x00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000n,
-  b: 0x00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000007n,
-  G: {
-    x: 0x79BE667E_F9DCBBAC_55A06295_CE870B07_029BFCDB_2DCE28D9_59F2815B_16F81798n,
-    y: 0x483ADA77_26A3C465_5DA4FBFC_0E1108A8_FD17B448_A6855419_9C47D08F_FB10D4B8n,
-  },
-  n: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_BAAEDCE6_AF48A03B_BFD25E8C_D0364141n,
-  n_mask: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 256,
-}
-
-export const secp256r1: FpECParams = {
-  p: 0xFFFFFFFF_00000001_00000000_00000000_00000000_FFFFFFFF_FFFFFFFF_FFFFFFFFn,
-  a: 0xFFFFFFFF_00000001_00000000_00000000_00000000_FFFFFFFF_FFFFFFFF_FFFFFFFCn,
-  b: 0x5AC635D8_AA3A93E7_B3EBBD55_769886BC_651D06B0_CC53B0F6_3BCE3C3E_27D2604Bn,
-  S: 0xC49D3608_86E70493_6A6678E1_139D26B7_819F7E90n,
-  G: {
-    x: 0x6B17D1F2_E12C4247_F8BCE6E5_63A440F2_77037D81_2DEB33A0_F4A13945_D898C296n,
-    y: 0x4FE342E2_FE1A7F9B_8EE7EB4A_7C0F9E16_2BCE3357_6B315ECE_CBB64068_37BF51F5n,
-  },
-  n: 0xFFFFFFFF_00000000_FFFFFFFF_FFFFFFFF_BCE6FAAD_A7179E84_F3B9CAC2_FC632551n,
-  n_mask: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 256,
-}
-
-export const secp384r1: FpECParams = {
-  p: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_FFFFFFFF_00000000_00000000_FFFFFFFFn,
-  a: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_FFFFFFFF_00000000_00000000_FFFFFFFCn,
-  b: 0xB3312FA7_E23EE7E4_988E056B_E3F82D19_181D9C6E_FE814112_0314088F_5013875A_C656398D_8A2ED19D_2A85C8ED_D3EC2AEFn,
-  S: 0xA335926A_A319A27A_1D00896A_6773A482_7ACDAC73n,
-  G: {
-    x: 0xAA87CA22_BE8B0537_8EB1C71E_F320AD74_6E1D3B62_8BA79B98_59F741E0_82542A38_5502F25D_BF55296C_3A545E38_72760AB7n,
-    y: 0x3617DE4A_96262C6F_5D9E98BF_9292DC29_F8F41DBD_289A147C_E9DA3113_B5F0B8C0_0A60B1CE_1D7E819D_7A431D7C_90EA0E5Fn,
-  },
-  n: 0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_C7634D81_F4372DDF_581A0DB2_48B0A77A_ECEC196A_CCC52973n,
-  n_mask: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 384,
-
-}
-
-export const secp521r1: FpECParams = {
-  p: 0x01FF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFFn,
-  a: 0x01FF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFCn,
-  b: 0x0051_953EB961_8E1C9A1F_929A21A0_B68540EE_A2DA725B_99B315F3_B8B48991_8EF109E1_56193951_EC7E937B_1652C0BD_3BB1BF07_3573DF88_3D2C34F1_EF451FD4_6B503F00n,
-  S: 0xD09E8800_291CB853_96CC6717_393284AA_A0DA64BAn,
-  G: {
-    x: 0x00C6_858E06B7_0404E9CD_9E3ECB66_2395B442_9C648139_053FB521_F828AF60_6B4D3DBA_A14B5E77_EFE75928_FE1DC127_A2FFA8DE_3348B3C1_856A429B_F97E7E31_C2E5BD66n,
-    y: 0x0118_39296A78_9A3BC004_5C8A5FB4_2C7D1BD9_98F54449_579B4468_17AFBD17_273E662C_97EE7299_5EF42640_C550B901_3FAD0761_353C7086_A272C240_88BE9476_9FD16650n,
-  },
-  n: 0x01FF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFA_51868783_BF2F966B_7FCC0148_F709A5D0_3BB5C9B8_899C47AE_BB6FB71E_91386409n,
-  n_mask: 0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
-  n_bit_length: 521,
-}
+import { ANSI_X963_KDF, type KDF } from './kdf'
+import { KitError, U8, genRandomBI, joinBuffer, mod, modInverse, modPow, modPrimeSquare } from './utils'
 
 // * Functions
 
@@ -155,7 +33,7 @@ function Fp(p: bigint) {
  *
  * Prime Field Elliptic Curve Operations
  */
-function FpEC(curve: FpECParams) {
+function FpECUtils(curve: FpECParams): FpEllipticCurveUtils {
   const { p, a, b, n, n_bit_length } = curve
   const { plus, multiply, subtract, divide } = Fp(p)
   const n_byte_length = n_bit_length >> 3
@@ -216,22 +94,33 @@ function FpEC(curve: FpECParams) {
       return mulPoint(addPoint(P, P), k / 2n)
     }
   }
-  const isLegalPoint = (P: FpECPoint): boolean => {
+  const isLegalPK = (p_key: ECPublicKey): boolean => {
+    const { Q } = p_key
     // P != O
-    if (P.isInfinity) {
+    if (Q.isInfinity) {
       return false
     }
     // P(x, y) ∈ E
-    const { x, y } = P
-    if (!x || !y || x >= p || y >= p) {
+    const { x, y } = Q
+    if (x < 0n || x >= p || y < 0n || y >= p) {
       return false
     }
     // y^2 = x^3 + ax + b
-    if (mod(y * y - x * x * x - a * x - b, p) !== 0n) {
+    const l = modPow(y, 2n, p)
+    const r = mod(modPow(x, 3n, p) + a * x + b, p)
+    if (l !== r) {
       return false
     }
     // nP = O
-    if (!mulPoint(P, n).isInfinity) {
+    const nP = mulPoint(Q, n)
+    if (!nP.isInfinity) {
+      return false
+    }
+    return true
+  }
+  const isLegalSK = (s_key: ECPrivateKey): boolean => {
+    const { d } = s_key
+    if (d < 0n || d >= p) {
       return false
     }
     return true
@@ -273,243 +162,353 @@ function FpEC(curve: FpECParams) {
     }
   }
 
-  return { addPoint, mulPoint, isLegalPoint, pointToU8, U8ToPoint }
+  return { addPoint, mulPoint, isLegalPK, isLegalSK, pointToU8, U8ToPoint }
 }
 
 // * EC Algorithms
 
 /**
- * 生成椭圆曲线密钥对
+ * 素域椭圆曲线密码学组件
  *
- * Generate Elliptic Curve Key Pair
+ * Prime Field Elliptic Curve Cryptography Components
  */
-export function genECKeyPair(curve: FpECParams): Required<ECKeyPair> {
-  const { G, n, n_bit_length } = curve
-  const { mulPoint } = FpEC(curve)
-
-  // private key
-  const d = genRandomBI(n - 2n, n_bit_length >> 3)
-
-  // public key
-  const Q = mulPoint(G, d)
-
-  return { curve, d, Q }
-}
-
-/**
- * 椭圆曲线数字签名算法
- *
- * Elliptic Curve Digital Signature Algorithm
- */
-export function ecdsa(curve: FpECParams, hash: Digest) {
-  const { n, G, n_mask } = curve
-  const { mulPoint, addPoint } = FpEC(curve)
-
-  /**
-   * @param {ECPrivateKey} d - 签名者的私钥
-   * @param {Uint8Array} M - 消息
-   */
-  function sign(d: ECPrivateKey, M: Uint8Array): ECSignature {
-    let r = 0n
-    let s = 0n
-
-    let z = U8.from(hash(M)).toBI()
-    while (z > n_mask) {
-      z = z >> 1n
+export function FpEC(curve: FpECParams): FpEllipticCurve {
+  const { G, n, n_mask, n_bit_length } = curve
+  const utils = FpECUtils(curve)
+  const { addPoint, mulPoint, isLegalPK, isLegalSK } = utils
+  const genKey = () => {
+    // private key
+    const d = genRandomBI(n - 2n, n_bit_length >> 3)
+    // public key
+    const Q = mulPoint(G, d)
+    return { Q, d }
+  }
+  const ecdh = (s_key: ECPrivateKey, p_key: ECPublicKey) => {
+    if (!isLegalPK(p_key)) {
+      throw new KitError('Invalid public key')
     }
+    if (!isLegalSK(s_key)) {
+      throw new KitError('Invalid private key')
+    }
+    const Q = p_key.Q
+    const d = s_key.d
+    const S = mulPoint(Q, d)
+    if (S.isInfinity) {
+      throw new KitError('the result of ECDH is the point at infinity')
+    }
+    return S
+  }
+  const ecmqv = (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey) => {
+    if (!isLegalPK(v1) || !isLegalPK(v2)) {
+      throw new KitError('Invalid public key')
+    }
+    const ceilLog2n = n_bit_length
+    const L = 1n << BigInt(Math.ceil(ceilLog2n / 2))
+    const Q2u = mod(u2.Q.x, L) + L
+    const Q2v = mod(v2.Q.x, L) + L
+    const s = mod(u2.d + Q2u * u1.d, n)
+    const P = mulPoint(addPoint(v2.Q, mulPoint(v1.Q, Q2v)), s)
+    if (P.isInfinity) {
+      throw new KitError('Public key not available')
+    }
+    return P
+  }
+  const ecdsa = (key: ECPrivateKey | ECPublicKey, hash: Digest) => {
+    const sign = (M: Uint8Array): ECDSASignature => {
+      if (!('d' in key)) {
+        throw new KitError('Missing necessary parameters to sign')
+      }
+      const { d } = key
+      let r = 0n
+      let s = 0n
+      let z = U8.from(hash(M)).toBI()
+      while (z > n_mask) {
+        z = z >> 1n
+      }
+      do {
+        const K = genKey()
+        const [k, x1] = [K.d, K.Q.x]
+        r = mod(x1, n)
+        if (r === 0n)
+          continue
 
+        s = modInverse(k, n) * (z + r * d)
+        s = mod(s, n)
+      } while (s === 0n)
+      return { r, s }
+    }
+    const verify = (M: Uint8Array, signature: ECDSASignature): boolean => {
+      if (!('Q' in key)) {
+        throw new KitError('Missing necessary parameters to sign')
+      }
+      const { Q } = key
+      const { r, s } = signature
+      if (r <= 0n || r >= n || s <= 0n || s >= n) {
+        return false
+      }
+      let z = U8.from(hash(M)).toBI()
+      while (z > n_mask) {
+        z = z >> 1n
+      }
+      const w = modInverse(s, n)
+      const u1 = mod(z * w, n)
+      const u2 = mod(r * w, n)
+      const P = addPoint(mulPoint(G, u1), mulPoint(Q, u2))
+      const v = mod(P.x, n)
+      return v === r
+    }
+    return { sign, verify }
+  }
+  const eciesEncrypt: ECIESEncrypt = (
+    p_key: ECPublicKey,
+    cipher: IVBlockCipher = cbc(aes(256)),
+    KDF: KDF = ANSI_X963_KDF(sha256),
+    k_hash: KeyHash = hmac(sha256),
+    S1 = new Uint8Array(0),
+    S2 = new Uint8Array(0),
+    iv = new Uint8Array(cipher.BLOCK_SIZE),
+  ) => {
+    if (!isLegalPK(p_key)) {
+      throw new KitError('Invalid public key')
+    }
+    let s_key: ECKeyPair
+    let deriveShare: FpECPoint
     do {
-      const K = genECKeyPair(curve)
-      const [k, x1] = [K.d, K.Q.x]
-      r = mod(x1, n)
-      if (r === 0n)
-        continue
-
-      s = modInverse(k, n) * (z + r * d)
-      s = mod(s, n)
-    } while (s === 0n)
-
-    return { r, s }
+      s_key = genKey()
+      deriveShare = ecdh(s_key, p_key)
+    } while (deriveShare.isInfinity)
+    const Z = U8.fromBI(deriveShare.x)
+    const K = KDF((cipher.KEY_SIZE + k_hash.KEY_SIZE) << 3, joinBuffer(Z, S1))
+    const KE = K.slice(0, cipher.KEY_SIZE)
+    const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + k_hash.KEY_SIZE)
+    const _cipher = cipher(KE, iv)
+    const _mac = k_hash(KM)
+    const R: ECPublicKey = { Q: s_key.Q }
+    return (M: Uint8Array) => {
+      const C = _cipher.encrypt(M)
+      const D = _mac(joinBuffer(C, S2))
+      return { R, C, D }
+    }
+  }
+  const eciesDecrypt: ECIESDecrypt = (
+    s_key: ECPrivateKey,
+    cipher: IVBlockCipher = cbc(aes(256)),
+    KDF: KDF = ANSI_X963_KDF(sha256),
+    k_hash: KeyHash = hmac(sha256),
+    S1 = new Uint8Array(0),
+    S2 = new Uint8Array(0),
+    iv = new Uint8Array(cipher.BLOCK_SIZE),
+  ) => {
+    return (CT: ECIESCipherText) => {
+      const { R, C, D } = CT
+      // 密钥派生
+      const deriveShare = ecdh(s_key, R)
+      if (deriveShare.isInfinity) {
+        throw new KitError('ECIES Decryption failed')
+      }
+      const Z = U8.fromBI(deriveShare.x)
+      const K = KDF((cipher.KEY_SIZE + k_hash.KEY_SIZE) << 3, joinBuffer(Z, S1))
+      const KE = K.slice(0, cipher.KEY_SIZE)
+      const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + k_hash.KEY_SIZE)
+      const _cipher = cipher(KE, iv)
+      const _mac = k_hash(KM)
+      // 校验
+      if (_mac(joinBuffer(C, S2)).some((v, i) => v !== D[i])) {
+        throw new KitError('ECIES Decryption failed')
+      }
+      const M = _cipher.decrypt(C)
+      // 解密
+      return new U8(M)
+    }
   }
 
-  /**
-   * @param {ECPublicKey} Q - 签名者的公钥
-   * @param {Uint8Array} M - 消息
-   * @param {ECSignature} signature - 签名
-   */
-  function verify(Q: ECPublicKey, M: Uint8Array, signature: ECSignature): boolean {
-    // TODO 检查 Q 是否在曲线上
-
-    const { r, s } = signature
-    if (r <= 0n || r >= n || s <= 0n || s >= n) {
-      return false
-    }
-
-    let z = U8.from(hash(M)).toBI()
-    while (z > n_mask) {
-      z = z >> 1n
-    }
-
-    const w = modInverse(s, n)
-    const u1 = mod(z * w, n)
-    const u2 = mod(r * w, n)
-    const P = addPoint(mulPoint(G, u1), mulPoint(Q, u2))
-    const v = mod(P.x, n)
-    return v === r
+  return {
+    genKey,
+    ecdh,
+    ecmqv,
+    ecdsa,
+    eciesEncrypt,
+    eciesDecrypt,
+    ...utils,
   }
-
-  return { sign, verify }
-}
-
-/**
- * 椭圆曲线迪菲-赫尔曼, 密钥协商算法
- *
- * Elliptic Curve Diffie-Hellman Key Agreement Algorithm
- *
- * @param {FpECParams} curve - 椭圆曲线参数 / Elliptic curve parameters
- * @param {ECPrivateKey} d - 己方的私钥 / Self private key
- * @param {ECPublicKey} Q - 对方的公钥 / Counterparty public key
- */
-export function ecdh(curve: FpECParams, d: ECPrivateKey, Q: ECPublicKey) {
-  const { mulPoint } = FpEC(curve)
-  const S = mulPoint(Q, d)
-  if (S.isInfinity) {
-    throw new KitError('Public key not available')
-  }
-  return S
-}
-
-/**
- * 椭圆曲线集成加密标准
- *
- * Elliptic Curve Integrated Encryption Scheme
- */
-export function ecies(curve: FpECParams, cipher: BlockCipher, KDF: KDF, k_hash: KeyHash) {
-  const { pointToU8 } = FpEC(curve)
-  const kE_size = cipher.KEY_SIZE
-  const kM_size = k_hash.KEY_SIZE
-
-  /**
-   * @param {ECKeyPair} encryption - 加密者的密钥对 / Encryptor's key pair
-   * @param {ECKeyPair} decryption - 解密者的密钥对 / Decryptor's key pair
-   * @param {Uint8Array} M - 明文 / Plaintext
-   * @param {Uint8Array} S1 - 附加信息1 / Additional information 1
-   * @param {Uint8Array} S2 - 附加信息2 / Additional information 2
-   */
-  function encrypt(encryption: ECKeyPair, decryption: ECKeyPair, M: Uint8Array, S1 = new Uint8Array(0), S2 = new Uint8Array(0)) {
-    if (encryption.d === undefined) {
-      throw new KitError('Missing necessary parameters to encrypt')
-    }
-    const S = U8.fromBI(ecdh(curve, encryption.d, decryption.Q).x)
-    const K = KDF((kE_size + kM_size) << 3, joinBuffer(S, S1))
-    const KE = K.slice(0, kE_size)
-    const KM = K.slice(kE_size, kE_size + kM_size)
-    const R = pointToU8(encryption.Q)
-    const c = cipher(KE).encrypt(M)
-    const d = k_hash(KM)(joinBuffer(c, S2))
-    return joinBuffer(R, c, d)
-  }
-  /**
-   * @param {ECKeyPair} encryption - 加密者的密钥对 / Encryptor's key pair
-   * @param {ECKeyPair} decryption - 解密者的密钥对 / Decryptor's key pair
-   * @param {Uint8Array} C - 密文 / Ciphertext
-   * @param {Uint8Array} S1 - 附加信息1 / Additional information 1
-   * @param {Uint8Array} S2 - 附加信息2 / Additional information 2
-   */
-  function decrypt(encryption: ECKeyPair, decryption: ECKeyPair, C: Uint8Array, S1 = new Uint8Array(0), S2 = new Uint8Array(0)) {
-    if (decryption.d === undefined) {
-      throw new KitError('Missing necessary parameters to decrypt')
-    }
-    const R_size = curve.n_bit_length >> 2
-    const d_size = k_hash.DIGEST_SIZE
-    const c_size = C.length - R_size - d_size
-    const c = C.slice(R_size, R_size + c_size)
-    const d = C.slice(R_size + c_size)
-    const S = U8.fromBI(ecdh(curve, decryption.d, encryption.Q).x)
-    const K = KDF((kE_size + kM_size) << 3, joinBuffer(S, S1))
-    const KE = K.slice(0, kE_size)
-    const KM = K.slice(kE_size, kE_size + kM_size)
-    const d_ = k_hash(KM)(joinBuffer(c, S2))
-    if (d !== d_) {
-      throw new KitError('Invalid ciphertext')
-    }
-    return cipher(KE).decrypt(c)
-  }
-
-  return { encrypt, decrypt }
 }
 
 // * Interfaces
 
-/**
- * 伪射坐标表示的椭圆曲线的点
- *
- * Affine Coordinates of Elliptic Curve Point
- */
-interface FpECPoint {
-  isInfinity?: boolean
-  x: bigint
-  y: bigint
+interface ECIESCipherText {
+  /**
+   * 临时公钥
+   *
+   * Temporary Public Key
+   */
+  R: ECPublicKey
+  /**
+   * 密文
+   *
+   * Ciphertext
+   */
+  C: Uint8Array
+  /**
+   * 校验值
+   *
+   * Check Value
+   */
+  D: Uint8Array
 }
 
-/**
- * 素域椭圆曲线参数
- *
- * Prime Field Elliptic Curve Parameters
- */
-interface FpECParams {
-  /** Prime */
-  readonly p: bigint
-  readonly a: bigint
-  readonly b: bigint
-  /** SEED */
-  readonly S?: bigint
-  /** Base point */
-  readonly G: FpECPoint
-  /** Order */
-  readonly n: bigint
-  readonly n_mask: bigint
-  readonly n_bit_length: number
+interface ECIESEncrypt {
+  /**
+   * 椭圆曲线集成加密算法
+   *
+   * Elliptic Curve Integrated Encryption Scheme
+   *
+   * @param {ECPublicKey} p_key - 接收方公钥 / Recipient's Public Key
+   * @param {IVBlockCipher} [cipher] - 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
+   * @param {KDF} [KDF] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
+   * @param {KeyHash} [k_hash] - 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
+   * @param {Uint8Array} [S1] - 附加数据1 / Additional Data 1
+   * @param {Uint8Array} [S2] - 附加数据2 / Additional Data 2
+   * @param {Uint8Array} [iv] - 初始化向量 / Initialization Vector
+   */
+  (
+    p_key: ECPublicKey,
+    cipher?: IVBlockCipher,
+    KDF?: KDF,
+    k_hash?: KeyHash,
+    S1?: Uint8Array,
+    S2?: Uint8Array,
+    iv?: Uint8Array,
+  ): (M: Uint8Array) => ECIESCipherText
 }
 
-/**
- * 素域椭圆曲线私钥
- *
- * Prime Field Elliptic Curve Private Key
- */
-type ECPrivateKey = bigint
+interface ECIESDecrypt {
+  /**
+   * 椭圆曲线集成解密算法
+   *
+   * Elliptic Curve Integrated Decryption Scheme
+   *
+   * @param {ECPrivateKey} s_key - 接收方私钥 / Recipient's Private Key
+   * @param {IVBlockCipher} [cipher] - 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
+   * @param {KDF} [KDF] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
+   * @param {KeyHash} [k_hash] - 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
+   * @param {Uint8Array} [S1] - 附加数据1 / Additional Data 1
+   * @param {Uint8Array} [S2] - 附加数据2 / Additional Data 2
+   * @param {Uint8Array} [iv] - 初始化向量 / Initialization Vector
+   */
+  (
+    s_key: ECPrivateKey,
+    cipher?: IVBlockCipher,
+    KDF?: KDF,
+    k_hash?: KeyHash,
+    S1?: Uint8Array,
+    S2?: Uint8Array,
+    iv?: Uint8Array,
+  ): (CT: ECIESCipherText) => Uint8Array
+}
 
-/**
- * 素域椭圆曲线公钥
- *
- * Prime Field Elliptic Curve Public Key
- */
-type ECPublicKey = FpECPoint
+interface FpEllipticCurveUtils {
+  /**
+   * 素域椭圆曲线点加法
+   *
+   * Prime Field Elliptic Curve Point Addition
+   */
+  addPoint: (A: FpECPoint, B: FpECPoint) => FpECPoint
+  /**
+   * 素域椭圆曲线点乘法
+   *
+   * Prime Field Elliptic Curve Point Multiplication
+   */
+  mulPoint: (P: FpECPoint, k: bigint) => FpECPoint
+  /**
+   * 判断公钥是否合法
+   *
+   * Determine if the public key is legal
+   */
+  isLegalPK: (p_key: ECPublicKey) => boolean
+  /**
+   * 判断私钥是否合法
+   *
+   * Determine if the private key is legal
+   */
+  isLegalSK: (s_key: ECPrivateKey) => boolean
+  /**
+   * 点转换为字节串，默认不压缩
+   *
+   * Convert Point to Byte String, not compressed by default
+   */
+  pointToU8: (point: FpECPoint, compress?: boolean) => U8
+  /**
+   * 字节串转换为点
+   *
+   * Convert Byte String to Point
+   */
+  U8ToPoint: (buffer: Uint8Array) => FpECPoint
+}
 
+interface FpEllipticCurve extends FpEllipticCurveUtils {
+  /**
+   * 生成椭圆曲线密钥对
+   *
+   * Generate Elliptic Curve Key Pair
+   */
+  genKey: () => ECKeyPair
+  /**
+   * 椭圆曲线迪菲-赫尔曼, 密钥协商算法
+   *
+   * Elliptic Curve Diffie-Hellman Key Agreement Algorithm
+   */
+  ecdh: (s_key: ECPrivateKey, p_key: ECPublicKey) => FpECPoint
+  /**
+   * 椭圆曲线梅内泽斯-奎-范斯通密钥协商算法
+   *
+   * Elliptic Curve Menezes-Qu-Vanstone Key Agreement Algorithm
+   */
+  ecmqv: (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey) => FpECPoint
+  /**
+   * 椭圆曲线数字签名算法
+   *
+   * Elliptic Curve Digital Signature Algorithm
+   */
+  ecdsa: (key: ECPrivateKey | ECPublicKey, hash: Digest) => {
+    sign: (M: Uint8Array) => ECDSASignature
+    verify: (M: Uint8Array, signature: ECDSASignature) => boolean
+  }
+  /**
+   * 椭圆曲线集成加密算法
+   *
+   * Elliptic Curve Integrated Encryption Scheme
+   */
+  eciesEncrypt: ECIESEncrypt
+  /**
+   * 椭圆曲线集成解密算法
+   *
+   * Elliptic Curve Integrated Decryption Scheme
+   */
+  eciesDecrypt: ECIESDecrypt
+}
+
+interface ECPublicKey {
+  /**
+   * 素域椭圆曲线公钥
+   *
+   * Prime Field Elliptic Curve Public Key
+   */
+  readonly Q: Readonly<FpECPoint>
+}
+interface ECPrivateKey {
+  /**
+   * 素域椭圆曲线私钥
+   *
+   * Prime Field Elliptic Curve Private Key
+   */
+  readonly d: bigint
+}
 /**
  * 椭圆曲线密钥对
  *
  * Elliptic Curve Key Pair
  */
-interface ECKeyPair {
-  /**
-   * 椭圆曲线参数
-   *
-   * Elliptic curve parameters
-   */
-  readonly curve: FpECParams
-  /**
-   * 私钥
-   *
-   * Private key
-   */
-  d?: ECPrivateKey
-  /**
-   * 公钥
-   *
-   * Public key
-   */
-  Q: ECPublicKey
+interface ECKeyPair extends ECPrivateKey, ECPublicKey {
 }
 
 /**
@@ -517,7 +516,11 @@ interface ECKeyPair {
  *
  * Elliptic Curve Digital Signature Algorithm
  */
-interface ECSignature {
+interface ECDSASignature {
   r: bigint
   s: bigint
+}
+
+interface IVBlockCipher extends BlockCipherInfo {
+  (K: Uint8Array, iv: Uint8Array): ReturnType<BlockCipher>
 }
