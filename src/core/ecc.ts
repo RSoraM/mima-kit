@@ -517,7 +517,17 @@ interface ECKeyPair extends ECPrivateKey, ECPublicKey {
  * Elliptic Curve Digital Signature Algorithm
  */
 interface ECDSASignature {
+  /**
+   * 临时公钥
+   *
+   * Temporary Public Key
+   */
   r: bigint
+  /**
+   * 签名值
+   *
+   * Signature Value
+   */
   s: bigint
 }
 
