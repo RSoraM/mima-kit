@@ -262,8 +262,8 @@ export function FpEC(curve: FpECParams): FpEllipticCurve {
   const eciesEncrypt: ECIESEncrypt = (
     p_key: ECPublicKey,
     cipher: IVBlockCipher = cbc(aes(256)),
-    KDF: KDF = ANSI_X963_KDF(sha256),
     k_hash: KeyHash = hmac(sha256),
+    KDF: KDF = ANSI_X963_KDF(sha256),
     S1 = new Uint8Array(0),
     S2 = new Uint8Array(0),
     iv = new Uint8Array(cipher.BLOCK_SIZE),
@@ -293,8 +293,8 @@ export function FpEC(curve: FpECParams): FpEllipticCurve {
   const eciesDecrypt: ECIESDecrypt = (
     s_key: ECPrivateKey,
     cipher: IVBlockCipher = cbc(aes(256)),
-    KDF: KDF = ANSI_X963_KDF(sha256),
     k_hash: KeyHash = hmac(sha256),
+    KDF: KDF = ANSI_X963_KDF(sha256),
     S1 = new Uint8Array(0),
     S2 = new Uint8Array(0),
     iv = new Uint8Array(cipher.BLOCK_SIZE),
@@ -364,8 +364,8 @@ interface ECIESEncrypt {
    *
    * @param {ECPublicKey} p_key - 接收方公钥 / Recipient's Public Key
    * @param {IVBlockCipher} [cipher] - 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
-   * @param {KDF} [KDF] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
    * @param {KeyHash} [k_hash] - 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
+   * @param {KDF} [KDF] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
    * @param {Uint8Array} [S1] - 附加数据1 / Additional Data 1
    * @param {Uint8Array} [S2] - 附加数据2 / Additional Data 2
    * @param {Uint8Array} [iv] - 初始化向量 / Initialization Vector
@@ -373,8 +373,8 @@ interface ECIESEncrypt {
   (
     p_key: ECPublicKey,
     cipher?: IVBlockCipher,
-    KDF?: KDF,
     k_hash?: KeyHash,
+    KDF?: KDF,
     S1?: Uint8Array,
     S2?: Uint8Array,
     iv?: Uint8Array,
@@ -389,8 +389,8 @@ interface ECIESDecrypt {
    *
    * @param {ECPrivateKey} s_key - 接收方私钥 / Recipient's Private Key
    * @param {IVBlockCipher} [cipher] - 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
-   * @param {KDF} [KDF] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
    * @param {KeyHash} [k_hash] - 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
+   * @param {KDF} [KDF] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
    * @param {Uint8Array} [S1] - 附加数据1 / Additional Data 1
    * @param {Uint8Array} [S2] - 附加数据2 / Additional Data 2
    * @param {Uint8Array} [iv] - 初始化向量 / Initialization Vector
@@ -398,8 +398,8 @@ interface ECIESDecrypt {
   (
     s_key: ECPrivateKey,
     cipher?: IVBlockCipher,
-    KDF?: KDF,
     k_hash?: KeyHash,
+    KDF?: KDF,
     S1?: Uint8Array,
     S2?: Uint8Array,
     iv?: Uint8Array,
