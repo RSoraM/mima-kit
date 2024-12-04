@@ -3,9 +3,9 @@ import { HEX, UTF8 } from '../src/core/codec'
 import { U8 } from '../src/core/utils'
 import { NoPadding, ecb } from '../src/core/cipher'
 import { ANSI_X963_KDF } from '../src/core/kdf'
-import { FpEC, es_xor } from '../src/core/ec'
 import * as ecParams from '../src/core/ecParams'
 import { rsa } from '../src/cipher/pkcs/rsa'
+import { FpECC, es_xor } from '../src/cipher/pkcs/ecc'
 import { hmac } from '../src/hash/hmac'
 import { sha1 } from '../src/hash/sha1'
 import { sha256 } from '../src/hash/sha256'
@@ -67,29 +67,8 @@ describe('pkcs#1', () => {
 
 describe('ecc', () => {
   // vector source: http://rfc.nop.hu/secg/gec2.pdf
-  it('secp160r1-ecdsa', () => {
-    const M = UTF8('abc')
-    const ec = FpEC(secp160r1)
-    const key = {
-      d: 971761939728640320549601132085879836204587084162n,
-      Q: {
-        isInfinity: false,
-        x: 466448783855397898016055842232266600516272889280n,
-        y: 1110706324081757720403272427311003102474457754220n,
-      },
-    }
-    const dsa = ec.ecdsa(key, sha1)
-    const signature = dsa.sign(M)
-    const signature_outside = {
-      r: 0xCE2873E5BE449563391FEB47DDCBA2DC16379191n,
-      s: 0x3480EC1371A091A464B31CE47DF0CB8AA2D98B54n,
-    }
-    expect(dsa.verify(M, signature)).toBe(true)
-    expect(dsa.verify(M, signature_outside)).toBe(true)
-  })
   it('secp160r1-ecdh', () => {
-    const kdf = ANSI_X963_KDF(sha1)
-    const ec = FpEC(secp160r1)
+    const ec = FpECC(secp160r1)
     const u_k = {
       d: 971761939728640320549601132085879836204587084162n,
       Q: {
@@ -106,18 +85,18 @@ describe('ecc', () => {
         y: 221937774842090227911893783570676792435918278531n,
       },
     }
-    const u_s = ec.ecdh(u_k, v_k)
-    const v_s = ec.ecdh(v_k, u_k)
+    const s_u = ec.ecdh(u_k, v_k)
+    const s_v = ec.ecdh(v_k, u_k)
     const s_outside = 1155982782519895915997745984453282631351432623114n
-    expect(u_s.x).toBe(v_s.x)
-    expect(u_s.x).toBe(s_outside)
+    expect(s_u.x).toBe(s_v.x)
+    expect(s_u.x).toBe(s_outside)
+    const kdf = ANSI_X963_KDF(sha1)
     const K = kdf(20 << 3, U8.fromBI(s_outside))
     const K_outside = HEX('744AB703F5BC082E59185F6D049D2D367DB245C2')
     expect(K_outside.every((v, i) => v === K[i])).toBe(true)
   })
   it('secp160r1-ecmqv', () => {
-    const kdf = ANSI_X963_KDF(sha1)
-    const ec = FpEC(secp160r1)
+    const ec = FpECC(secp160r1)
     const u_k1 = {
       d: 971761939728640320549601132085879836204587084162n,
       Q: {
@@ -150,22 +129,45 @@ describe('ecc', () => {
         y: 560813476551307469487939594456722559518188737232n,
       },
     }
-    const u_s = ec.ecmqv(u_k1, u_k2, v_k1, v_k2)
-    const v_s = ec.ecmqv(v_k1, v_k2, u_k1, u_k2)
+    const s_u = ec.ecmqv(u_k1, u_k2, v_k1, v_k2)
+    const s_v = ec.ecmqv(v_k1, v_k2, u_k1, u_k2)
     const s_outside = 516158222599696982690660648801682584432269985196n
-    expect(u_s.x).toBe(v_s.x)
-    expect(u_s.x).toBe(s_outside)
+    expect(s_u.x).toBe(s_v.x)
+    expect(s_u.x).toBe(s_outside)
+    const kdf = ANSI_X963_KDF(sha1)
     const K = kdf(20 << 3, U8.fromBI(s_outside))
     const K_outside = HEX('C06763F8C3D2452C1CC5D29BD61918FB485063F6')
     expect(K_outside.every((v, i) => v === K[i])).toBe(true)
   })
+  it('secp160r1-ecdsa', () => {
+    const ec = FpECC(secp160r1)
+    const dsa = ec.ecdsa(sha1)
+    const key = {
+      d: 971761939728640320549601132085879836204587084162n,
+      Q: {
+        isInfinity: false,
+        x: 466448783855397898016055842232266600516272889280n,
+        y: 1110706324081757720403272427311003102474457754220n,
+      },
+    }
+    const msg = UTF8('abc')
+    const sig = dsa.sign(key, msg)
+    const sig_outside = {
+      r: 0xCE2873E5BE449563391FEB47DDCBA2DC16379191n,
+      s: 0x3480EC1371A091A464B31CE47DF0CB8AA2D98B54n,
+    }
+    expect(dsa.verify(key, msg, sig)).toBe(true)
+    expect(dsa.verify(key, msg, sig_outside)).toBe(true)
+  })
   it('secp160r1-ecies', () => {
+    const ec = FpECC(secp160r1)
     const cipher = ecb(es_xor, NoPadding)
     const kdf = ANSI_X963_KDF(sha1)
     /** HMAC-SHA-1-160 with 20 bytes keys */
     const mac = hmac(sha1, 160, 160)
-    const ec = FpEC(secp160r1)
-    const v_k = {
+    const ecies = ec.ecies({ cipher, mac, kdf })
+
+    const key = {
       d: 399525573676508631577122671218044116107572676710n,
       Q: {
         isInfinity: false,
@@ -173,11 +175,9 @@ describe('ecc', () => {
         y: 221937774842090227911893783570676792435918278531n,
       },
     }
-    const encrypt = ec.eciesEncrypt(v_k, cipher, mac, kdf)
-    const decrypt = ec.eciesDecrypt(v_k, cipher, mac, kdf)
-    const M = UTF8('abcdefghijklmnopqrst')
-    const C = encrypt(M)
-    const C_outside: typeof C = {
+    const msg = UTF8('abcdefghijklmnopqrst')
+    const cip = ecies.encrypt(key, msg)
+    const cip_outside = {
       R: {
         Q: {
           isInfinity: false,
@@ -188,11 +188,11 @@ describe('ecc', () => {
       C: HEX('7123C870A31A81EA7583290D1BA17BC8759435ED'),
       D: HEX('1CCDA9EB4ED27360BE896729AD185493622591E5'),
     }
-    expect(decrypt(C)).toMatchObject(M)
-    expect(decrypt(C_outside)).toMatchObject(M)
+    expect(ecies.decrypt(key, cip)).toMatchObject(msg)
+    expect(ecies.decrypt(key, cip_outside)).toMatchObject(msg)
   })
   it('secp160r1-point-compress', () => {
-    const ec = FpEC(secp160r1)
+    const ec = FpECC(secp160r1)
     const R = {
       isInfinity: false,
       x: 1176954224688105769566774212902092897866168635793n,
