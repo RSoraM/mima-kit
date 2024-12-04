@@ -1,7 +1,8 @@
 import { aes } from '../cipher/blockCipher/aes'
 import { hmac } from '../hash/hmac'
 import { sha256 } from '../hash/sha256'
-import { type BlockCipher, type BlockCipherInfo, cbc } from './cipher'
+import type { BlockCipher, BlockCipherInfo } from './cipher'
+import { cbc, createCipher } from './cipher'
 import type { FpECParams, FpECPoint } from './eccParams'
 import type { Digest, KeyHash } from './hash'
 import { ANSI_X963_KDF, type KDF } from './kdf'
@@ -164,6 +165,25 @@ function FpECUtils(curve: FpECParams): FpEllipticCurveUtils {
 
   return { addPoint, mulPoint, isLegalPK, isLegalSK, pointToU8, U8ToPoint }
 }
+
+/**
+ * ! 此加密算法仅用于测试 ECIES
+ * ! This encryption algorithm is only used for testing ECIES
+ */
+export const es_xor = createCipher(
+  (K: Uint8Array) => {
+    const encrypt = (M: Uint8Array) => new U8(M.map((v, i) => v ^ K[i]))
+    const decrypt = (C: Uint8Array) => new U8(C.map((v, i) => v ^ K[i]))
+    return { encrypt, decrypt }
+  },
+  {
+    ALGORITHM: 'ES-XOR',
+    BLOCK_SIZE: 20,
+    KEY_SIZE: 20,
+    MIN_KEY_SIZE: 20,
+    MAX_KEY_SIZE: 20,
+  },
+)
 
 // * EC Algorithms
 
