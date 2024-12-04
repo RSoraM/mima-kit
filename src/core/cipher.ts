@@ -310,8 +310,13 @@ export interface ECBMode extends ModeBaseInfo {
    * @param {Padding} padding - 填充方案 / Padding scheme (default: PKCS7)
    */
   (cipher: BlockCipher, padding?: Padding): {
-    (K: Uint8Array): Cipherable & ECBModeInfo
-  }
+    /**
+     * ECB 不使用 IV, 如果提供 IV, 将被忽略. 仅为与其他模式兼容.
+     *
+     * ECB do not use IV, if you provide IV, it will be ignored. It is only for compatibility with other modes.
+     */
+    (K: Uint8Array, iv?: Uint8Array): Cipherable & ECBModeInfo
+  } & BlockCipherInfo
 }
 /**
  * Electronic Codebook mode.
