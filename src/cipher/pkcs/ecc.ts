@@ -1,9 +1,9 @@
 import type { BlockCipher, BlockCipherInfo } from '../../core/cipher'
 import { cbc, createCipher } from '../../core/cipher'
 import { FpEC, type FpECUtils } from '../../core/ec'
-import type { FpECParams, FpECPoint } from '../../core/ecParams'
+import type { FpECPoint, FpWECParams } from '../../core/ecParams'
 import type { Digest, KeyHash } from '../../core/hash'
-import { KitError, U8, genRandomBI, joinBuffer, mod, modInverse, modPow, modPrimeSquare } from '../../core/utils'
+import { KitError, U8, genRandomBI, getBIBits, joinBuffer, mod, modInverse, modPow, modPrimeSquare } from '../../core/utils'
 import type { KDF } from '../../core/kdf'
 import { ANSI_X963_KDF } from '../../core/kdf'
 import { aes } from '../blockCipher/aes'
@@ -36,29 +36,14 @@ interface ECPrivateKey {
 interface ECKeyPair extends ECPrivateKey, ECPublicKey {
 }
 
-/**
- * 椭圆曲线迪菲-赫尔曼, 密钥协商算法
- *
- * Elliptic Curve Diffie-Hellman Key Agreement Algorithm
- */
 interface ECDH {
   (s_key: ECPrivateKey, p_key: ECPublicKey): FpECPoint
 }
 
-/**
- * 椭圆曲线梅内泽斯-奎-范斯通密钥协商算法
- *
- * Elliptic Curve Menezes-Qu-Vanstone Key Agreement Algorithm
- */
 interface ECMQV {
   (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey): FpECPoint
 }
 
-/**
- * 椭圆曲线数字签名
- *
- * Elliptic Curve Digital Signature Algorithm
- */
 interface ECDSASignature {
   /**
    * 临时公钥
@@ -73,11 +58,6 @@ interface ECDSASignature {
    */
   s: bigint
 }
-/**
- * 椭圆曲线数字签名算法
- *
- * Elliptic Curve Digital Signature Algorithm
- */
 interface ECDSA {
   (hash?: Digest): {
     sign: (s_key: ECPrivateKey, M: Uint8Array) => ECDSASignature
@@ -157,6 +137,14 @@ interface ECIESDecrypt {
   (s_key: ECPrivateKey, C: ECIESCiphertext): U8
 }
 interface ECIES {
+  /**
+   * @param {IVBlockCipher} [config.cipher] - 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
+   * @param {KeyHash} [config.mac] - 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
+   * @param {KDF} [config.kdf] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
+   * @param {Uint8Array} [config.S1] - 附加数据1 / Additional Data 1 (default: empty)
+   * @param {Uint8Array} [config.S2] - 附加数据2 / Additional Data 2 (default: empty)
+   * @param {Uint8Array} [config.iv] - 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE))
+   */
   (config?: ECIESConfig): {
     encrypt: ECIESEncrypt
     decrypt: ECIESDecrypt
@@ -171,9 +159,29 @@ interface FpECCrypto {
    * Generate Elliptic Curve Key Pair
    */
   genKey: () => ECKeyPair
+  /**
+   * 椭圆曲线迪菲-赫尔曼, 密钥协商算法
+   *
+   * Elliptic Curve Diffie-Hellman Key Agreement Algorithm
+   */
   ecdh: ECDH
+  /**
+   * 椭圆曲线梅内泽斯-奎-范斯通密钥协商算法
+   *
+   * Elliptic Curve Menezes-Qu-Vanstone Key Agreement Algorithm
+   */
   ecmqv: ECMQV
+  /**
+   * 椭圆曲线数字签名
+   *
+   * Elliptic Curve Digital Signature Algorithm
+   */
   ecdsa: ECDSA
+  /**
+   * 椭圆曲线集成加密算法
+   *
+   * Elliptic Curve Integrated Encryption Scheme
+   */
   ecies: ECIES
   /**
    * 判断公钥是否合法
@@ -203,6 +211,18 @@ interface FpECCrypto {
 
 // * Functions
 
+/**
+ * 定义 ECIES 配置
+ *
+ * Define ECIES Configuration
+ *
+ * @param {IVBlockCipher} [config.cipher] - 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
+ * @param {KeyHash} [config.mac] - 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
+ * @param {KDF} [config.kdf] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
+ * @param {Uint8Array} [config.S1] - 附加数据1 / Additional Data 1 (default: empty)
+ * @param {Uint8Array} [config.S2] - 附加数据2 / Additional Data 2 (default: empty)
+ * @param {Uint8Array} [config.iv] - 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE))
+ */
 export function defineECIES(config?: ECIESConfig) {
   const {
     cipher = cbc(aes(256)),
@@ -215,6 +235,14 @@ export function defineECIES(config?: ECIESConfig) {
   return { cipher, mac, kdf, S1, S2, iv }
 }
 
+function createMask(n: number) {
+  let mask = 0n
+  for (let i = 0; i < n; i++) {
+    mask = (mask << 1n) | 1n
+  }
+  return mask
+}
+
 // * EC Algorithms
 
 /**
@@ -222,9 +250,11 @@ export function defineECIES(config?: ECIESConfig) {
  *
  * Prime Field Elliptic Curve Cryptography Components
  */
-export function FpECC(curve: FpECParams): FpECCrypto {
-  const { p, a, b, G, n, n_mask, n_bit_length } = curve
+export function FpECC(curve: FpWECParams): FpECCrypto {
+  const { p, a, b, G, n } = curve
+  const n_bit_length = getBIBits(n)
   const n_byte_length = n_bit_length >> 3
+  const n_mask = createMask(n_bit_length)
   const utils = FpEC(curve)
   const { addPoint, mulPoint } = utils
 
