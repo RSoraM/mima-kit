@@ -10,6 +10,11 @@ import { rsa } from './rsa'
 export interface MGF {
   (mdfSeed: Uint8Array, maskLen: number): Uint8Array
 }
+/**
+ * PKCS#1 v2.2 的 掩码生成函数 MGF1
+ *
+ * Mask Generation Function MGF1 of PKCS#1 v2.2
+ */
 export function mgf1(hash: Hash): MGF {
   return (mdfSeed: Uint8Array, maskLen: number) => {
     const T: Uint8Array[] = []
