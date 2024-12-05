@@ -32,7 +32,7 @@ function _hmac(hash: Hash, K: Uint8Array, M: Uint8Array) {
 export function hmac(hash: Hash, d_size?: number, k_size?: number): KeyHash {
   const { ALGORITHM, BLOCK_SIZE, DIGEST_SIZE } = hash
   d_size = d_size ? Math.min(d_size >> 3, DIGEST_SIZE) : DIGEST_SIZE
-  k_size = k_size ? k_size >> 3 : BLOCK_SIZE
+  k_size = k_size ? k_size >> 3 : DIGEST_SIZE
   const description: KeyHashDescription = {
     ALGORITHM: `HMAC-${ALGORITHM}-${d_size << 3}`,
     BLOCK_SIZE,
