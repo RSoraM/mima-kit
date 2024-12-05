@@ -1,14 +1,4 @@
-// * Functions
-
-function createMask(n: number) {
-  let mask = 0n
-  for (let i = 0; i < n; i++) {
-    mask = (mask << 1n) | 1n
-  }
-  return mask
-}
-
-// * Interfaces
+// * Prime Filed Elliptic Curve Interfaces
 
 /**
  * 伪射坐标表示的椭圆曲线的点
@@ -22,11 +12,11 @@ export interface FpECPoint {
 }
 
 /**
- * 素域椭圆曲线参数
+ * 素域 Weierstrass 椭圆曲线参数
  *
- * Prime Field Elliptic Curve Parameters
+ * Prime Field Weierstrass Elliptic Curve Parameters
  */
-export interface FpECParams {
+export interface FpWECParams {
   /** Prime */
   readonly p: bigint
   /** Coefficient a */
@@ -37,11 +27,51 @@ export interface FpECParams {
   readonly G: Readonly<FpECPoint>
   /** Order */
   readonly n: bigint
-  readonly n_mask: bigint
-  readonly n_bit_length: number
   /** co-factor */
   readonly h: bigint
 }
+
+/**
+ * 素域 Montgomery 椭圆曲线参数
+ *
+ * Prime Field Montgomery Elliptic Curve Parameters
+ */
+export interface FpMECParams {
+  /** Prime */
+  readonly p: bigint
+  /** Coefficient a */
+  readonly a: bigint
+  /** Coefficient b */
+  readonly b: 1n
+  /** Base point */
+  readonly G: Readonly<FpECPoint>
+  /** Order */
+  readonly n: bigint
+  /** co-factor */
+  readonly h: bigint
+}
+
+/**
+ * 素域 Twisted Edwards 椭圆曲线参数
+ *
+ * Prime Field Twisted Edwards Elliptic Curve Parameters
+ */
+export interface FpTECParams {
+  /** Prime */
+  readonly p: bigint
+  /** Coefficient a */
+  readonly a: bigint
+  /** Coefficient b */
+  readonly d: bigint
+  /** Base point */
+  readonly G: Readonly<FpECPoint>
+  /** Order */
+  readonly n: bigint
+  /** co-factor */
+  readonly h: bigint
+}
+
+// * Binary Field Elliptic Curve Interfaces
 
 export interface F2mECPoint extends FpECPoint {
 }
@@ -51,21 +81,24 @@ export interface F2mECPoint extends FpECPoint {
  *
  * Binary Field Elliptic Curve Parameters
  */
-export interface F2mECParams {
+export interface FbECParams {
   readonly m: number
   readonly f: (x: bigint) => bigint
   readonly a: bigint
   readonly b: bigint
   readonly G: Readonly<F2mECPoint>
   readonly n: bigint
-  readonly n_mask: bigint
-  readonly n_bit_length: number
   readonly h: bigint
 }
 
 // * SM2 Prime Curve
 
-export const sm2p256v1: FpECParams = Object.freeze({
+/**
+ * 256 位素域上的 SM2 曲线
+ *
+ * SM2 curve over a 256 bit prime field
+ */
+export const sm2p256v1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFFn,
   a: 0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFCn,
   b: 0x28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93n,
@@ -74,14 +107,20 @@ export const sm2p256v1: FpECParams = Object.freeze({
     y: 0xBC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0n,
   },
   n: 0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123n,
-  n_mask: createMask(256),
-  n_bit_length: 256,
   h: 1n,
 })
 
 // * SEC-1 Prime Curves
 
-export const secp112r1: FpECParams = Object.freeze({
+/**
+ * 112 位素域上的 SECG/WTLS 曲线
+ *
+ * SECG/WTLS curve over a 112 bit prime field
+ *
+ * @alias secp112r1
+ * @alias wtls6
+ */
+export const secp112r1: FpWECParams = Object.freeze({
   p: 0xDB7C2ABF62E35E668076BEAD208Bn,
   a: 0xDB7C2ABF62E35E668076BEAD2088n,
   b: 0x659EF8BA043916EEDE8911702B22n,
@@ -90,12 +129,15 @@ export const secp112r1: FpECParams = Object.freeze({
     y: 0xA89CE5AF8724C0A23E0E0FF77500n,
   },
   n: 0xDB7C2ABF62E35E7628DFAC6561C5n,
-  n_mask: createMask(112),
-  n_bit_length: 112,
   h: 1n,
 })
 
-export const secp112r2: FpECParams = Object.freeze({
+/**
+ * 112 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 112 bit prime field
+ */
+export const secp112r2: FpWECParams = Object.freeze({
   p: 0xDB7C2ABF62E35E668076BEAD208Bn,
   a: 0x6127C24C05F38A0AAAF65C0EF02Cn,
   b: 0x51DEF1815DB5ED74FCC34C85D709n,
@@ -104,12 +146,15 @@ export const secp112r2: FpECParams = Object.freeze({
     y: 0xADCD46F5882E3747DEF36E956E97n,
   },
   n: 0x36DF0AAFD8B8D7597CA10520D04Bn,
-  n_mask: createMask(112),
-  n_bit_length: 112,
   h: 4n,
 })
 
-export const secp128r1: FpECParams = Object.freeze({
+/**
+ * 128 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 128 bit prime field
+ */
+export const secp128r1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFDFFFFFFFFFFFFFFFFFFFFFFFFn,
   a: 0xFFFFFFFDFFFFFFFFFFFFFFFFFFFFFFFCn,
   b: 0xE87579C11079F43DD824993C2CEE5ED3n,
@@ -118,12 +163,15 @@ export const secp128r1: FpECParams = Object.freeze({
     y: 0xCF5AC8395BAFEB13C02DA292DDED7A83n,
   },
   n: 0xFFFFFFFE0000000075A30D1B9038A115n,
-  n_mask: createMask(128),
-  n_bit_length: 128,
   h: 1n,
 })
 
-export const secp128r2: FpECParams = Object.freeze({
+/**
+ * 128 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 128 bit prime field
+ */
+export const secp128r2: FpWECParams = Object.freeze({
   p: 0xFFFFFFFDFFFFFFFFFFFFFFFFFFFFFFFFn,
   a: 0xD6031998D1B3BBFEBF59CC9BBFF9AEE1n,
   b: 0x5EEEFCA380D02919DC2C6558BB6D8A5Dn,
@@ -132,12 +180,15 @@ export const secp128r2: FpECParams = Object.freeze({
     y: 0x27B6916A894D3AEE7106FE805FC34B44n,
   },
   n: 0x3FFFFFFF7FFFFFFFBE0024720613B5A3n,
-  n_mask: createMask(128),
-  n_bit_length: 128,
   h: 4n,
 })
 
-export const secp160k1: FpECParams = Object.freeze({
+/**
+ * 160 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 160 bit prime field
+ */
+export const secp160k1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFAC73n,
   a: 0n,
   b: 7n,
@@ -146,12 +197,18 @@ export const secp160k1: FpECParams = Object.freeze({
     y: 0x938CF935318FDCED6BC28286531733C3F03C4FEEn,
   },
   n: 0x0100000000000000000001B8FA16DFAB9ACA16B6B3n,
-  n_mask: createMask(161),
-  n_bit_length: 161,
   h: 1n,
 })
 
-export const secp160r1: FpECParams = Object.freeze({
+/**
+ * 160 位素域上的 SECG/WTLS 曲线
+ *
+ * SECG/WTLS curve over a 160 bit prime field
+ *
+ * @alias secp160r1
+ * @alias wtls7
+ */
+export const secp160r1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7FFFFFFFn,
   a: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7FFFFFFCn,
   b: 0x1C97BEFC54BD7A8B65ACF89F81D4D4ADC565FA45n,
@@ -160,12 +217,15 @@ export const secp160r1: FpECParams = Object.freeze({
     y: 0x23A628553168947D59DCC912042351377AC5FB32n,
   },
   n: 0x0100000000000000000001F4C8F927AED3CA752257n,
-  n_mask: createMask(161),
-  n_bit_length: 161,
   h: 1n,
 })
 
-export const secp160r2: FpECParams = Object.freeze({
+/**
+ * 160 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 160 bit prime field
+ */
+export const secp160r2: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7FFFFFFFn,
   a: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7FFFFFFCn,
   b: 0xB4E134D3FB59EB8BAB57274904664D5AF50388BAn,
@@ -174,12 +234,15 @@ export const secp160r2: FpECParams = Object.freeze({
     y: 0xFEAFFEF2E331F296E071FA0DF9982CFEA7D43F2En,
   },
   n: 0x0100000000000000000000351EE786A818F3A1A16Bn,
-  n_mask: createMask(161),
-  n_bit_length: 161,
   h: 1n,
 })
 
-export const secp192k1: FpECParams = Object.freeze({
+/**
+ * 192 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 192 bit prime field
+ */
+export const secp192k1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFEE37n,
   a: 0x000000000000000000000000000000000000000000000000n,
   b: 0x000000000000000000000000000000000000000000000003n,
@@ -188,12 +251,19 @@ export const secp192k1: FpECParams = Object.freeze({
     y: 0x9B2F2F6D9C5628A7844163D015BE86344082AA88D95E2F9Dn,
   },
   n: 0xFFFFFFFFFFFFFFFFFFFFFFFE26F2FC170F69466A74DEFD8Dn,
-  n_mask: createMask(192),
-  n_bit_length: 192,
   h: 1n,
 })
 
-export const secp192r1: FpECParams = Object.freeze({
+/**
+ * 192 位素域上的 NIST/X9.62/SECG 曲线
+ *
+ * NIST/X9.62/SECG curve over a 192 bit prime field
+ *
+ * @alias p192
+ * @alias prime192v1
+ * @alias secp192r1
+ */
+export const secp192r1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFn,
   a: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFCn,
   b: 0x64210519E59C80E70FA7E9AB72243049FEB8DEECC146B9B1n,
@@ -202,12 +272,15 @@ export const secp192r1: FpECParams = Object.freeze({
     y: 0x07192B95FFC8DA78631011ED6B24CDD573F977A11E794811n,
   },
   n: 0xFFFFFFFFFFFFFFFFFFFFFFFF99DEF836146BC9B1B4D22831n,
-  n_mask: createMask(192),
-  n_bit_length: 192,
   h: 1n,
 })
 
-export const secp224k1: FpECParams = Object.freeze({
+/**
+ * 224 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 224 bit prime field
+ */
+export const secp224k1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFE56Dn,
   a: 0x00000000000000000000000000000000000000000000000000000000n,
   b: 0x00000000000000000000000000000000000000000000000000000005n,
@@ -216,12 +289,18 @@ export const secp224k1: FpECParams = Object.freeze({
     y: 0x7E089FED7FBA344282CAFBD6F7E319F7C0B0BD59E2CA4BDB556D61A5n,
   },
   n: 0x010000000000000000000000000001DCE8D2EC6184CAF0A971769FB1F7n,
-  n_mask: createMask(225),
-  n_bit_length: 225,
   h: 1n,
 })
 
-export const secp224r1: FpECParams = Object.freeze({
+/**
+ * 224 位素域上的 NIST/SECG 曲线
+ *
+ * NIST/SECG curve over a 224 bit prime field
+ *
+ * @alias p224
+ * @alias secp224r1
+ */
+export const secp224r1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001n,
   a: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFEn,
   b: 0xB4050A850C04B3ABF54132565044B0B7D7BFD8BA270B39432355FFB4n,
@@ -230,13 +309,16 @@ export const secp224r1: FpECParams = Object.freeze({
     y: 0xBD376388B5F723FB4C22DFE6CD4375A05A07476444D5819985007E34n,
   },
   n: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF16A2E0B8F03E13DD29455C5C2A3Dn,
-  n_mask: createMask(224),
-  n_bit_length: 224,
   h: 1n,
 
 })
 
-export const secp256k1: FpECParams = Object.freeze({
+/**
+ * 256 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 256 bit prime field
+ */
+export const secp256k1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn,
   a: 0x0000000000000000000000000000000000000000000000000000000000000000n,
   b: 0x0000000000000000000000000000000000000000000000000000000000000007n,
@@ -245,12 +327,19 @@ export const secp256k1: FpECParams = Object.freeze({
     y: 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n,
   },
   n: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n,
-  n_mask: createMask(256),
-  n_bit_length: 256,
   h: 1n,
 })
 
-export const secp256r1: FpECParams = Object.freeze({
+/**
+ * 256 位素域上的 NIST/X9.62/SECG 曲线
+ *
+ * NIST/X9.62/SECG curve over a 256 bit prime field
+ *
+ * @alias p256
+ * @alias prime256v1
+ * @alias secp256r1
+ */
+export const secp256r1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFn,
   a: 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFCn,
   b: 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604Bn,
@@ -259,12 +348,18 @@ export const secp256r1: FpECParams = Object.freeze({
     y: 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5n,
   },
   n: 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n,
-  n_mask: createMask(256),
-  n_bit_length: 256,
   h: 1n,
 })
 
-export const secp384r1: FpECParams = Object.freeze({
+/**
+ * 384 位素域上的 NIST/SECG 曲线
+ *
+ * NIST/SECG curve over a 384 bit prime field
+ *
+ * @alias p384
+ * @alias secp384r1
+ */
+export const secp384r1: FpWECParams = Object.freeze({
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFFn,
   a: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFCn,
   b: 0xB3312FA7E23EE7E4988E056BE3F82D19181D9C6EFE8141120314088F5013875AC656398D8A2ED19D2A85C8EDD3EC2AEFn,
@@ -273,13 +368,19 @@ export const secp384r1: FpECParams = Object.freeze({
     y: 0x3617DE4A96262C6F5D9E98BF9292DC29F8F41DBD289A147CE9DA3113B5F0B8C00A60B1CE1D7E819D7A431D7C90EA0E5Fn,
   },
   n: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973n,
-  n_mask: createMask(384),
-  n_bit_length: 384,
   h: 1n,
 
 })
 
-export const secp521r1: FpECParams = Object.freeze({
+/**
+ * 521 位素域上的 NIST/SECG 曲线
+ *
+ * NIST/SECG curve over a 521 bit prime field
+ *
+ * @alias p521
+ * @alias secp521r1
+ */
+export const secp521r1: FpWECParams = Object.freeze({
   p: 0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
   a: 0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCn,
   b: 0x0051953EB9618E1C9A1F929A21A0B68540EEA2DA725B99B315F3B8B489918EF109E156193951EC7E937B1652C0BD3BB1BF073573DF883D2C34F1EF451FD46B503F00n,
@@ -288,14 +389,12 @@ export const secp521r1: FpECParams = Object.freeze({
     y: 0x011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE72995EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650n,
   },
   n: 0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409n,
-  n_mask: createMask(521),
-  n_bit_length: 521,
   h: 1n,
 })
 
 // * SEC-1 Binary Curves
 
-export const sect163k1: F2mECParams = Object.freeze({
+export const sect163k1: FbECParams = Object.freeze({
   m: 163,
   f: (x: bigint) => x ** 163n + x ** 7n + x ** 6n + x ** 3n + 1n,
   a: 0x1n,
@@ -305,22 +404,197 @@ export const sect163k1: F2mECParams = Object.freeze({
     y: 0x0289070FB05D38FF58321F2E800536D538CCDAA3D9n,
   },
   n: 0x04000000000000000000020108A2E0CC0D99F8A5EFn,
-  n_mask: createMask(163),
-  n_bit_length: 163,
   h: 2n,
 })
 
+// * X9.63 Prime Curves
+
+/**
+ * 192 位素域上的 NIST/X9.62/SECG 曲线
+ *
+ * NIST/X9.62/SECG curve over a 192 bit prime field
+ *
+ * @alias p192
+ * @alias prime192v1
+ * @alias secp192r1
+ */
+export const prime192v1 = secp192r1
+
+/**
+ * 256 位素域上的 NIST/X9.62/SECG 曲线
+ *
+ * NIST/X9.62/SECG curve over a 256 bit prime field
+ *
+ * @alias p256
+ * @alias prime256v1
+ * @alias secp256r1
+ */
+export const prime256v1 = secp256r1
+
 // * NIST Prime Curves
 
+/**
+ * 192 位素域上的 NIST/X9.62/SECG 曲线
+ *
+ * NIST/X9.62/SECG curve over a 192 bit prime field
+ *
+ * @alias p192
+ * @alias prime192v1
+ * @alias secp192r1
+ */
 export const p192 = secp192r1
+
+/**
+ * 224 位素域上的 NIST/SECG 曲线
+ *
+ * NIST/SECG curve over a 224 bit prime field
+ *
+ * @alias p224
+ * @alias secp224r1
+ */
 export const p224 = secp224r1
+
+/**
+ * 256 位素域上的 SECG 曲线
+ *
+ * SECG curve over a 256 bit prime field
+ *
+ * @alias p256
+ * @alias prime256v1
+ * @alias secp256r1
+ */
 export const p256 = secp256r1
+
+/**
+ * 384 位素域上的 NIST/SECG 曲线
+ *
+ * NIST/SECG curve over a 384 bit prime field
+ *
+ * @alias p384
+ * @alias secp384r1
+ */
 export const p384 = secp384r1
+
+/**
+ * 521 位素域上的 NIST/SECG 曲线
+ *
+ * NIST/SECG curve over a 521 bit prime field
+ *
+ * @alias p521
+ * @alias secp521r1
+ */
 export const p521 = secp521r1
+
+/**
+ * NIST W-25519 是与 Curve25519 同构的 Weierstrass 曲线
+ *
+ * NIST W-25519 is a Weierstrass curve isomorphic to Curve25519
+ */
+export const w25519: FpWECParams = Object.freeze({
+  p: 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEDn,
+  a: 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA984914A144n,
+  b: 0x7B425ED097B425ED097B425ED097B425ED097B425ED097B4260B5E9C7710C864n,
+  G: {
+    x: 0x2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD245An,
+    y: 0x5F51E65E475F794B1FE122D388B72EB36DC2B28192839E4DD6163A5D81312C14n,
+  },
+  n: 0x1000000000000000000000000000000014DEF9DEA2F79CD65812631A5CF5D3EDn,
+  h: 8n,
+})
+
+/**
+ * NIST W-448 是与 Curve448 同构的 Weierstrass 曲线
+ *
+ * NISt W-448 is a Weierstrass curve isomorphic to Curve448
+ */
+export const w448: FpWECParams = Object.freeze({
+  p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
+  a: 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1A76D41Fn,
+  b: 0x5ED097B425ED097B425ED097B425ED097B425ED097B425ED097B425E71C71C71C71C71C71C71C71C71C71C71C71C71C71C72C87B7CC69F70n,
+  G: {
+    x: 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0000000000000000000000000000000000000000000000000000CB91n,
+    y: 0x7D235D1295F5B1F66C98AB6E58326FCECBAE5D34F55545D060F75DC28DF3F6EDB8027E2346430D211312C4B150677AF76FD7223D457B5B1An,
+  },
+  n: 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7CCA23E9C44EDB49AED63690216CC2728DC58F552378C292AB5844F3n,
+  h: 4n,
+})
+
+/**
+ * 素域 p^255 - 19 上的 NIST Montgomery 曲线
+ *
+ * NIST Montgomery curve over a prime field p^255 - 19
+ */
+export const curve25519: FpMECParams = Object.freeze({
+  p: 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEDn,
+  a: 486662n,
+  b: 1n,
+  G: {
+    x: 9n,
+    y: 0x5F51E65E475F794B1FE122D388B72EB36DC2B28192839E4DD6163A5D81312C14n,
+  },
+  n: 0x1000000000000000000000000000000014DEF9DEA2F79CD65812631A5CF5D3EDn,
+  h: 8n,
+})
+
+/**
+ * 素域 p^448 - 2^224 - 1 上的 NIST Montgomery 曲线
+ *
+ * NIST Montgomery curve over a prime field p^448 - 2^224 - 1
+ */
+export const curve448: FpMECParams = Object.freeze({
+  p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
+  a: 156326n,
+  b: 1n,
+  G: {
+    x: 5n,
+    y: 0x7D235D1295F5B1F66C98AB6E58326FCECBAE5D34F55545D060F75DC28DF3F6EDB8027E2346430D211312C4B150677AF76FD7223D457B5B1An,
+  },
+  n: 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7CCA23E9C44EDB49AED63690216CC2728DC58F552378C292AB5844F3n,
+  h: 4n,
+})
+
+/**
+ * ed25519 是与 Curve25519 同构的 Twisted Edwards 曲线
+ *
+ * ed25519 is a Twisted Edwards curve isomorphic to Curve25519
+ */
+export const ed25519: FpTECParams = Object.freeze({
+  p: 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEDn,
+  a: -1n,
+  d: 0x52036CEE2B6FFE738CC740797779E89800700A4D4141D8AB75EB4DCA135978A3n,
+  G: {
+    x: 0x216936D3CD6E53FEC0A4E231FDD6DC5C692CC7609525A7B2C9562D608F25D51An,
+    y: 0x6666666666666666666666666666666666666666666666666666666666666658n,
+  },
+  n: 0x1000000000000000000000000000000014DEF9DEA2F79CD65812631A5CF5D3EDn,
+  h: 8n,
+})
+
+/**
+ * ed448 是与 Curve448 同构的 Twisted Edwards 曲线
+ *
+ * ed448 is a Twisted Edwards curve isomorphic to Curve448
+ */
+export const ed448: FpTECParams = Object.freeze({
+  p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
+  a: 1n,
+  d: -39081n,
+  G: {
+    x: 0x4F1970C66BED0DED221D15A622BF36DA9E146570470F1767EA6DE324A3D3A46412AE1AF72AB66511433B80E18B00938E2626A82BC70CC05En,
+    y: 0x693F46716EB6BC248876203756C9C7624BEA73736CA3984087789C1E05A0C2D73AD3FF1CE67C39C4FDBD132C4ED7C8AD9808795BF230FA14n,
+  },
+  n: 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7CCA23E9C44EDB49AED63690216CC2728DC58F552378C292AB5844F3n,
+  h: 4n,
+})
 
 // * Brainpool Prime Curves
 
-export const bp160r1: FpECParams = Object.freeze({
+/**
+ * 160 位素域上的 RFC 5639 曲线
+ *
+ * RFC 5639 curve over a 160 bit prime field
+ */
+export const bp160r1: FpWECParams = Object.freeze({
   p: 0xE95E4A5F737059DC60DFC7AD95B3D8139515620Fn,
   a: 0x340E7BE2A280EB74E2BE61BADA745D97E8F7C300n,
   b: 0x1E589A8595423412134FAA2DBDEC95C8D8675E58n,
@@ -329,12 +603,15 @@ export const bp160r1: FpECParams = Object.freeze({
     y: 0x1667CB477A1A8EC338F94741669C976316DA6321n,
   },
   n: 0xE95E4A5F737059DC60DF5991D45029409E60FC09n,
-  n_mask: createMask(160),
-  n_bit_length: 160,
   h: 1n,
 })
 
-export const bp192r1: FpECParams = Object.freeze({
+/**
+ * 192 位素域上的 RFC 5639 曲线
+ *
+ * RFC 5639 curve over a 192 bit prime field
+ */
+export const bp192r1: FpWECParams = Object.freeze({
   p: 0xC302F41D932A36CDA7A3463093D18DB78FCE476DE1A86297n,
   a: 0x6A91174076B1E0E19C39C031FE8685C1CAE040E5C69A28EFn,
   b: 0x469A28EF7C28CCA3DC721D044F4496BCCA7EF4146FBF25C9n,
@@ -343,12 +620,15 @@ export const bp192r1: FpECParams = Object.freeze({
     y: 0x14B690866ABD5BB88B5F4828C1490002E6773FA2FA299B8Fn,
   },
   n: 0xC302F41D932A36CDA7A3462F9E9E916B5BE8F1029AC4ACC1n,
-  n_mask: createMask(192),
-  n_bit_length: 192,
   h: 1n,
 })
 
-export const bp224r1: FpECParams = Object.freeze({
+/**
+ * 224 位素域上的 RFC 5639 曲线
+ *
+ * RFC 5639 curve over a 224 bit prime field
+ */
+export const bp224r1: FpWECParams = Object.freeze({
   p: 0xD7C134AA264366862A18302575D1D787B09F075797DA89F57EC8C0FFn,
   a: 0x68A5E62CA9CE6C1C299803A6C1530B514E182AD8B0042A59CAD29F43n,
   b: 0x2580F63CCFE44138870713B1A92369E33E2135D266DBB372386C400Bn,
@@ -357,12 +637,15 @@ export const bp224r1: FpECParams = Object.freeze({
     y: 0x58AA56F772C0726F24C6B89E4ECDAC24354B9E99CAA3F6D3761402CDn,
   },
   n: 0xD7C134AA264366862A18302575D0FB98D116BC4B6DDEBCA3A5A7939Fn,
-  n_mask: createMask(224),
-  n_bit_length: 224,
   h: 1n,
 })
 
-export const bp256r1: FpECParams = Object.freeze({
+/**
+ * 256 位素域上的 RFC 5639 曲线
+ *
+ * RFC 5639 curve over a 256 bit prime field
+ */
+export const bp256r1: FpWECParams = Object.freeze({
   p: 0xA9FB57DBA1EEA9BC3E660A909D838D726E3BF623D52620282013481D1F6E5377n,
   a: 0x7D5A0975FC2C3057EEF67530417AFFE7FB8055C126DC5C6CE94A4B44F330B5D9n,
   b: 0x26DC5C6CE94A4B44F330B5D9BBD77CBF958416295CF7E1CE6BCCDC18FF8C07B6n,
@@ -371,12 +654,15 @@ export const bp256r1: FpECParams = Object.freeze({
     y: 0x547EF835C3DAC4FD97F8461A14611DC9C27745132DED8E545C1D54C72F046997n,
   },
   n: 0xA9FB57DBA1EEA9BC3E660A909D838D718C397AA3B561A6F7901E0E82974856A7n,
-  n_mask: createMask(256),
-  n_bit_length: 256,
   h: 1n,
 })
 
-export const bp320r1: FpECParams = Object.freeze({
+/**
+ * 320 位素域上的 RFC 5639 曲线
+ *
+ * RFC 5639 curve over a 320 bit prime field
+ */
+export const bp320r1: FpWECParams = Object.freeze({
   p: 0xD35E472036BC4FB7E13C785ED201E065F98FCFA6F6F40DEF4F92B9EC7893EC28FCD412B1F1B32E27n,
   a: 0x3EE30B568FBAB0F883CCEBD46D3F3BB8A2A73513F5EB79DA66190EB085FFA9F492F375A97D860EB4n,
   b: 0x520883949DFDBC42D3AD198640688A6FE13F41349554B49ACC31DCCD884539816F5EB4AC8FB1F1A6n,
@@ -385,12 +671,15 @@ export const bp320r1: FpECParams = Object.freeze({
     y: 0x14FDD05545EC1CC8AB4093247F77275E0743FFED117182EAA9C77877AAAC6AC7D35245D1692E8EE1n,
   },
   n: 0xD35E472036BC4FB7E13C785ED201E065F98FCFA5B68F12A32D482EC7EE8658E98691555B44C59311n,
-  n_mask: createMask(320),
-  n_bit_length: 320,
   h: 1n,
 })
 
-export const bp384r1: FpECParams = Object.freeze({
+/**
+ * 384 位素域上的 RFC 5639 曲线
+ *
+ * RFC 5639 curve over a 384 bit prime field
+ */
+export const bp384r1: FpWECParams = Object.freeze({
   p: 0x8CB91E82A3386D280F5D6F7E50E641DF152F7109ED5456B412B1DA197FB71123ACD3A729901D1A71874700133107EC53n,
   a: 0x7BC382C63D8C150C3C72080ACE05AFA0C2BEA28E4FB22787139165EFBA91F90F8AA5814A503AD4EB04A8C7DD22CE2826n,
   b: 0x04A8C7DD22CE28268B39B55416F0447C2FB77DE107DCD2A62E880EA53EEB62D57CB4390295DBC9943AB78696FA504C11n,
@@ -399,12 +688,15 @@ export const bp384r1: FpECParams = Object.freeze({
     y: 0x8ABE1D7520F9C2A45CB1EB8E95CFD55262B70B29FEEC5864E19C054FF99129280E4646217791811142820341263C5315n,
   },
   n: 0x8CB91E82A3386D280F5D6F7E50E641DF152F7109ED5456B31F166E6CAC0425A7CF3AB6AF6B7FC3103B883202E9046565n,
-  n_mask: createMask(384),
-  n_bit_length: 384,
   h: 1n,
 })
 
-export const bp512r1: FpECParams = Object.freeze({
+/**
+ * 512 位素域上的 RFC 5639 曲线
+ *
+ * RFC 5639 curve over a 512 bit prime field
+ */
+export const bp512r1: FpWECParams = Object.freeze({
   p: 0xAADD9DB8DBE9C48B3FD4E6AE33C9FC07CB308DB3B3C9D20ED6639CCA703308717D4D9B009BC66842AECDA12AE6A380E62881FF2F2D82C68528AA6056583A48F3n,
   a: 0x7830A3318B603B89E2327145AC234CC594CBDD8D3DF91610A83441CAEA9863BC2DED5D5AA8253AA10A2EF1C98B9AC8B57F1117A72BF2C7B9E7C1AC4D77FC94CAn,
   b: 0x3DF91610A83441CAEA9863BC2DED5D5AA8253AA10A2EF1C98B9AC8B57F1117A72BF2C7B9E7C1AC4D77FC94CADC083E67984050B75EBAE5DD2809BD638016F723n,
@@ -413,7 +705,5 @@ export const bp512r1: FpECParams = Object.freeze({
     y: 0x7DDE385D566332ECC0EABFA9CF7822FDF209F70024A57B1AA000C55B881F8111B2DCDE494A5F485E5BCA4BD88A2763AED1CA2B2FA8F0540678CD1E0F3AD80892n,
   },
   n: 0xAADD9DB8DBE9C48B3FD4E6AE33C9FC07CB308DB3B3C9D20ED6639CCA70330870553E5C414CA92619418661197FAC10471DB1D381085DDADDB58796829CA90069n,
-  n_mask: createMask(512),
-  n_bit_length: 512,
   h: 1n,
 })
