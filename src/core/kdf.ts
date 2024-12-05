@@ -16,7 +16,7 @@ export interface KDF {
  *
  * ANSI-X9.63 密钥派生函数
  */
-export function ANSI_X963_KDF(hash: Hash): KDF {
+export function x963kdf(hash: Hash): KDF {
   const d_bit = hash.DIGEST_SIZE << 3
   return (k_bit: number, ikm: Uint8Array, info = new Uint8Array(0)) => {
     /** Output Keying Material */
@@ -34,9 +34,9 @@ export function ANSI_X963_KDF(hash: Hash): KDF {
 }
 
 /**
- * HKDF Key Derivation Function
+ * HMAC-based Key Derivation Function (HKDF), please combine `hmac` and `hash` externally to control the behavior of calling `hmac` inside the function.
  *
- * HKDF 密钥派生函数
+ * 基于 HMAC 的密钥派生函数 (HKDF), 请在外部组合 `hmac` 和 `hash` 函数, 以控制在函数内部调用 `hmac` 时的行为.
  */
 export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE)): KDF {
   const d_bit = k_hash.DIGEST_SIZE << 3
@@ -59,14 +59,16 @@ export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE))
 }
 
 /**
- * Password-Based Key Derivation Function 2
+ * Password-Based Key Derivation Function 2 (PBKDF2), please combine `hmac` and `hash` externally to control the behavior of calling `hmac` inside the function.
+ * Also, PBKDF2 does not use the `info` parameter, if provided, it will be ignored.
  *
- * PBKDF2 密码基础密钥派生函数
+ * PBKDF2 密码基础密钥派生函数 (PBKDF2), 请在外部组合 `hmac` 和 `hash` 函数, 以控制在函数内部调用 `hmac` 时的行为.
+ * 同时, PBKDF2 不使用 `info` 参数, 如果提供 `info`, 将被忽略.
  */
 export function pbkdf2(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE), iterations = 1000): KDF {
   const d_bit = k_hash.DIGEST_SIZE << 3
-  return (k_bit: number, ikm: Uint8Array, info = new Uint8Array(0)) => {
-    ikm = joinBuffer(ikm, info)
+  return (k_bit: number, ikm: Uint8Array) => {
+    ikm = joinBuffer(ikm)
 
     /** Output Keying Material */
     const okm: Uint8Array[] = []

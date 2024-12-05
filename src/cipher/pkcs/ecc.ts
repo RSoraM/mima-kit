@@ -5,7 +5,7 @@ import type { FpECPoint, FpWECParams } from '../../core/ecParams'
 import type { Digest, KeyHash } from '../../core/hash'
 import { KitError, U8, genRandomBI, getBIBits, joinBuffer, mod, modInverse, modPow, modPrimeSquare } from '../../core/utils'
 import type { KDF } from '../../core/kdf'
-import { ANSI_X963_KDF } from '../../core/kdf'
+import { x963kdf } from '../../core/kdf'
 import { aes } from '../blockCipher/aes'
 import { sha256 } from '../../hash/sha256'
 import { hmac } from '../../hash/hmac'
@@ -227,7 +227,7 @@ export function defineECIES(config?: ECIESConfig) {
   const {
     cipher = cbc(aes(256)),
     mac = hmac(sha256),
-    kdf = ANSI_X963_KDF(sha256),
+    kdf = x963kdf(sha256),
     S1 = new Uint8Array(0),
     S2 = new Uint8Array(0),
     iv = new Uint8Array(cipher.BLOCK_SIZE),
