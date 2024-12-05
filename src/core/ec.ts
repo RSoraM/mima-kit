@@ -1,4 +1,4 @@
-import type { FpECParams, FpECPoint } from './ecParams'
+import type { FpECPoint, FpWECParams } from './ecParams'
 import { mod, modInverse } from './utils'
 
 // * Interfaces
@@ -44,7 +44,7 @@ export function Fp(p: bigint) {
  *
  * Prime Field Elliptic Curve Operations
  */
-export function FpEC(curve: FpECParams): FpECUtils {
+export function FpEC(curve: FpWECParams): FpECUtils {
   const { p, a } = curve
   const { plus, multiply, subtract, divide } = Fp(p)
 
