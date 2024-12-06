@@ -176,35 +176,16 @@ function cShakePadding(rByte: number, sigBytes: number) {
 
 // * cSHAKE
 
-export interface cSHAKEConfig {
-  /**
-   * function-name
-   *
-   * 函数名称
-   *
-   * @default ''
-   */
-  N?: Uint8Array
-  /**
-   * customization
-   *
-   * 自定义参数
-   *
-   * @default ''
-   */
-  S?: Uint8Array
-}
-
 /**
  * `cSHAKE128` 是 `SHAKE128` 的可定制变体
  *
  * `cSHAKE128` is a customizable variant of `SHAKE128`
  *
  * @param {number} d - 输出长度 bit / output length bit
- * @param {cSHAKEConfig} config - 配置 / config
+ * @param {Uint8Array} [N] - 函数名 / function name
+ * @param {Uint8Array} [S] - 自定义参数 / customization
  */
-export function cShake128(d: number, config: cSHAKEConfig = {}) {
-  const { N = new Uint8Array(), S = new Uint8Array() } = config
+export function cShake128(d: number, N = new Uint8Array(), S = new Uint8Array()) {
   const description = {
     ALGORITHM: `cSHAKE128/${d}`,
     BLOCK_SIZE: 168,
@@ -230,10 +211,10 @@ export function cShake128(d: number, config: cSHAKEConfig = {}) {
  * `cSHAKE256` is a customizable variant of `SHAKE256`
  *
  * @param {number} d - 输出长度 bit / output length bit
- * @param {cSHAKEConfig} config - 配置 / config
+ * @param {Uint8Array} [N] - 函数名 / function name
+ * @param {Uint8Array} [S] - 自定义参数 / customization
  */
-export function cShake256(d: number, config: cSHAKEConfig = {}) {
-  const { N = new Uint8Array(), S = new Uint8Array() } = config
+export function cShake256(d: number, N = new Uint8Array(), S = new Uint8Array()) {
   const description = {
     ALGORITHM: `cSHAKE256/${d}`,
     BLOCK_SIZE: 136,

@@ -101,12 +101,12 @@ describe('sha3', () => {
     const fn2 = UTF8('meow')
     const custom = UTF8('password')
     expect(cShake128(256)(_).to(HEX)).toMatchInlineSnapshot('"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26"')
-    expect(cShake128(256, { N: fn, S: custom })(_).to(HEX)).toMatchInlineSnapshot('"8949abe9aa6f75cc32d7ae0668798a5491530d2dad1c85a3fea68689fc20cb0e"')
-    expect(cShake128(256, { N: fn2, S: custom })(meow).to(HEX)).toMatchInlineSnapshot('"c6c729b124020e81cec50c281b2fa863ae613ee5c5f0432b4f43fedb29364c7a"')
+    expect(cShake128(256, fn, custom)(_).to(HEX)).toMatchInlineSnapshot('"8949abe9aa6f75cc32d7ae0668798a5491530d2dad1c85a3fea68689fc20cb0e"')
+    expect(cShake128(256, fn2, custom)(meow).to(HEX)).toMatchInlineSnapshot('"c6c729b124020e81cec50c281b2fa863ae613ee5c5f0432b4f43fedb29364c7a"')
 
     expect(cShake256(512)(_).to(HEX)).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
-    expect(cShake256(512, { N: fn, S: custom })(_).to(HEX)).toMatchInlineSnapshot('"1ff1d7cc4b14a1d86eb1d763501705199ae4208ca3ebd83809f95189c9b08a1fdf6d9b182f14541888b3b0ba7023dc53a7f8025de2eed1b8dacc95edf9c13b91"')
-    expect(cShake256(512, { N: fn2, S: custom })(meow).to(HEX)).toMatchInlineSnapshot('"6ba1b872ade77effc824d222654c841d8a99369b533e540007ac3383693d3ff68687892dbd2cc2ea3c8ae61578a6c3c0c7a89235db524db223ff7770293724a3"')
+    expect(cShake256(512, fn, custom)(_).to(HEX)).toMatchInlineSnapshot('"1ff1d7cc4b14a1d86eb1d763501705199ae4208ca3ebd83809f95189c9b08a1fdf6d9b182f14541888b3b0ba7023dc53a7f8025de2eed1b8dacc95edf9c13b91"')
+    expect(cShake256(512, fn2, custom)(meow).to(HEX)).toMatchInlineSnapshot('"6ba1b872ade77effc824d222654c841d8a99369b533e540007ac3383693d3ff68687892dbd2cc2ea3c8ae61578a6c3c0c7a89235db524db223ff7770293724a3"')
   })
   it('kmac', () => {
     const _ = UTF8('')
