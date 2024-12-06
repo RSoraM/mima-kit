@@ -197,7 +197,7 @@ export function createPadding(
  *
  * PKCS7 填充方案.
  */
-export const PKCS7 = createPadding(
+export const PKCS7_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
     const pad = BLOCK_SIZE - M.byteLength % BLOCK_SIZE
     return joinBuffer(M, new Uint8Array(pad).fill(pad))
@@ -210,34 +210,11 @@ export const PKCS7 = createPadding(
 )
 
 /**
- * Zero padding scheme.
- *
- * 零填充方案.
- */
-export const ZERO_PAD = createPadding(
-  (M: Uint8Array, BLOCK_SIZE: number) => {
-    const pad = BLOCK_SIZE - M.byteLength % BLOCK_SIZE
-    return joinBuffer(M, new Uint8Array(pad))
-  },
-  (P: Uint8Array) => {
-    let i = P.byteLength - 1
-    while (P[i] === 0) {
-      i = i - 1
-      if (i < 0) {
-        return new U8()
-      }
-    }
-    return new U8(P.slice(0, i + 1))
-  },
-  { ALGORITHM: 'Zero Padding' },
-)
-
-/**
  * ISO/IEC 7816 padding scheme.
  *
  * ISO/IEC 7816 填充方案.
  */
-export const ISO7816_4 = createPadding(
+export const ISO7816_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
     const BLOCK_TOTAL = Math.ceil((M.byteLength + 1) / BLOCK_SIZE)
     const P = new U8(BLOCK_TOTAL * BLOCK_SIZE)
@@ -264,7 +241,7 @@ export const ISO7816_4 = createPadding(
  *
  * ANSI X9.23 填充方案.
  */
-export const ANSI_X923 = createPadding(
+export const X923_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
     const BLOCK_TOTAL = Math.ceil((M.byteLength + 1) / BLOCK_SIZE)
     const P = new U8(BLOCK_TOTAL * BLOCK_SIZE)
@@ -280,11 +257,34 @@ export const ANSI_X923 = createPadding(
 )
 
 /**
+ * Zero padding scheme.
+ *
+ * 零填充方案.
+ */
+export const ZERO_PAD = createPadding(
+  (M: Uint8Array, BLOCK_SIZE: number) => {
+    const pad = BLOCK_SIZE - M.byteLength % BLOCK_SIZE
+    return joinBuffer(M, new Uint8Array(pad))
+  },
+  (P: Uint8Array) => {
+    let i = P.byteLength - 1
+    while (P[i] === 0) {
+      i = i - 1
+      if (i < 0) {
+        return new U8()
+      }
+    }
+    return new U8(P.slice(0, i + 1))
+  },
+  { ALGORITHM: 'Zero Padding' },
+)
+
+/**
  * No Padding
  *
  * 无填充
  */
-export const NoPadding = createPadding(
+export const NO_PAD = createPadding(
   (M: Uint8Array) => new U8(M),
   (P: Uint8Array) => new U8(P),
   { ALGORITHM: 'No Padding' },
@@ -324,7 +324,7 @@ export interface ECBMode extends ModeBaseInfo {
  * 电子密码本模式.
  */
 export const ecb = wrap<ECBMode>(
-  (cipher: BlockCipher, padding: Padding = PKCS7) => {
+  (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: ECBModeInfo = {
       ALGORITHM: `ECB-${cipher.ALGORITHM}`,
       PADDING: padding,
@@ -391,7 +391,7 @@ export interface CBCMode extends ModeBaseInfo {
  * 密码块链接模式.
  */
 export const cbc = wrap<CBCMode>(
-  (cipher: BlockCipher, padding: Padding = PKCS7) => {
+  (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: CBCModeInfo = {
       ALGORITHM: `CBC-${cipher.ALGORITHM}`,
       PADDING: padding,
@@ -459,7 +459,7 @@ export const pcbc = wrap<PCBCMode>(
    * @param {BlockCipher} cipher - 分组加密算法 / Block cipher
    * @param {Padding} padding - 填充方案 / Padding scheme (default: PKCS7)
    */
-  (cipher: BlockCipher, padding: Padding = PKCS7) => {
+  (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: PCBCModeInfo = {
       ALGORITHM: `PCBC-${cipher.ALGORITHM}`,
       PADDING: padding,
@@ -528,7 +528,7 @@ export interface CFBMode extends ModeBaseInfo {
  * 密码反馈模式.
  */
 export const cfb = wrap<CFBMode>(
-  (cipher: BlockCipher, padding: Padding = PKCS7) => {
+  (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: CFBModeInfo = {
       ALGORITHM: `CFB-${cipher.ALGORITHM}`,
       PADDING: padding,
@@ -593,7 +593,7 @@ export interface OFBMode extends ModeBaseInfo {
  * 输出反馈模式.
  */
 export const ofb = wrap<OFBMode>(
-  (cipher: BlockCipher, padding: Padding = PKCS7) => {
+  (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: OFBModeInfo = {
       ALGORITHM: `OFB-${cipher.ALGORITHM}`,
       PADDING: padding,
@@ -659,7 +659,7 @@ export interface CTRMode extends ModeBaseInfo {
  * 计数器模式.
  */
 export const ctr = wrap<CTRMode>(
-  (cipher: BlockCipher, padding: Padding = PKCS7) => {
+  (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: CTRModeInfo = {
       ALGORITHM: `CTR-${cipher.ALGORITHM}`,
       PADDING: padding,
@@ -794,7 +794,7 @@ function GHASH(H: Uint8Array, A: Uint8Array, C: Uint8Array) {
 export const gcm = wrap<GCMMode>(
   (
     cipher: BlockCipher,
-    padding: Padding = PKCS7,
+    padding: Padding = PKCS7_PAD,
     tag_size: number = 16,
   ) => {
     const BLOCK_SIZE = cipher.BLOCK_SIZE

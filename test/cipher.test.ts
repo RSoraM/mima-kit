@@ -18,7 +18,7 @@ import { camellia } from '../src/cipher/blockCipher/camellia'
 import { U8 } from '../src/core/utils'
 
 const { ecb, cbc, pcbc, cfb, ofb, ctr, gcm } = cipherSuite
-const { ANSI_X923, NoPadding } = cipherSuite
+const { X923_PAD, NO_PAD } = cipherSuite
 
 describe('stream cipher', () => {
   // * RC4
@@ -362,7 +362,7 @@ describe('mode', () => {
     const m = UTF8('meow, 喵， 🐱')
     const c = HEX('ac1e00f787097325407c4686cf80273bd1ec1f8de32343df8d9b245b04e58014')
 
-    const cbc_sm4 = cbc(sm4, ANSI_X923)(k, iv)
+    const cbc_sm4 = cbc(sm4, X923_PAD)(k, iv)
     expect(cbc_sm4.encrypt(m)).toMatchObject(c)
     expect(cbc_sm4.decrypt(c)).toMatchObject(m)
   })
@@ -395,7 +395,7 @@ describe('mode', () => {
     const m = UTF8('meow, 喵， 🐱')
     const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c123c')
 
-    const cfb_sm4 = cfb(sm4, NoPadding)(k, iv)
+    const cfb_sm4 = cfb(sm4, NO_PAD)(k, iv)
     expect(cfb_sm4.encrypt(m)).toMatchObject(c)
     expect(cfb_sm4.decrypt(c)).toMatchObject(m)
   })
@@ -417,7 +417,7 @@ describe('mode', () => {
     const m = UTF8('meow, 喵， 🐱')
     const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c1222')
 
-    const ofb_sm4 = ofb(sm4, NoPadding)(k, iv)
+    const ofb_sm4 = ofb(sm4, NO_PAD)(k, iv)
     expect(ofb_sm4.encrypt(m)).toMatchObject(c)
     expect(ofb_sm4.decrypt(c)).toMatchObject(m)
   })
@@ -439,7 +439,7 @@ describe('mode', () => {
     const m = UTF8('meow, 喵， 🐱')
     const c = HEX('e38ec4c9fb65e1da9ba25c2f35840c1226')
 
-    const ctr_sm4 = ctr(sm4, NoPadding)(k, iv)
+    const ctr_sm4 = ctr(sm4, NO_PAD)(k, iv)
     expect(ctr_sm4.encrypt(m)).toMatchObject(c)
     expect(ctr_sm4.decrypt(c)).toMatchObject(m)
   })
@@ -467,7 +467,7 @@ describe('mode', () => {
     const c = HEX('1f5490b2105791a5ae8e5eff3fc75438d6')
     const t = HEX('8dc65670d665f16a045c2931245fc639')
 
-    const gcm_sm4 = gcm(sm4, NoPadding)(k, iv)
+    const gcm_sm4 = gcm(sm4, NO_PAD)(k, iv)
     expect(gcm_sm4.encrypt(m)).toMatchObject(c)
     expect(gcm_sm4.decrypt(c)).toMatchObject(m)
     expect(gcm_sm4.sign(c, a)).toMatchObject(t)

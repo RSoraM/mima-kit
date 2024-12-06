@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { HEX, UTF8 } from '../src/core/codec'
 import { U8 } from '../src/core/utils'
-import { NoPadding, ecb } from '../src/core/cipher'
+import { NO_PAD, ecb } from '../src/core/cipher'
 import { hkdf, pbkdf2, x963kdf } from '../src/core/kdf'
 import * as ecParams from '../src/core/ecParams'
 import { rsa } from '../src/cipher/pkcs/rsa'
@@ -161,7 +161,7 @@ describe('ecc', () => {
   })
   it('secp160r1-ecies', () => {
     const ec = FpECC(secp160r1)
-    const cipher = ecb(es_xor, NoPadding)
+    const cipher = ecb(es_xor, NO_PAD)
     const kdf = x963kdf(sha1)
     /** HMAC-SHA-1-160 with 20 bytes keys */
     const mac = hmac(sha1, 160, 160)
