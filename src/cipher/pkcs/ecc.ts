@@ -1,9 +1,9 @@
 import type { BlockCipher, BlockCipherInfo } from '../../core/cipher'
 import { cbc, createCipher } from '../../core/cipher'
-import { FpEC, type FpECUtils } from '../../core/ec'
+import { Fp, FpEC, type FpECUtils } from '../../core/ec'
 import type { FpECPoint, FpWECParams } from '../../core/ecParams'
 import type { Digest, KeyHash } from '../../core/hash'
-import { KitError, U8, genRandomBI, getBIBits, joinBuffer, mod, modInverse, modPow, modPrimeSquare } from '../../core/utils'
+import { KitError, U8, genRandomBI, getBIBits, joinBuffer, mod, modInverse, modPrimeSquare } from '../../core/utils'
 import type { KDF } from '../../core/kdf'
 import { x963kdf } from '../../core/kdf'
 import { aes } from '../blockCipher/aes'
@@ -200,7 +200,7 @@ interface FpECCrypto {
    *
    * Convert Point to Byte String, not compressed by default
    */
-  pointToU8: (point: FpECPoint, compress?: boolean) => U8
+  PointToU8: (point: FpECPoint, compress?: boolean) => U8
   /**
    * 字节串转换为点
    *
@@ -252,11 +252,14 @@ function createMask(n: number) {
  */
 export function FpECC(curve: FpWECParams): FpECCrypto {
   const { p, a, b, G, n } = curve
-  const n_bit_length = getBIBits(n)
-  const n_byte_length = n_bit_length >> 3
-  const n_mask = createMask(n_bit_length)
-  const utils = FpEC(curve)
-  const { addPoint, mulPoint } = utils
+  const p_bits = getBIBits(p)
+  const p_bytes = (p_bits + 7) >> 3
+  const n_bits = getBIBits(n)
+  const n_mask = createMask(n_bits)
+  const FpECOpt = FpEC(curve)
+  const FpOpt = Fp(p)
+  const { addPoint, mulPoint } = FpECOpt
+  const { plus, multiply } = FpOpt
 
   const isLegalPK = (p_key: ECPublicKey): boolean => {
     const { Q } = p_key
@@ -270,8 +273,8 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
       return false
     }
     // y^2 = x^3 + ax + b
-    const l = modPow(y, 2n, p)
-    const r = mod(modPow(x, 3n, p) + a * x + b, p)
+    const l = multiply(y, y)
+    const r = plus(multiply(x, x, x), multiply(a, x), b)
     if (l !== r) {
       return false
     }
@@ -289,45 +292,52 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
     }
     return true
   }
-  const pointToU8 = (point: FpECPoint, compress = false): U8 => {
+  const PointToU8 = (point: FpECPoint, compress = false): U8 => {
     if (point.isInfinity) {
       return new U8([0x00])
     }
     const PC = new U8([compress ? 0x02 | Number(point.y & 1n) : 0x04])
-    const X1 = U8.fromBI(point.x)
-    const Y1 = compress ? new U8() : U8.fromBI(point.y)
+    const X1 = U8.fromBI(point.x, p_bytes)
+    const Y1 = compress ? new U8() : U8.fromBI(point.y, p_bytes)
     return joinBuffer(PC, X1, Y1)
   }
   const U8ToPoint = (buffer: Uint8Array): FpECPoint => {
     const u8 = U8.from(buffer)
     const PC = BigInt(u8[0])
     if (PC === 0x00n) {
+      if (u8.length !== 1) {
+        throw new KitError('Invalid Point')
+      }
       return { isInfinity: true, x: 0n, y: 0n }
     }
     if (PC !== 0x02n && PC !== 0x03n && PC !== 0x04n) {
-      throw new KitError('Invalid point conversion')
+      throw new KitError('Invalid Point')
     }
     // 无压缩
     if (PC === 0x04n) {
-      const x = u8.slice(1, n_byte_length + 1).toBI()
-      const y = u8.slice(n_byte_length + 1).toBI()
+      if (u8.length !== (p_bytes << 1) + 1) {
+        throw new KitError('Invalid Point')
+      }
+      const x = u8.slice(1, p_bytes + 1).toBI()
+      const y = u8.slice(p_bytes + 1).toBI()
       return { isInfinity: false, x, y }
     }
     // 解压缩
     else {
+      if (u8.length !== p_bytes + 1) {
+        throw new KitError('Invalid Point')
+      }
       const x = u8.slice(1).toBI()
-
       let y = 0n
-      y = x * x * x + a * x + b
+      y = plus(multiply(x, x, x), multiply(a, x), b)
       y = modPrimeSquare(y, p)
       y = (y & 1n) === (PC & 1n) ? y : p - y
-
       return { isInfinity: false, x, y }
     }
   }
   const genKey = () => {
     // private key
-    const d = genRandomBI(n - 2n, n_bit_length >> 3)
+    const d = genRandomBI(n - 2n, n_bits >> 3)
     // public key
     const Q = mulPoint(G, d)
     return { Q, d }
@@ -351,7 +361,7 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
     if (!isLegalPK(v1) || !isLegalPK(v2)) {
       throw new KitError('Invalid public key')
     }
-    const ceilLog2n = n_bit_length
+    const ceilLog2n = n_bits
     const L = 1n << BigInt(Math.ceil(ceilLog2n / 2))
     const Q2u = mod(u2.Q.x, L) + L
     const Q2v = mod(v2.Q.x, L) + L
@@ -449,17 +459,16 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
     return { encrypt, decrypt }
   }
   return {
-    utils,
+    utils: FpECOpt,
     isLegalPK,
     isLegalSK,
-    pointToU8,
+    PointToU8,
     U8ToPoint,
     genKey,
     ecdh,
     ecmqv,
     ecdsa,
     ecies,
-    ...utils,
   }
 }
 

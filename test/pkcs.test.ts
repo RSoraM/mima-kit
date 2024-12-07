@@ -198,7 +198,7 @@ describe('ecc', () => {
       x: 1176954224688105769566774212902092897866168635793n,
       y: 1130322298812061698910820170565981471918861336822n,
     }
-    const P = ec.pointToU8(R, true)
+    const P = ec.PointToU8(R, true)
     const P_outside = HEX('02CE2873E5BE449563391FEB47DDCBA2DC16379191')
     const Q = ec.U8ToPoint(P_outside)
     expect(P).toMatchObject(P_outside)
