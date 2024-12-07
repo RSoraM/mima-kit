@@ -166,6 +166,12 @@ interface FpECCrypto {
    */
   ecdh: ECDH
   /**
+   * 椭圆曲线余因子迪菲-赫尔曼, 密钥协商算法
+   *
+   * Elliptic Curve Co-factor Diffie-Hellman Key Agreement Algorithm
+   */
+  eccdh: ECDH
+  /**
    * 椭圆曲线梅内泽斯-奎-范斯通密钥协商算法
    *
    * Elliptic Curve Menezes-Qu-Vanstone Key Agreement Algorithm
@@ -251,7 +257,7 @@ function createMask(n: number) {
  * Prime Field Elliptic Curve Cryptography Components
  */
 export function FpECC(curve: FpWECParams): FpECCrypto {
-  const { p, a, b, G, n } = curve
+  const { p, a, b, G, n, h } = curve
   const p_bits = getBIBits(p)
   const p_bytes = (p_bits + 7) >> 3
   const n_bits = getBIBits(n)
@@ -354,6 +360,21 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
     const S = mulPoint(Q, d)
     if (S.isInfinity) {
       throw new KitError('the result of ECDH is the point at infinity')
+    }
+    return S
+  }
+  const eccdh: ECDH = (s_key: ECPrivateKey, p_key: ECPublicKey) => {
+    if (!isLegalPK(p_key)) {
+      throw new KitError('Invalid public key')
+    }
+    if (!isLegalSK(s_key)) {
+      throw new KitError('Invalid private key')
+    }
+    const Q = p_key.Q
+    const d = s_key.d
+    const S = mulPoint(Q, d * h)
+    if (S.isInfinity) {
+      throw new KitError('the result of ECCDH is the point at infinity')
     }
     return S
   }
@@ -466,6 +487,7 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
     U8ToPoint,
     genKey,
     ecdh,
+    eccdh,
     ecmqv,
     ecdsa,
     ecies,
