@@ -230,6 +230,7 @@ interface FpECCrypto {
  * @param {Uint8Array} [config.iv] - 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE))
  */
 export function defineECIES(config?: ECIESConfig) {
+  config = config ?? {}
   const {
     cipher = cbc(aes(256)),
     mac = hmac(sha256),
@@ -237,7 +238,7 @@ export function defineECIES(config?: ECIESConfig) {
     S1 = new Uint8Array(0),
     S2 = new Uint8Array(0),
     iv = new Uint8Array(cipher.BLOCK_SIZE),
-  } = config ?? {}
+  } = config
   return { cipher, mac, kdf, S1, S2, iv }
 }
 
