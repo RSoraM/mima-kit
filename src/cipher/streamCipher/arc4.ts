@@ -1,4 +1,4 @@
-import { createStreamCipher } from '../../core/cipher'
+import { createCipher } from '../../core/cipher'
 import { KitError, U8 } from '../../core/utils'
 
 // * Functions
@@ -55,7 +55,7 @@ function _arc4(K: Uint8Array) {
  * cipher.decrypt(c)
  * ```
  */
-export const arc4 = createStreamCipher(
+export const arc4 = createCipher(
   _arc4,
   {
     ALGORITHM: `ARC4`,

@@ -1,4 +1,4 @@
-import { createIVStreamCipher } from '../../core/cipher'
+import { createCipher } from '../../core/cipher'
 import { KitError, U8, resizeBuffer, rotateL32 } from '../../core/utils'
 
 // * Functions
@@ -129,7 +129,7 @@ function _salsa20(K: Uint8Array, iv: Uint8Array) {
  * cipher.decrypt(c)
  * ```
  */
-export const salsa20 = createIVStreamCipher(
+export const salsa20 = createCipher(
   _salsa20,
   {
     ALGORITHM: 'Salsa20',

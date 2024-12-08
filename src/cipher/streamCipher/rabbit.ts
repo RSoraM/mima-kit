@@ -1,4 +1,4 @@
-import { createIVStreamCipher } from '../../core/cipher'
+import { createCipher } from '../../core/cipher'
 import { KitError, U8, resizeBuffer, rotateL32 } from '../../core/utils'
 
 // * Constants
@@ -149,7 +149,7 @@ function _rabbit(K: Uint8Array, iv: Uint8Array) {
  * const cipher = rabbit(k, new Uint8Array(0))
  * ```
  */
-export const rabbit = createIVStreamCipher(
+export const rabbit = createCipher(
   _rabbit,
   {
     ALGORITHM: 'rabbit',
