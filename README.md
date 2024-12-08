@@ -85,7 +85,7 @@ npm install mima-kit
     <li><a href="#xtea">XTEA</a></li>
   </ul>
   <li><a href="#填充模式">填充模式</a></li>
-  <li><a href="#分组模式">分组模式</a></li>
+  <li><a href="#工作模式">工作模式</a></li>
   <li><a href="#流密码算法">流密码算法</a></li>
   <ul style="list-style-type: none; padding-left: 1em;">
     <li><a href="#zuc">ZUC</a></li>
@@ -106,7 +106,6 @@ npm install mima-kit
 <ul style="list-style-type: none;">
   <li><a href="#rsa">RSA</a></li>
   <ul style="list-style-type: none; padding-left: 1em;">
-    <li><a href="#rsa-primitive">RSA Primitive</a></li>
     <li><a href="#pkcs1-mgf1">PKCS1-MGF1</a></li>
     <li><a href="#rsaes-pkcs1-v1_5">RSAES-PKCS-v1_5</a></li>
     <li><a href="#rsaes-oaep">RSAES-OAEP</a></li>
@@ -353,7 +352,7 @@ kmac256XOF(512, s)(key)(m).to(HEX)
 
 ## 包装您的加密散列算法
 
-如果您已经实现了一个伟大而又神秘的散列算法，您可以使用 `mima-kit` 提供的 `createHash` 函数将其包装成一个可被调用的 `Hash` 对象。然后您就可以像使用其他 `加密散列算法` 一样，将您的算法和 `mima-kit` 中其他高级算法一起使用。
+如果您已经实现了一个伟大而又神秘的散列算法，您可以使用 `createHash` 函数将其包装成一个可被调用的 `Hash` 对象。然后您就可以像使用其他 `加密散列算法` 一样，将您的算法和 `mima-kit` 中其他高级算法一起使用。
 
 > 如果您熟悉 `JS`，您会发现 `createHash` 的本质不过是 `Object.assign` 的包装。您完全可以用 `Object.assign` 替代 `createHash`，但 `createHash` 会为您提供一些类型提示，避免发生恼人的拼写错误。
 
@@ -386,7 +385,7 @@ interface HashDescription {
 
 # 对称密钥算法
 
-`对称密钥算法` 是一种使用相同密钥进行 `加密` 和 `解密` 的加密算法。它可以分为 `分组密码算法` 和 `流密码算法`。`分组密码算法` 通常需要组合 `填充模式` 和 `分组模式` 一起使用。`分组密码算法` 可以通过特定的 `分组模式` 和 `NO_PAD` 转换为 `流密码算法`。
+`对称密钥算法` 是一种使用相同密钥进行 `加密` 和 `解密` 的加密算法。它可以分为 `分组密码算法` 和 `流密码算法`。`分组密码算法` 通常需要组合 `填充模式` 和 `工作模式` 一起使用。`分组密码算法` 可以通过特定的 `工作模式` 和 `NO_PAD` 转换为 `流密码算法`。
 
 > 你可以在 `/test/cipher.test.ts` 中找到更多使用示例。
 
@@ -673,7 +672,7 @@ const cbc_sm4 = cbc(sm4, ZERO_PAD)
 const ofb_sm4 = ofb(sm4, NO_PAD)
 ```
 
-## 分组模式
+## 工作模式
 
 - `ecb` Electronic Codebook
 - `cbc` Cipher Block Chaining
@@ -683,11 +682,11 @@ const ofb_sm4 = ofb(sm4, NO_PAD)
 - `ctr` Counter Mode
 - `gcm` Galois/Counter Mode
 
-`mima-kit` 将 `分组模式` 与 `分组密码算法` 完全解偶，这意味着您可以将任意 `分组密码算法` 与任意 `分组模式` 结合使用。
+`mima-kit` 将 `工作模式` 与 `分组密码算法` 完全解偶，这意味着您可以将任意 `分组密码算法` 与任意 `工作模式` 结合使用。
 
 ### ECB
 
-`Electronic Codebook` (ECB) 是最简单的分组模式。`ECB` 模式将明文分成固定长度的数据块，然后对每个数据块进行加密。
+`Electronic Codebook` (ECB) 是最简单的工作模式。`ECB` 模式将明文分成固定长度的数据块，然后对每个数据块进行加密。
 
 - `ECB` 模式不需要 `iv`。
 - 向 `ECB` 模式传递的 `iv` 参数会被忽略。
@@ -704,7 +703,7 @@ CIPHER.decrypt(c) // m
 
 ### CBC
 
-`Cipher Block Chaining` (CBC) 是最常用的分组模式。`CBC` 模式每个明文块都会与前一个密文块进行异或操作，然后再进行加密。
+`Cipher Block Chaining` (CBC) 是最常用的工作模式。`CBC` 模式每个明文块都会与前一个密文块进行异或操作，然后再进行加密。
 
 - `CBC` 模式需要 `iv`。
 - `iv` 的长度与加密算法的 `BLOCK_SIZE` 相同。
@@ -912,7 +911,7 @@ const m = cipher.decrypt(c)
 
 ## 包装您的对称密钥算法
 
-与 [`包装您的加密散列算法`](#包装您的加密散列算法) 一样，您可以使用 `mima-kit` 提供的 `createCipher` 函数将您的 `对称密钥算法` 包装成一个可被调用的 `Cipher` 对象。然后您就可以像使用其他 `对称密钥算法` 一样，将您的算法和 `mima-kit` 中其他高级算法一起使用。
+与 [`包装您的加密散列算法`](#包装您的加密散列算法) 一样，您可以使用 `createCipher` 函数将您的 `对称密钥算法` 包装成一个可被调用的 `Cipher` 对象。然后您就可以像使用其他 `对称密钥算法` 一样，将您的算法和 `mima-kit` 中其他高级算法一起使用。
 
 > 如果您熟悉 `JS`，您会发现 `createCipher` 的本质不过是 `Object.assign` 的包装。您完全可以用 `Object.assign` 替代 `createCipher`，但 `createCipher` 会为您提供一些类型提示，避免发生恼人的拼写错误。
 
@@ -969,7 +968,7 @@ interface BlockCipherInfo {
 
 Specification: [RFC 8017](https://www.rfc-editor.org/rfc/rfc8017.html)
 
-`RSA` 算法是一种基于大素数分解的非对称加密算法。`mima-kit` 提供的 `RSA` 算法支持大于 `256` 位的密钥。因为 `mima-kit` 内部实现的大数运算相关的函数在处理太小的数字时会产生错误的结果。且我并没有测试过小于 256 位的密钥，所以我无法保证小于 `256` 位的密钥是否能正常工作。
+`RSA` 算法是一种基于大素数分解的非对称加密算法。`mima-kit` 提供的 `RSA` 算法支持大于 `256` 位的密钥。因为 `mima-kit` 内部实现的大数运算相关的函数在处理太小的数字时可能会产生错误的结果。且我并没有测试过小于 `256` 位的密钥，所以我无法保证小于 `256` 位的密钥是否能正常工作。
 
 > 我想这个世界上应该没有人会使用这么小的密钥吧...
 
@@ -1055,9 +1054,13 @@ const m = cipher.decrypt(c)
 
 `RSASSA-PKCS1-v1_5` 是 `PKCS#1` 标准中的一个签名方案。它需要组合 `Hash` 函数。
 
+> `RSASSA-PKCS1-v1_5` 会用到 `Hash` 的 `OID`，`mima-kit` 中只有部份 `Hash` 函数记录了 `OID`，请务必在使用 `RSASSA-PKCS1-v1_5` 时检查 `Hash` 函数的 `OID` 是否正确。
+
 ```typescript
 const p = UTF8('mima-kit')
 const key = rsa(2048)
+// check OID before using
+sha256.OID = '2.16.840.1.101.3.4.2.1'
 // using SHA-256 by default
 const cipher = pkcs1_ssa_1_5(key)
 // using SHA-1
@@ -1274,7 +1277,7 @@ const kdf = hkdf(mac)
 
 ### PBKDF2
 
-`PBKDF2` 是 `PKCS#5` 标准中的一个密钥派生函数。`PBKDF2` 需要组合 `KeyHash` 函数，指定 `iteration` 次数和一个可选的盐。
+`PBKDF2` 是 `PKCS#5` 标准中的一个密钥派生函数。`PBKDF2` 需要组合 `KeyHash` 函数，指定 `iteration` 次数和一个可选的 `salt`。
 
 ```typescript
 const mac = hmac(sha256)

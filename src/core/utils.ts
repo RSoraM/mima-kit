@@ -471,7 +471,7 @@ export function wrap<T = any>(...args: any[]): T {
     return {} as T
   }
   // @ts-expect-error Object assign
-  return Object.freeze(Object.assign(...args))
+  return Object.assign(...args)
 }
 
 export class KitError extends Error {

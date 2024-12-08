@@ -1051,9 +1051,13 @@ const m = cipher.decrypt(c)
 
 `RSASSA-PKCS1-v1_5` is a signature scheme in the `PKCS#1`. It needs to be combined with `Hash` functions.
 
+> `RSASSA-PKCS1-v1_5` will use the `OID` of `Hash`. Only some `Hash` functions in `mima-kit` record the `OID`. Please be sure to check whether the `OID` of the `Hash` function is correct when using `RSASSA-PKCS1-v1_5`.
+
 ```typescript
 const p = UTF8('mima-kit')
 const key = rsa(2048)
+// check OID before using
+sha256.OID = '2.16.840.1.101.3.4.2.1'
 // using SHA-256 by default
 const cipher = pkcs1_ssa_1_5(key)
 // using SHA-1
