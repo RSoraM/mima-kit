@@ -309,6 +309,10 @@ export interface Mode extends ModeBaseInfo {
    * @param {Padding} padding - 填充方案 / Padding scheme (default: PKCS7)
    */
   (cipher: BlockCipher, padding?: Padding): {
+    /**
+     * @param {Uint8Array} K - 密钥 / Key
+     * @param {Uint8Array} iv - 初始化向量 / Initialization Vector
+     */
     (K: Uint8Array, iv: Uint8Array): Cipherable & ModeInfo
   } & ModeInfo
 }
@@ -323,6 +327,9 @@ export interface ECBMode extends ModeBaseInfo {
      * ECB 不使用 IV, 如果提供 IV, 将被忽略. 仅为与其他模式兼容.
      *
      * ECB do not use IV, if you provide IV, it will be ignored. It is only for compatibility with other modes.
+     *
+     * @param {Uint8Array} K - 密钥 / Key
+     * @param {Uint8Array} [iv] - 初始化向量 / Initialization Vector
      */
     (k: Uint8Array, iv?: Uint8Array): Cipherable & ModeInfo
   } & ModeInfo
@@ -690,6 +697,10 @@ export interface GCMMode extends ModeBaseInfo {
    * @param {number} tag_size - 标签大小 / Authentication tag size (default: 16)
    */
   (cipher: BlockCipher, padding?: Padding, tag_size?: number): {
+    /**
+     * @param {Uint8Array} K - 密钥 / Key
+     * @param {Uint8Array} iv - 初始化向量 / Initialization Vector
+     */
     (K: Uint8Array, iv: Uint8Array): Cipherable & Verifiable & GCMModeInfo
   } & GCMModeInfo
 }

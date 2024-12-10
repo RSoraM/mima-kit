@@ -4,6 +4,9 @@ import { wrap } from './utils'
 // * 散列函数包装器
 
 export interface Digest {
+  /**
+   * @param {Uint8Array} M - 消息 / message
+   */
   (M: Uint8Array): U8
 }
 export interface HashDescription {
@@ -83,6 +86,14 @@ export interface KeyHashDescription extends HashDescription {
    */
   KEY_SIZE: number
 }
+/**
+ * 密钥散列函数
+ *
+ * Keyed hash function
+ */
 export interface KeyHash extends KeyHashDescription {
+  /**
+   * @param {Uint8Array} K - 密钥 / key
+   */
   (K: Uint8Array): Hash
 }
