@@ -13,21 +13,21 @@ const R = [
   [27, 20, 39, 8, 14],
 ]
 /**
- * `RCGen(6, 12)`
+ * https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
  */
 const RC12 = [
-  0x0000000000000001n,
-  0x0000000000008082n,
-  0x800000000000808An,
-  0x8000000080008000n,
-  0x000000000000808Bn,
-  0x0000000080000001n,
+  0x000000008000808Bn,
+  0x800000000000008Bn,
+  0x8000000000008089n,
+  0x8000000000008003n,
+  0x8000000000008002n,
+  0x8000000000000080n,
+  0x000000000000800An,
+  0x800000008000000An,
   0x8000000080008081n,
-  0x8000000000008009n,
-  0x000000000000008An,
-  0x0000000000000088n,
-  0x0000000080008009n,
-  0x000000008000000An,
+  0x8000000000008080n,
+  0x0000000080000001n,
+  0x8000000080008008n,
 ]
 /**
  * `RCGen(6, 24)`
@@ -83,8 +83,8 @@ export function RCGen(l = 6, nr = 24) {
         let R = 0x80n
         for (let i = 1; i <= t % 255; i++) {
           const b = R & 1n
-          const mask = (b << 8n) | (b << 4n) | (b << 3n) | (b << 2n)
-          R = (R ^ mask) >> 1n
+          R ^= (b << 8n) | (b << 4n) | (b << 3n) | (b << 2n)
+          R >>= 1n
         }
         rc = R >> 7n
       }
@@ -317,9 +317,9 @@ export function sponge_1600(
     const P = pad(M)
     // * 吸收
     let S = new Uint8Array(200)
-    const blockTotal = P.byteLength / r_byte
-    for (let i = 0; i < blockTotal; i++) {
-      const Pi = P.slice(i * r_byte, (i + 1) * r_byte)
+    let i = 0
+    while (i < P.byteLength) {
+      const Pi = P.slice(i, i += r_byte)
       S.forEach((byte, index) => S[index] = byte ^ Pi[index])
       S = f(S)
     }

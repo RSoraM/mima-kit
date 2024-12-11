@@ -8,6 +8,7 @@ import * as sha3 from '../src/hash/sha3'
 import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import { hmac } from '../src/hash/hmac'
+import { turboSHAKE128, turboSHAKE256 } from '../src/hash/turboSHAKE'
 
 const { sha3_224, sha3_256 } = sha3
 const { sha3_384, sha3_512 } = sha3
@@ -161,4 +162,16 @@ it('hmac', () => {
 
   const hmac_sha3 = hmac(sha3_256)(password)
   expect(hmac_sha3(meow).to(HEX)).toMatchInlineSnapshot('"969bdb3d05db27ee7df5ba69b6e2e2bf5d7abb3b13e8c181d6418d6f0403f3f0"')
+})
+// * TurboSHAKE
+it('turboShake', () => {
+  // Vector Source: https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
+  expect(turboSHAKE128(64)(new Uint8Array(0)).to(HEX)).toMatchInlineSnapshot(`"1e415f1c5983aff2169217277d17bb538cd945a397ddec541f1ce41af2c1b74c3e8ccae2a4dae56c84a04c2385c03c15e8193bdf58737363321691c05462c8df"`)
+  expect(turboSHAKE128(10032)(new Uint8Array(0)).subarray(10000).to(HEX)).toMatchInlineSnapshot(`"a3b9b0385900ce761f22aed548e754da10a5242d62e8c658e3f3a923a7555607"`)
+  expect(turboSHAKE128(32, 0x06)(HEX('FF')).to(HEX)).toMatchInlineSnapshot(`"8ec9c66465ed0d4a6c35d13506718d687a25cb05c74cca1e42501abd83874a67"`)
+  expect(turboSHAKE128(32, 0x0B)(HEX('FFFFFFFFFFFFFF')).to(HEX)).toMatchInlineSnapshot(`"8deeaa1aec47ccee569f659c21dfa8e112db3cee37b18178b2acd805b799cc37"`)
+  expect(turboSHAKE256(64)(new Uint8Array(0)).to(HEX)).toMatchInlineSnapshot(`"367a329dafea871c7802ec67f905ae13c57695dc2c6663c61035f59a18f8e7db11edc0e12e91ea60eb6b32df06dd7f002fbafabb6e13ec1cc20d995547600db0"`)
+  expect(turboSHAKE256(10032)(new Uint8Array(0)).subarray(10000).to(HEX)).toMatchInlineSnapshot(`"abefa11630c661269249742685ec082f207265dccf2f43534e9c61ba0c9d1d75"`)
+  expect(turboSHAKE256(64, 0x06)(HEX('FF')).to(HEX)).toMatchInlineSnapshot(`"738d7b4e37d18b7f22ad1b5313e357e3dd7d07056a26a303c433fa3533455280f4f5a7d4f700efb437fe6d281405e07be32a0a972e22e63adc1b090daefe004b"`)
+  expect(turboSHAKE256(64, 0x0B)(HEX('FFFFFFFFFFFFFF')).to(HEX)).toMatchInlineSnapshot(`"bb36764951ec97e9d85f7ee9a67a7718fc005cf42556be79ce12c0bde50e5736d6632b0d0dfb202d1bbb8ffe3dd74cb00834fa756cb03471bab13a1e2c16b3c0"`)
 })
