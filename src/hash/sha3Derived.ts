@@ -1,7 +1,8 @@
-import type { KeyHash, KeyHashDescription } from '../core/hash'
 import { UTF8 } from '../core/codec'
-import { createHash, createTupleHash } from '../core/hash'
 import { KitError, joinBuffer, wrap } from '../core/utils'
+import type { KeyHash, KeyHashDescription } from '../core/hash'
+import { createHash, createTupleHash } from '../core/hash'
+import type { Sha3Padding } from './sha3'
 import { Keccak_c, shake128, shake256 } from './sha3'
 
 // * Encode and Padding Function
@@ -9,19 +10,16 @@ import { Keccak_c, shake128, shake256 } from './sha3'
 /**
  * SP.800-185 2.3.1:
  *
- * left_encode
- *
- * 左侧整数编码
+ * 左侧整数编码 / left_encode
  *
  * Inspired by https://github.com/paulmillr/noble-hashes
  *
- * @example
  * ```ts
  * leftEncode(0) // Uint8Array(2) [ 1, 0 ]
  * leftEncode(18446744073709551615n) // Uint8Array(9) [ 8, 255, 255, 255, 255, 255, 255, 255, 255 ]
  * ```
  *
- * @param {number | bigint} x - 输入
+ * @param {number | bigint} x - 输入 / input
  */
 function leftEncode(x: number | bigint): Uint8Array {
   const result = []
@@ -47,19 +45,16 @@ function leftEncode(x: number | bigint): Uint8Array {
 /**
  * SP.800-185 2.3.1:
  *
- * right_encode
- *
- * 右侧整数编码
+ * 右侧整数编码 / right_encode
  *
  * Inspired by https://github.com/paulmillr/noble-hashes
  *
- * @example
  * ```ts
  * rightEncode(0) // Uint8Array(2) [ 0, 1 ]
  * rightEncode(18446744073709551615n) // Uint8Array(9) [ 255, 255, 255, 255, 255, 255, 255, 255, 8 ]
  * ```
  *
- * @param {number | bigint} x - 输入
+ * @param {number | bigint} x - 输入 / input
  */
 function rightEncode(x: number | bigint): Uint8Array {
   const result = []
@@ -85,20 +80,17 @@ function rightEncode(x: number | bigint): Uint8Array {
 /**
  * SP.800-185 2.3.2:
  *
- * encode_string
- *
- * 字符编码
- *
- * Unlike the specification document, this implementation does not perform concatenation operations, but returns an array, and the concatenation operation is performed externally. See `bytepad` function for details.
+ * 字符编码 / encode_string
  *
  * 与规范文档不同, 这个实现不会进行串接操作, 而是返回一个数组, 串接操作在外部进行. 详细见 `bytepad` 函数.
  *
- * @example
+ * Unlike the specification document, this implementation does not perform concatenation operations, but returns an array, and the concatenation operation is performed externally. See `bytepad` function for details.
+ *
  * ```ts
  * encodeString(K) // [left_encode(len(K)), K]
  * ```
  *
- * @param {string | Uint8Array} input - 输入
+ * @param {string | Uint8Array} input - 输入 / input
  */
 function encodeString(input: string | Uint8Array) {
   input = typeof input === 'string' ? UTF8(input) : input
@@ -108,21 +100,19 @@ function encodeString(input: string | Uint8Array) {
 /**
  * SP.800-185 2.3.3:
  *
- * The `bytePad` is used by many algorithms which involves many concatenation operations, but for `Javascript` implementation, each concatenation means creating a `Uint8Array` for merging. Frequent creation of `Uint8Array` may cause performance issues.
- *
  * 在算法中 `bytePad` 涉及很多串接操作, 但对 `Javascript` 实现来说, 每次串接都意味着创建 `Uint8Array` 进行合并. 频繁地创建 `Uint8Array` 有可能导致性能问题.
- *
- * This is an optimized implementation. The input `X` is changed to an array, and the final return is also an array. The merge operation is moved to the outside.
- *
  * 这是一个优化后的实现. 将输入 `X` 改为数组, 最后也返回数组, 将合并操作移动到外部.
  *
- * @example
+ * The `bytePad` is used by many algorithms which involves many concatenation operations, but for `Javascript` implementation, each concatenation means creating a `Uint8Array` for merging. Frequent creation of `Uint8Array` may cause performance issues.
+ * This is an optimized implementation. The input `X` is changed to an array, and the final return is also an array. The merge operation is moved to the outside.
+ *
+ *
  * ```ts
  * bytepad(X, w) = left_encode(w) || X0 || ... || Xn || 0^z
  * ```
  *
- * @param {Uint8Array} X - 输入数组
- * @param {number} w - 字节倍数
+ * @param {Uint8Array} X - 输入数组 / input array
+ * @param {number} w - 字节倍数 / byte multiple
  */
 function bytepad(X: Uint8Array[], w: number): Uint8Array[] {
   if (w <= 0) {
@@ -148,30 +138,27 @@ function bytepad(X: Uint8Array[], w: number): Uint8Array[] {
 }
 
 /**
- * `cSHAKE` Padding
+ * `cSHAKE` 填充函数 / Padding Function
  *
- * `cSHAKE` 填充函数
- *
- * @example
- * ```
+ * ```ts
  * M || 00 || 10*1
  * ```
  *
- * @param {number} rByte - 处理速率
- * @param {number} sigBytes - 消息字节数
+ * @param {number} r_byte - 处理速率 / Rate
  */
-function cShakePadding(rByte: number, sigBytes: number) {
-  const q = rByte - (sigBytes % rByte)
-  const p = new Uint8Array(q)
-
-  if (q === 1) {
-    p[0] = 0x84
-    return p
+const cShakePadding: Sha3Padding = (r_byte: number) => {
+  return (M: Uint8Array) => {
+    const sig_byte = M.length
+    const pad_byte = r_byte - (sig_byte % r_byte)
+    const P = new Uint8Array(sig_byte + pad_byte)
+    P.set(M)
+    if (pad_byte === 1) {
+      P[sig_byte] = 0x84
+    }
+    P[sig_byte] = 0x04
+    P[P.length - 1] |= 0x80
+    return P
   }
-
-  p[0] = 0x04
-  p[q - 1] = 0x80
-  return p
 }
 
 // * cSHAKE
@@ -181,9 +168,9 @@ function cShakePadding(rByte: number, sigBytes: number) {
  *
  * `cSHAKE128` is a customizable variant of `SHAKE128`
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} [N] - 函数名 / function name
- * @param {Uint8Array} [S] - 自定义参数 / customization
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} [N] - 函数名 / Function name
+ * @param {Uint8Array} [S] - 自定义参数 / Customization
  */
 export function cShake128(d: number, N = new Uint8Array(), S = new Uint8Array()) {
   const description = {
@@ -210,9 +197,9 @@ export function cShake128(d: number, N = new Uint8Array(), S = new Uint8Array())
  *
  * `cSHAKE256` is a customizable variant of `SHAKE256`
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} [N] - 函数名 / function name
- * @param {Uint8Array} [S] - 自定义参数 / customization
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} [N] - 函数名 / Function name
+ * @param {Uint8Array} [S] - 自定义参数 / Customization
  */
 export function cShake256(d: number, N = new Uint8Array(), S = new Uint8Array()) {
   const description = {
@@ -243,9 +230,9 @@ export function cShake256(d: number, N = new Uint8Array(), S = new Uint8Array())
  * The Keccak Message Authentication Code (KMAC) algorithm
  * `KMAC128` is a variant of `KMAC`, build from `cSHAKE128`
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
- * @param {number} k_size - 推荐密钥大小 bit / recommended key size bit
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
+ * @param {number} k_size - 推荐密钥大小 / Recommended key size (bit)
  */
 export function kmac128(d: number, S = new Uint8Array(0), k_size: number = 128): KeyHash {
   const description: KeyHashDescription = {
@@ -274,9 +261,9 @@ export function kmac128(d: number, S = new Uint8Array(0), k_size: number = 128):
  * The Keccak Message Authentication Code (KMAC) algorithm
  * `KMAC256` is a variant of `KMAC`, build from `cSHAKE256`
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
- * @param {number} k_size - 推荐密钥大小 bit / recommended key size bit
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
+ * @param {number} k_size - 推荐密钥大小 / Recommended key size (bit)
  */
 export function kmac256(d: number, S = new Uint8Array(0), k_size: number = 256): KeyHash {
   const description: KeyHashDescription = {
@@ -305,9 +292,9 @@ export function kmac256(d: number, S = new Uint8Array(0), k_size: number = 256):
  * `KMAC` with Arbitrary-Length Output
  * `KMAC128XOF` is a XOF mode of `KMAC128`, build from `cSHAKE128`
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
- * @param {number} k_size - 推荐密钥大小 bit / recommended key size bit
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
+ * @param {number} k_size - 推荐密钥大小 / Recommended key size (bit)
  */
 export function kmac128XOF(d: number, S = new Uint8Array(0), k_size: number = 128): KeyHash {
   const description: KeyHashDescription = {
@@ -336,9 +323,9 @@ export function kmac128XOF(d: number, S = new Uint8Array(0), k_size: number = 12
  * `KMAC` with Arbitrary-Length Output
  * `KMAC256XOF` is a XOF mode of `KMAC256`, build from `cSHAKE256`
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
- * @param {number} k_size - 推荐密钥大小 bit / recommended key size bit
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
+ * @param {number} k_size - 推荐密钥大小 / recommended key size (bit)
  */
 export function kmac256XOF(d: number, S = new Uint8Array(0), k_size: number = 256): KeyHash {
   const description: KeyHashDescription = {
@@ -363,12 +350,12 @@ export function kmac256XOF(d: number, S = new Uint8Array(0), k_size: number = 25
 // * TupleHash
 
 /**
- * `TupleHash` is a `SHA3` derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
- *
  * `TupleHash` 是一个具有可变长度输出的 `SHA3` 派生散列函数, 旨在以一种明确的方式简单地散列输入字符串的元组, 这些字符串中的任何一个或全部都可以是空字符串.
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
+ * `TupleHash` is a `SHA3` derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
+ *
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
  */
 export function tupleHash128(d: number, S: Uint8Array = new Uint8Array()) {
   const digest = (M: Uint8Array[]) => {
@@ -389,12 +376,12 @@ export function tupleHash128(d: number, S: Uint8Array = new Uint8Array()) {
 }
 
 /**
- * `TupleHash` is a `SHA3` derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
- *
  * `TupleHash` 是一个具有可变长度输出的 `SHA3` 派生散列函数, 旨在以一种明确的方式简单地散列输入字符串的元组, 这些字符串中的任何一个或全部都可以是空字符串.
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
+ * `TupleHash` is a `SHA3` derived hash function with variable-length output that is designed to simply hash a tuple of input strings, any or all of which may be empty strings, in an unambiguous way.
+ *
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
  */
 export function tupleHash256(d: number, S: Uint8Array = new Uint8Array()) {
   const digest = (M: Uint8Array[]) => {
@@ -415,12 +402,12 @@ export function tupleHash256(d: number, S: Uint8Array = new Uint8Array()) {
 }
 
 /**
- * `TupleHash` with Arbitrary-Length Output
- *
  * 可变长度输出的 `TupleHash`
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
+ * `TupleHash` with Arbitrary-Length Output
+ *
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
  */
 export function tupleHash128XOF(d: number, S: Uint8Array = new Uint8Array()) {
   const digest = (M: Uint8Array[]) => {
@@ -441,12 +428,12 @@ export function tupleHash128XOF(d: number, S: Uint8Array = new Uint8Array()) {
 }
 
 /**
- * `TupleHash` with Arbitrary-Length Output
- *
  * 可变长度输出的 `TupleHash`
  *
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
+ * `TupleHash` with Arbitrary-Length Output
+ *
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
  */
 export function tupleHash256XOF(d: number, S: Uint8Array = new Uint8Array()) {
   const digest = (M: Uint8Array[]) => {
@@ -474,13 +461,13 @@ export function tupleHash256XOF(d: number, S: Uint8Array = new Uint8Array()) {
 // TODO 计划引入 `multithreading` 依赖, 实现真正的并行计算
 
 /**
- * The purpose of `ParallelHash` is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
- *
  * `ParallelHash` 的目的是利用现代处理器中可用的并行性, 支持对非常长的字符串进行高效散列.
  *
- * @param {number} b - 状态大小 bit / state size bit
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
+ * The purpose of `ParallelHash` is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
+ *
+ * @param {number} b - 状态大小 / State size (bit)
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
  */
 export function parallelHash128(b: number, d: number, S: Uint8Array = new Uint8Array()) {
   const bByte = b >> 3
@@ -510,13 +497,13 @@ export function parallelHash128(b: number, d: number, S: Uint8Array = new Uint8A
 }
 
 /**
- * The purpose of `ParallelHash` is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
- *
  * `ParallelHash` 的目的是利用现代处理器中可用的并行性, 支持对非常长的字符串进行高效散列.
  *
- * @param {number} b - 状态大小 bit / state size bit
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
+ * The purpose of `ParallelHash` is to support the efficient hashing of very long strings, by taking advantage of the parallelism available in modern processors.
+ *
+ * @param {number} b - 状态大小 / State size (bit)
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
  */
 export function parallelHash256(b: number, d: number, S: Uint8Array = new Uint8Array()) {
   const bByte = b >> 3
@@ -547,13 +534,13 @@ export function parallelHash256(b: number, d: number, S: Uint8Array = new Uint8A
 }
 
 /**
- * `ParallelHash` with Arbitrary-Length Output
- *
  * 可变长度输出的 `ParallelHash`
  *
- * @param {number} b - 状态大小 bit / state size bit
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
+ * `ParallelHash` with Arbitrary-Length Output
+ *
+ * @param {number} b - 状态大小 / State size (bit)
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
  */
 export function parallelHash128XOF(b: number, d: number, S: Uint8Array = new Uint8Array()) {
   const bByte = b >> 3
@@ -584,13 +571,13 @@ export function parallelHash128XOF(b: number, d: number, S: Uint8Array = new Uin
 }
 
 /**
- * `ParallelHash` with Arbitrary-Length Output
- *
  * 可变长度输出的 `ParallelHash`
  *
- * @param {number} b - 状态大小 bit / state size bit
- * @param {number} d - 输出长度 bit / output length bit
- * @param {Uint8Array} S - 自定义参数 / customization
+ * `ParallelHash` with Arbitrary-Length Output
+ *
+ * @param {number} b - 状态大小 / State size (bit)
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} S - 自定义参数 / Customization
  */
 export function parallelHash256XOF(b: number, d: number, S: Uint8Array = new Uint8Array()) {
   const bByte = b >> 3
