@@ -4,14 +4,14 @@ import { KitError, rotateL64 } from '../core/utils'
 
 // * Constants
 
-export const PERMUTATION: KeccakConfig = {
+export const PERMUTATION: KeccakConfig = Object.freeze({
   b: 1600,
   bByte: 200,
   w: 64,
   wByte: 8,
   l: 6,
   nr: 24,
-}
+})
 
 /**
  * FIPS.202 3.2.2
@@ -222,6 +222,7 @@ export function Keccak_p_1600(nr?: number) {
    * @param {Uint8Array} S - 状态
    */
   return (S: Uint8Array) => {
+    nr = nr || PERMUTATION.nr
     if (S.byteLength !== PERMUTATION.bByte) {
       throw new KitError('Invalid state size')
     }
