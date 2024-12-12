@@ -1,3 +1,4 @@
+import { createHash } from '../core/hash'
 import { KitError } from '../core/utils'
 import type { SpongePadding } from './keccak1600'
 import { keccak_p_1600, sponge_1600 } from './keccak1600'
@@ -24,22 +25,50 @@ function turboShakePadding(rByte: number, D: number): SpongePadding {
   }
 }
 
+/**
+ * TurboSHAKE128
+ *
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {number} [D] - 域分隔符 / Domain Separator (range: 0x01 ~ 0x7F, default: 0x1F)
+ */
 export function turboSHAKE128(d: number, D = 0x1F) {
   if (D < 0x01 || D > 0x7F) {
     throw new KitError('Invalid Domain Separator')
   }
+  const d_byte = d >> 3
   const r_byte = 168
   const f = keccak_p_1600(12)
   const pad = turboShakePadding(r_byte, D)
-  return (M: Uint8Array) => sponge_1600(r_byte, d, pad, f)(M)
+  return createHash(
+    (M: Uint8Array) => sponge_1600(r_byte, d_byte, pad, f)(M),
+    {
+      ALGORITHM: `TurboSHAKE128/${d}`,
+      BLOCK_SIZE: r_byte,
+      DIGEST_SIZE: d_byte,
+    },
+  )
 }
 
+/**
+ * TurboSHAKE256
+ *
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {number} [D] - 域分隔符 / Domain Separator (range: 0x01 ~ 0x7F, default: 0x1F)
+ */
 export function turboSHAKE256(d: number, D = 0x1F) {
   if (D < 0x01 || D > 0x7F) {
     throw new KitError('Invalid Domain Separator')
   }
+  const d_byte = d >> 3
   const r_byte = 136
   const f = keccak_p_1600(12)
   const pad = turboShakePadding(r_byte, D)
-  return (M: Uint8Array) => sponge_1600(r_byte, d, pad, f)(M)
+  return createHash(
+    (M: Uint8Array) => sponge_1600(r_byte, d_byte, pad, f)(M),
+    {
+      ALGORITHM: `TurboSHAKE256/${d}`,
+      BLOCK_SIZE: r_byte,
+      DIGEST_SIZE: d_byte,
+    },
+  )
 }
