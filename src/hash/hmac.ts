@@ -1,5 +1,6 @@
 import type { Hash, KeyHash, KeyHashDescription } from '../core/hash'
-import { joinBuffer, wrap } from '../core/utils'
+import { createKeyHash } from '../core/hash'
+import { joinBuffer } from '../core/utils'
 
 function _hmac(hash: Hash, K: Uint8Array, M: Uint8Array) {
   const { BLOCK_SIZE } = hash
@@ -38,7 +39,7 @@ export function hmac(hash: Hash, d_size?: number, k_size?: number): KeyHash {
     DIGEST_SIZE: d_size,
     KEY_SIZE: k_size,
   }
-  return wrap(
+  return createKeyHash(
     (K: Uint8Array, M: Uint8Array) => _hmac(hash, K, M).slice(0, d_size),
     description,
   )

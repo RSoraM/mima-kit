@@ -100,3 +100,4 @@ export interface KeyHashDescription extends HashDescription {
  */
 export interface KeyHash extends KeyDigest, KeyHashDescription {
 }
+export const createKeyHash = (digest: KeyDigest, description: KeyHashDescription): KeyHash => wrap(digest, description)

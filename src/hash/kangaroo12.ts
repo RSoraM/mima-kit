@@ -13,17 +13,19 @@ function lengthEncode(x: number): Uint8Array {
 }
 
 /**
- * KangarooTwelve 128
+ * KangarooTwelve
  *
  * @param {number} d - 输出长度 / Digest Size (bit)
- * @param {Uint8Array} [C] - 自定义参数 / Customization
+ * @param {Uint8Array} C - 自定义参数 / Customization
+ * @param {typeof turboshake128} SHAKE - TurboSHAKE 函数 / Function
+ * @param {number} cv - 中间压缩值长度 / Compressed Value Size (bit)
  */
-export function kt128(d: number, C = new Uint8Array()) {
-  const digest = (M: Uint8Array) => {
+function kt(d: number, C: Uint8Array, SHAKE: typeof turboshake128, cv: number) {
+  return (M: Uint8Array) => {
     const length_encode = lengthEncode(C.length)
     const S = joinBuffer(M, C, length_encode)
     if (S.length <= 8192) {
-      return turboshake128(d, 0x07)(S)
+      return SHAKE(d, 0x07)(S)
     }
     else {
       // KangarooTwelve hopping
@@ -31,20 +33,28 @@ export function kt128(d: number, C = new Uint8Array()) {
       FinalNode.push(S.slice(0, 8192))
       FinalNode.push(new Uint8Array([0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]))
       let offset = 8192
-      let block_i = 0
+      let num_block = 0
       while (offset < S.length) {
-        const CV = turboshake128(256, 0x0B)(S.slice(offset, offset += 8192))
+        const CV = SHAKE(cv, 0x0B)(S.slice(offset, offset += 8192))
         FinalNode.push(CV)
-        block_i++
+        num_block++
       }
-      FinalNode.push(lengthEncode(block_i))
+      FinalNode.push(lengthEncode(num_block))
       FinalNode.push(new Uint8Array([0xFF, 0xFF]))
-      return turboshake128(d, 0x06)(joinBuffer(...FinalNode))
+      return SHAKE(d, 0x06)(joinBuffer(...FinalNode))
     }
   }
+}
 
+/**
+ * KangarooTwelve 128
+ *
+ * @param {number} d - 输出长度 / Digest Size (bit)
+ * @param {Uint8Array} [C] - 自定义参数 / Customization
+ */
+export function kt128(d: number, C = new Uint8Array()) {
   return createHash(
-    digest,
+    kt(d, C, turboshake128, 256),
     {
       ALGORITHM: `KangarooTwelve128/${d}`,
       BLOCK_SIZE: 8192,
@@ -60,32 +70,8 @@ export function kt128(d: number, C = new Uint8Array()) {
  * @param {Uint8Array} [C] - 自定义参数 / Customization
  */
 export function kt256(d: number, C = new Uint8Array()) {
-  const digest = (M: Uint8Array) => {
-    const length_encode = lengthEncode(C.length)
-    const S = joinBuffer(M, C, length_encode)
-    if (S.length <= 8192) {
-      return turboshake256(d, 0x07)(S)
-    }
-    else {
-      // KangarooTwelve hopping
-      const FinalNode: Uint8Array[] = []
-      FinalNode.push(S.slice(0, 8192))
-      FinalNode.push(new Uint8Array([0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]))
-      let offset = 8192
-      let num_block = 0
-      while (offset < S.length) {
-        const CV = turboshake256(512, 0x0B)(S.slice(offset, offset += 8192))
-        FinalNode.push(CV)
-        num_block++
-      }
-      FinalNode.push(lengthEncode(num_block))
-      FinalNode.push(new Uint8Array([0xFF, 0xFF]))
-      return turboshake256(d, 0x06)(joinBuffer(...FinalNode))
-    }
-  }
-
   return createHash(
-    digest,
+    kt(d, C, turboshake256, 512),
     {
       ALGORITHM: `KangarooTwelve256/${d}`,
       BLOCK_SIZE: 8192,
