@@ -8,21 +8,21 @@ import * as sha3 from '../src/hash/sha3'
 import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import { hmac } from '../src/hash/hmac'
-import { turboSHAKE128, turboSHAKE256 } from '../src/hash/turboSHAKE'
-import { kt128, kt256 } from '../src/hash/K12'
+import { turboshake128, turboshake256 } from '../src/hash/turboSHAKE'
+import { kt128, kt256 } from '../src/hash/kangaroo12'
 import { joinBuffer } from '../src/core/utils'
 
 const { sha3_224, sha3_256 } = sha3
 const { sha3_384, sha3_512 } = sha3
 const { shake128, shake256 } = sha3
 
-const { cShake128, cShake256 } = sha3Derived
+const { cshake128, cshake256 } = sha3Derived
 const { kmac128, kmac256 } = sha3Derived
 const { kmac128XOF, kmac256XOF } = sha3Derived
-const { tupleHash128, tupleHash256 } = sha3Derived
-const { tupleHash128XOF, tupleHash256XOF } = sha3Derived
-const { parallelHash128, parallelHash256 } = sha3Derived
-const { parallelHash128XOF, parallelHash256XOF } = sha3Derived
+const { tuplehash128, tuplehash256 } = sha3Derived
+const { tuplehash128XOF, tuplehash256XOF } = sha3Derived
+const { parallelhash128, parallelhash256 } = sha3Derived
+const { parallelhash128XOF, parallelhash256XOF } = sha3Derived
 
 // * MD5
 it('md5', () => {
@@ -97,19 +97,19 @@ describe('sha3', () => {
     expect(shake256(2048)(_).to(HEX)).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be141e96616fb13957692cc7edd0b45ae3dc07223c8e92937bef84bc0eab862853349ec75546f58fb7c2775c38462c5010d846c185c15111e595522a6bcd16cf86f3d122109e3b1fdd943b6aec468a2d621a7c06c6a957c62b54dafc3be87567d677231395f6147293b68ceab7a9e0c58d864e8efde4e1b9a46cbe854713672f5caaae314ed9083dab4b099f8e300f01b8650f1f4b1d8fcf3f3cb53fb8e9eb2ea203bdc970f50ae55428a91f7f53ac266b28419c3778a15fd248d339ede785fb7f"')
   })
   // * SHA-3 Derived
-  it('cShake', () => {
+  it('cshake', () => {
     const _ = UTF8('')
     const meow = UTF8('meow, 喵， 🐱')
     const fn = UTF8('fn')
     const fn2 = UTF8('meow')
     const custom = UTF8('password')
-    expect(cShake128(256)(_).to(HEX)).toMatchInlineSnapshot('"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26"')
-    expect(cShake128(256, fn, custom)(_).to(HEX)).toMatchInlineSnapshot('"8949abe9aa6f75cc32d7ae0668798a5491530d2dad1c85a3fea68689fc20cb0e"')
-    expect(cShake128(256, fn2, custom)(meow).to(HEX)).toMatchInlineSnapshot('"c6c729b124020e81cec50c281b2fa863ae613ee5c5f0432b4f43fedb29364c7a"')
+    expect(cshake128(256)(_).to(HEX)).toMatchInlineSnapshot('"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26"')
+    expect(cshake128(256, fn, custom)(_).to(HEX)).toMatchInlineSnapshot('"8949abe9aa6f75cc32d7ae0668798a5491530d2dad1c85a3fea68689fc20cb0e"')
+    expect(cshake128(256, fn2, custom)(meow).to(HEX)).toMatchInlineSnapshot('"c6c729b124020e81cec50c281b2fa863ae613ee5c5f0432b4f43fedb29364c7a"')
 
-    expect(cShake256(512)(_).to(HEX)).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
-    expect(cShake256(512, fn, custom)(_).to(HEX)).toMatchInlineSnapshot('"1ff1d7cc4b14a1d86eb1d763501705199ae4208ca3ebd83809f95189c9b08a1fdf6d9b182f14541888b3b0ba7023dc53a7f8025de2eed1b8dacc95edf9c13b91"')
-    expect(cShake256(512, fn2, custom)(meow).to(HEX)).toMatchInlineSnapshot('"6ba1b872ade77effc824d222654c841d8a99369b533e540007ac3383693d3ff68687892dbd2cc2ea3c8ae61578a6c3c0c7a89235db524db223ff7770293724a3"')
+    expect(cshake256(512)(_).to(HEX)).toMatchInlineSnapshot('"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be"')
+    expect(cshake256(512, fn, custom)(_).to(HEX)).toMatchInlineSnapshot('"1ff1d7cc4b14a1d86eb1d763501705199ae4208ca3ebd83809f95189c9b08a1fdf6d9b182f14541888b3b0ba7023dc53a7f8025de2eed1b8dacc95edf9c13b91"')
+    expect(cshake256(512, fn2, custom)(meow).to(HEX)).toMatchInlineSnapshot('"6ba1b872ade77effc824d222654c841d8a99369b533e540007ac3383693d3ff68687892dbd2cc2ea3c8ae61578a6c3c0c7a89235db524db223ff7770293724a3"')
   })
   it('kmac', () => {
     const empty = UTF8('')
@@ -124,21 +124,21 @@ describe('sha3', () => {
     expect(kmac256(512, custom)(key, meow).to(HEX)).toMatchInlineSnapshot(`"7ac4bd71ef93bfa57560f069ed832b785b9ddd855200974a9025240c44f39d8739c31c201f92919c075bcac16313761765c32a20b8a1dbae1cef32e015e3e7f5"`)
     expect(kmac256XOF(512, custom)(key, meow).to(HEX)).toMatchInlineSnapshot(`"16066139244a9b649547be5fa349a3f9ce568ab6dcb753b00573cca1d2f6b47e354e175520fff098c3124048f8524771518e4cae9de9f026c76b347dc79058f2"`)
   })
-  it('tupleHash', () => {
+  it('tuplehash', () => {
     const m = ['meow', '喵', '🐱'].map(v => UTF8(v))
     const custom = UTF8('custom')
-    expect(tupleHash128(256, custom)(m).to(HEX)).toMatchInlineSnapshot(`"3c981a838a10737fc32609fde65f87ad928d1321450279e6318f629ed3ef89de"`)
-    expect(tupleHash128XOF(256, custom)(m).to(HEX)).toMatchInlineSnapshot(`"506a35e6f751612bd496d6647c4f33f428f7670acd3dbe5417c2fc16dc9852c5"`)
-    expect(tupleHash256(512, custom)(m).to(HEX)).toMatchInlineSnapshot(`"9c30d7333705d6d5614a735bc2990328229b9b0d301d1645a931d3f33ba9f38cb6c1681196ae4107835823abc90bf06b1b113c85e000d808f0eef3a125a15dc0"`)
-    expect(tupleHash256XOF(512, custom)(m).to(HEX)).toMatchInlineSnapshot(`"7df7f72679ea7bc2b517c80a0d62d0635a343e1c40d96094da0cecd531e897a440faa28d4eff45cd46605cf050ea0a634e6d1cf5a63f56d3faf71e500e15dc98"`)
+    expect(tuplehash128(256, custom)(m).to(HEX)).toMatchInlineSnapshot(`"3c981a838a10737fc32609fde65f87ad928d1321450279e6318f629ed3ef89de"`)
+    expect(tuplehash128XOF(256, custom)(m).to(HEX)).toMatchInlineSnapshot(`"506a35e6f751612bd496d6647c4f33f428f7670acd3dbe5417c2fc16dc9852c5"`)
+    expect(tuplehash256(512, custom)(m).to(HEX)).toMatchInlineSnapshot(`"9c30d7333705d6d5614a735bc2990328229b9b0d301d1645a931d3f33ba9f38cb6c1681196ae4107835823abc90bf06b1b113c85e000d808f0eef3a125a15dc0"`)
+    expect(tuplehash256XOF(512, custom)(m).to(HEX)).toMatchInlineSnapshot(`"7df7f72679ea7bc2b517c80a0d62d0635a343e1c40d96094da0cecd531e897a440faa28d4eff45cd46605cf050ea0a634e6d1cf5a63f56d3faf71e500e15dc98"`)
   })
-  it('parallelHash', async () => {
+  it('parallelhash', async () => {
     const meow = UTF8('meow, 喵， 🐱')
     const custom = UTF8('custom')
-    expect(parallelHash128(1024, 256, custom)(meow).to(HEX)).toMatchInlineSnapshot(`"11deeb6a3ba603b959e1c0c04bdf7f5c4a7b026ff772f0f3ddb1beab216eff04"`)
-    expect(parallelHash128XOF(1024, 256, custom)(meow).to(HEX)).toMatchInlineSnapshot(`"98d0496b5a4875856fdfd4585a007093fa507989f12fe9c14182183ae53d108a"`)
-    expect(parallelHash256(1024, 512, custom)(meow).to(HEX)).toMatchInlineSnapshot(`"e5ccc4a5f8bb7948eef9af5f901bf95ecf1b5af82e8b78b0d14d20a5a65b9f1845f235bd82d67b88c7f260a8ff316f17ed5b46199b8c60e77625c2ac166fdc81"`)
-    expect(parallelHash256XOF(1024, 512, custom)(meow).to(HEX)).toMatchInlineSnapshot(`"bbb761d72744302b54aecbb62ad310f416b5b55e0ec75fe9eac113889e625c75d78aafd46fd54efe11b75f2ab99d780f0f70c6c9e4cb352c08b39a1f7b2a2fc2"`)
+    expect(parallelhash128(1024, 256, custom)(meow).to(HEX)).toMatchInlineSnapshot(`"11deeb6a3ba603b959e1c0c04bdf7f5c4a7b026ff772f0f3ddb1beab216eff04"`)
+    expect(parallelhash128XOF(1024, 256, custom)(meow).to(HEX)).toMatchInlineSnapshot(`"98d0496b5a4875856fdfd4585a007093fa507989f12fe9c14182183ae53d108a"`)
+    expect(parallelhash256(1024, 512, custom)(meow).to(HEX)).toMatchInlineSnapshot(`"e5ccc4a5f8bb7948eef9af5f901bf95ecf1b5af82e8b78b0d14d20a5a65b9f1845f235bd82d67b88c7f260a8ff316f17ed5b46199b8c60e77625c2ac166fdc81"`)
+    expect(parallelhash256XOF(1024, 512, custom)(meow).to(HEX)).toMatchInlineSnapshot(`"bbb761d72744302b54aecbb62ad310f416b5b55e0ec75fe9eac113889e625c75d78aafd46fd54efe11b75f2ab99d780f0f70c6c9e4cb352c08b39a1f7b2a2fc2"`)
   })
 })
 // * SM3
@@ -178,68 +178,68 @@ function ptn(n: number) {
 it('turboShake', () => {
   // Vector Source: https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
   const empty = new Uint8Array(0)
-  expect(turboSHAKE128(32 << 3, 0x1F)(empty))
+  expect(turboshake128(32 << 3, 0x1F)(empty))
     .toMatchObject(HEX('1E415F1C5983AFF2169217277D17BB538CD945A397DDEC541F1CE41AF2C1B74C'))
-  expect(turboSHAKE128(64 << 3, 0x1F)(empty))
+  expect(turboshake128(64 << 3, 0x1F)(empty))
     .toMatchObject(HEX('1E415F1C5983AFF2169217277D17BB538CD945A397DDEC541F1CE41AF2C1B74C3E8CCAE2A4DAE56C84A04C2385C03C15E8193BDF58737363321691C05462C8DF'))
-  expect(turboSHAKE128(10032 << 3, 0x1F)(empty).slice(10000))
+  expect(turboshake128(10032 << 3, 0x1F)(empty).slice(10000))
     .toMatchObject(HEX('A3B9B0385900CE761F22AED548E754DA10A5242D62E8C658E3F3A923A7555607'))
-  expect(turboSHAKE128(32 << 3, 0x1F)(ptn(17 ** 0)))
+  expect(turboshake128(32 << 3, 0x1F)(ptn(17 ** 0)))
     .toMatchObject(HEX('55CEDD6F60AF7BB29A4042AE832EF3F58DB7299F893EBB9247247D856958DAA9'))
-  expect(turboSHAKE128(32 << 3, 0x1F)(ptn(17 ** 1)))
+  expect(turboshake128(32 << 3, 0x1F)(ptn(17 ** 1)))
     .toMatchObject(HEX('9C97D036A3BAC819DB70EDE0CA554EC6E4C2A1A4FFBFD9EC269CA6A111161233'))
-  expect(turboSHAKE128(32 << 3, 0x1F)(ptn(17 ** 2)))
+  expect(turboshake128(32 << 3, 0x1F)(ptn(17 ** 2)))
     .toMatchObject(HEX('96C77C279E0126F7FC07C9B07F5CDAE1E0BE60BDBE10620040E75D7223A624D2'))
-  expect(turboSHAKE128(32 << 3, 0x1F)(ptn(17 ** 3)))
+  expect(turboshake128(32 << 3, 0x1F)(ptn(17 ** 3)))
     .toMatchObject(HEX('D4976EB56BCF118520582B709F73E1D6853E001FDAF80E1B13E0D0599D5FB372'))
-  expect(turboSHAKE128(32 << 3, 0x1F)(ptn(17 ** 4)))
+  expect(turboshake128(32 << 3, 0x1F)(ptn(17 ** 4)))
     .toMatchObject(HEX('DA67C7039E98BF530CF7A37830C6664E14CBAB7F540F58403B1B82951318EE5C'))
-  expect(turboSHAKE128(32 << 3, 0x1F)(ptn(17 ** 5)))
+  expect(turboshake128(32 << 3, 0x1F)(ptn(17 ** 5)))
     .toMatchObject(HEX('B97A906FBF83EF7C812517ABF3B2D0AEA0C4F60318CE11CF103925127F59EECD'))
-  expect(turboSHAKE128(32 << 3, 0x1F)(ptn(17 ** 6)))
+  expect(turboshake128(32 << 3, 0x1F)(ptn(17 ** 6)))
     .toMatchObject(HEX('35CD494ADEDED2F25239AF09A7B8EF0C4D1CA4FE2D1AC370FA63216FE7B4C2B1'))
-  expect(turboSHAKE128(32 << 3, 0x01)(HEX('FFFFFF')))
+  expect(turboshake128(32 << 3, 0x01)(HEX('FFFFFF')))
     .toMatchObject(HEX('BF323F940494E88EE1C540FE660BE8A0C93F43D15EC006998462FA994EED5DAB'))
-  expect(turboSHAKE128(32 << 3, 0x06)(HEX('FF')))
+  expect(turboshake128(32 << 3, 0x06)(HEX('FF')))
     .toMatchObject(HEX('8EC9C66465ED0D4A6C35D13506718D687A25CB05C74CCA1E42501ABD83874A67'))
-  expect(turboSHAKE128(32 << 3, 0x07)(HEX('FFFFFF')))
+  expect(turboshake128(32 << 3, 0x07)(HEX('FFFFFF')))
     .toMatchObject(HEX('B658576001CAD9B1E5F399A9F77723BBA05458042D68206F7252682DBA3663ED'))
-  expect(turboSHAKE128(32 << 3, 0x0B)(HEX('FFFFFFFFFFFFFF')))
+  expect(turboshake128(32 << 3, 0x0B)(HEX('FFFFFFFFFFFFFF')))
     .toMatchObject(HEX('8DEEAA1AEC47CCEE569F659C21DFA8E112DB3CEE37B18178B2ACD805B799CC37'))
-  expect(turboSHAKE128(32 << 3, 0x30)(HEX('FF')))
+  expect(turboshake128(32 << 3, 0x30)(HEX('FF')))
     .toMatchObject(HEX('553122E2135E363C3292BED2C6421FA232BAB03DAA07C7D6636603286506325B'))
-  expect(turboSHAKE128(32 << 3, 0x7F)(HEX('FFFFFF')))
+  expect(turboshake128(32 << 3, 0x7F)(HEX('FFFFFF')))
     .toMatchObject(HEX('16274CC656D44CEFD422395D0F9053BDA6D28E122ABA15C765E5AD0E6EAF26F9'))
 
-  expect(turboSHAKE256(64 << 3, 0x1F)(empty))
+  expect(turboshake256(64 << 3, 0x1F)(empty))
     .toMatchObject(HEX('367A329DAFEA871C7802EC67F905AE13C57695DC2C6663C61035F59A18F8E7DB11EDC0E12E91EA60EB6B32DF06DD7F002FBAFABB6E13EC1CC20D995547600DB0'))
-  expect(turboSHAKE256(10032 << 3, 0x1F)(empty).slice(10000))
+  expect(turboshake256(10032 << 3, 0x1F)(empty).slice(10000))
     .toMatchObject(HEX('ABEFA11630C661269249742685EC082F207265DCCF2F43534E9C61BA0C9D1D75'))
-  expect(turboSHAKE256(64 << 3, 0x1F)(ptn(17 ** 0)))
+  expect(turboshake256(64 << 3, 0x1F)(ptn(17 ** 0)))
     .toMatchObject(HEX('3E1712F928F8EAF1054632B2AA0A246ED8B0C378728F60BC970410155C28820E90CC90D8A3006AA2372C5C5EA176B0682BF22BAE7467AC94F74D43D39B0482E2'))
-  expect(turboSHAKE256(64 << 3, 0x1F)(ptn(17 ** 1)))
+  expect(turboshake256(64 << 3, 0x1F)(ptn(17 ** 1)))
     .toMatchObject(HEX('B3BAB0300E6A191FBE6137939835923578794EA54843F5011090FA2F3780A9E5CB22C59D78B40A0FBFF9E672C0FBE0970BD2C845091C6044D687054DA5D8E9C7'))
-  expect(turboSHAKE256(64 << 3, 0x1F)(ptn(17 ** 2)))
+  expect(turboshake256(64 << 3, 0x1F)(ptn(17 ** 2)))
     .toMatchObject(HEX('66B810DB8E90780424C0847372FDC95710882FDE31C6DF75BEB9D4CD9305CFCAE35E7B83E8B7E6EB4B78605880116316FE2C078A09B94AD7B8213C0A738B65C0'))
-  expect(turboSHAKE256(64 << 3, 0x1F)(ptn(17 ** 3)))
+  expect(turboshake256(64 << 3, 0x1F)(ptn(17 ** 3)))
     .toMatchObject(HEX('C74EBC919A5B3B0DD1228185BA02D29EF442D69D3D4276A93EFE0BF9A16A7DC0CD4EABADAB8CD7A5EDD96695F5D360ABE09E2C6511A3EC397DA3B76B9E1674FB'))
-  expect(turboSHAKE256(64 << 3, 0x1F)(ptn(17 ** 4)))
+  expect(turboshake256(64 << 3, 0x1F)(ptn(17 ** 4)))
     .toMatchObject(HEX('02CC3A8897E6F4F6CCB6FD46631B1F5207B66C6DE9C7B55B2D1A23134A170AFDAC234EABA9A77CFF88C1F020B73724618C5687B362C430B248CD38647F848A1D'))
-  expect(turboSHAKE256(64 << 3, 0x1F)(ptn(17 ** 5)))
+  expect(turboshake256(64 << 3, 0x1F)(ptn(17 ** 5)))
     .toMatchObject(HEX('ADD53B06543E584B5823F626996AEE50FE45ED15F20243A7165485ACB4AA76B4FFDA75CEDF6D8CDC95C332BD56F4B986B58BB17D1778BFC1B1A97545CDF4EC9F'))
-  expect(turboSHAKE256(64 << 3, 0x1F)(ptn(17 ** 6)))
+  expect(turboshake256(64 << 3, 0x1F)(ptn(17 ** 6)))
     .toMatchObject(HEX('9E11BC59C24E73993C1484EC66358EF71DB74AEFD84E123F7800BA9C4853E02CFE701D9E6BB765A304F0DC34A4EE3BA82C410F0DA70E86BFBD90EA877C2D6104'))
-  expect(turboSHAKE256(64 << 3, 0x01)(HEX('FFFFFF')))
+  expect(turboshake256(64 << 3, 0x01)(HEX('FFFFFF')))
     .toMatchObject(HEX('D21C6FBBF587FA2282F29AEA620175FB0257413AF78A0B1B2A87419CE031D933AE7A4D383327A8A17641A34F8A1D1003AD7DA6B72DBA84BB62FEF28F62F12424'))
-  expect(turboSHAKE256(64 << 3, 0x06)(HEX('FF')))
+  expect(turboshake256(64 << 3, 0x06)(HEX('FF')))
     .toMatchObject(HEX('738D7B4E37D18B7F22AD1B5313E357E3DD7D07056A26A303C433FA3533455280F4F5A7D4F700EFB437FE6D281405E07BE32A0A972E22E63ADC1B090DAEFE004B'))
-  expect(turboSHAKE256(64 << 3, 0x07)(HEX('FFFFFF')))
+  expect(turboshake256(64 << 3, 0x07)(HEX('FFFFFF')))
     .toMatchObject(HEX('18B3B5B7061C2E67C1753A00E6AD7ED7BA1C906CF93EFB7092EAF27FBEEBB755AE6E292493C110E48D260028492B8E09B5500612B8F2578985DED5357D00EC67'))
-  expect(turboSHAKE256(64 << 3, 0x0B)(HEX('FFFFFFFFFFFFFF')))
+  expect(turboshake256(64 << 3, 0x0B)(HEX('FFFFFFFFFFFFFF')))
     .toMatchObject(HEX('BB36764951EC97E9D85F7EE9A67A7718FC005CF42556BE79CE12C0BDE50E5736D6632B0D0DFB202D1BBB8FFE3DD74CB00834FA756CB03471BAB13A1E2C16B3C0'))
-  expect(turboSHAKE256(64 << 3, 0x30)(HEX('FF')))
+  expect(turboshake256(64 << 3, 0x30)(HEX('FF')))
     .toMatchObject(HEX('F3FE12873D34BCBB2E608779D6B70E7F86BEC7E90BF113CBD4FDD0C4E2F4625E148DD7EE1A52776CF77F240514D9CCFC3B5DDAB8EE255E39EE389072962C111A'))
-  expect(turboSHAKE256(64 << 3, 0x7F)(HEX('FFFFFF')))
+  expect(turboshake256(64 << 3, 0x7F)(HEX('FFFFFF')))
     .toMatchObject(HEX('ABE569C1F77EC340F02705E7D37C9AB7E155516E4A6A150021D70B6FAC0BB40C069F9A9828A0D575CD99F9BAE435AB1ACF7ED9110BA97CE0388D074BAC768776'))
 })
 // * kangarooTwelve

@@ -1,6 +1,6 @@
 import { createHash } from '../core/hash'
 import { joinBuffer } from '../core/utils'
-import { turboSHAKE128, turboSHAKE256 } from './turboSHAKE'
+import { turboshake128, turboshake256 } from './turboSHAKE'
 
 function lengthEncode(x: number): Uint8Array {
   const S: number[] = []
@@ -23,7 +23,7 @@ export function kt128(d: number, C = new Uint8Array()) {
     const length_encode = lengthEncode(C.length)
     const S = joinBuffer(M, C, length_encode)
     if (S.length <= 8192) {
-      return turboSHAKE128(d, 0x07)(S)
+      return turboshake128(d, 0x07)(S)
     }
     else {
       // KangarooTwelve hopping
@@ -33,13 +33,13 @@ export function kt128(d: number, C = new Uint8Array()) {
       let offset = 8192
       let block_i = 0
       while (offset < S.length) {
-        const CV = turboSHAKE128(256, 0x0B)(S.slice(offset, offset += 8192))
+        const CV = turboshake128(256, 0x0B)(S.slice(offset, offset += 8192))
         FinalNode.push(CV)
         block_i++
       }
       FinalNode.push(lengthEncode(block_i))
       FinalNode.push(new Uint8Array([0xFF, 0xFF]))
-      return turboSHAKE128(d, 0x06)(joinBuffer(...FinalNode))
+      return turboshake128(d, 0x06)(joinBuffer(...FinalNode))
     }
   }
 
@@ -64,7 +64,7 @@ export function kt256(d: number, C = new Uint8Array()) {
     const length_encode = lengthEncode(C.length)
     const S = joinBuffer(M, C, length_encode)
     if (S.length <= 8192) {
-      return turboSHAKE256(d, 0x07)(S)
+      return turboshake256(d, 0x07)(S)
     }
     else {
       // KangarooTwelve hopping
@@ -74,13 +74,13 @@ export function kt256(d: number, C = new Uint8Array()) {
       let offset = 8192
       let num_block = 0
       while (offset < S.length) {
-        const CV = turboSHAKE256(512, 0x0B)(S.slice(offset, offset += 8192))
+        const CV = turboshake256(512, 0x0B)(S.slice(offset, offset += 8192))
         FinalNode.push(CV)
         num_block++
       }
       FinalNode.push(lengthEncode(num_block))
       FinalNode.push(new Uint8Array([0xFF, 0xFF]))
-      return turboSHAKE256(d, 0x06)(joinBuffer(...FinalNode))
+      return turboshake256(d, 0x06)(joinBuffer(...FinalNode))
     }
   }
 

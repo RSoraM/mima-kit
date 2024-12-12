@@ -146,7 +146,7 @@ function bytepad(X: Uint8Array[], w: number): Uint8Array[] {
  *
  * @param {number} r_byte - 处理速率 / Rate
  */
-const cShakePadding: Sha3Padding = (r_byte: number) => {
+const cshakePadding: Sha3Padding = (r_byte: number) => {
   return (M: Uint8Array) => {
     const sig_byte = M.length
     const pad_byte = r_byte - (sig_byte % r_byte)
@@ -172,7 +172,7 @@ const cShakePadding: Sha3Padding = (r_byte: number) => {
  * @param {Uint8Array} [N] - 函数名 / Function name
  * @param {Uint8Array} [S] - 自定义参数 / Customization
  */
-export function cShake128(d: number, N = new Uint8Array(), S = new Uint8Array()) {
+export function cshake128(d: number, N = new Uint8Array(), S = new Uint8Array()) {
   const description = {
     ALGORITHM: `cSHAKE128/${d}`,
     BLOCK_SIZE: 168,
@@ -186,7 +186,7 @@ export function cShake128(d: number, N = new Uint8Array(), S = new Uint8Array())
   const digest = (M: Uint8Array) => {
     const P = bytepad([...encodeString(N), ...encodeString(S)], 168)
     P.push(M)
-    return Keccak_c(256, d, cShakePadding)(joinBuffer(...P))
+    return Keccak_c(256, d, cshakePadding)(joinBuffer(...P))
   }
 
   return createHash(digest, description)
@@ -201,7 +201,7 @@ export function cShake128(d: number, N = new Uint8Array(), S = new Uint8Array())
  * @param {Uint8Array} [N] - 函数名 / Function name
  * @param {Uint8Array} [S] - 自定义参数 / Customization
  */
-export function cShake256(d: number, N = new Uint8Array(), S = new Uint8Array()) {
+export function cshake256(d: number, N = new Uint8Array(), S = new Uint8Array()) {
   const description = {
     ALGORITHM: `cSHAKE256/${d}`,
     BLOCK_SIZE: 136,
@@ -215,13 +215,15 @@ export function cShake256(d: number, N = new Uint8Array(), S = new Uint8Array())
   const digest = (M: Uint8Array) => {
     const P = bytepad([...encodeString(N), ...encodeString(S)], 136)
     P.push(M)
-    return Keccak_c(512, d, cShakePadding)(joinBuffer(...P))
+    return Keccak_c(512, d, cshakePadding)(joinBuffer(...P))
   }
 
   return createHash(digest, description)
 }
 
 // * KMAC
+
+// TODO 合并 KMAC
 
 /**
  * Keccak 消息认证码 (KMAC) 算法
@@ -246,7 +248,7 @@ export function kmac128(d: number, S = new Uint8Array(0), k_size: number = 128):
     X.push(...bytepad(encodeString(K), 168))
     X.push(M)
     X.push(rightEncode(d))
-    return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(256, d, cshakePadding)(joinBuffer(...X))
   }
   return wrap(
     (K: Uint8Array, M: Uint8Array) => digest(K, M),
@@ -277,7 +279,7 @@ export function kmac256(d: number, S = new Uint8Array(0), k_size: number = 256):
     X.push(...bytepad(encodeString(K), 136))
     X.push(M)
     X.push(rightEncode(d))
-    return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(512, d, cshakePadding)(joinBuffer(...X))
   }
   return wrap(
     (K: Uint8Array, M: Uint8Array) => digest(K, M),
@@ -308,7 +310,7 @@ export function kmac128XOF(d: number, S = new Uint8Array(0), k_size: number = 12
     X.push(...bytepad(encodeString(K), 168))
     X.push(M)
     X.push(rightEncode(0))
-    return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(256, d, cshakePadding)(joinBuffer(...X))
   }
   return wrap(
     (K: Uint8Array, M: Uint8Array) => digest(K, M),
@@ -339,7 +341,7 @@ export function kmac256XOF(d: number, S = new Uint8Array(0), k_size: number = 25
     X.push(...bytepad(encodeString(K), 136))
     X.push(M)
     X.push(rightEncode(0))
-    return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(512, d, cshakePadding)(joinBuffer(...X))
   }
   return wrap(
     (K: Uint8Array, M: Uint8Array) => digest(K, M),
@@ -357,12 +359,12 @@ export function kmac256XOF(d: number, S = new Uint8Array(0), k_size: number = 25
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Uint8Array} S - 自定义参数 / Customization
  */
-export function tupleHash128(d: number, S: Uint8Array = new Uint8Array()) {
+export function tuplehash128(d: number, S: Uint8Array = new Uint8Array()) {
   const digest = (M: Uint8Array[]) => {
     const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 168)
     M.forEach(m => X.push(...encodeString(m)))
     X.push(rightEncode(d))
-    return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(256, d, cshakePadding)(joinBuffer(...X))
   }
 
   return createTupleHash(
@@ -383,12 +385,12 @@ export function tupleHash128(d: number, S: Uint8Array = new Uint8Array()) {
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Uint8Array} S - 自定义参数 / Customization
  */
-export function tupleHash256(d: number, S: Uint8Array = new Uint8Array()) {
+export function tuplehash256(d: number, S: Uint8Array = new Uint8Array()) {
   const digest = (M: Uint8Array[]) => {
     const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 136)
     M.forEach(m => X.push(...encodeString(m)))
     X.push(rightEncode(d))
-    return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(512, d, cshakePadding)(joinBuffer(...X))
   }
 
   return createTupleHash(
@@ -409,12 +411,12 @@ export function tupleHash256(d: number, S: Uint8Array = new Uint8Array()) {
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Uint8Array} S - 自定义参数 / Customization
  */
-export function tupleHash128XOF(d: number, S: Uint8Array = new Uint8Array()) {
+export function tuplehash128XOF(d: number, S: Uint8Array = new Uint8Array()) {
   const digest = (M: Uint8Array[]) => {
     const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 168)
     M.forEach(m => X.push(...encodeString(m)))
     X.push(rightEncode(0))
-    return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(256, d, cshakePadding)(joinBuffer(...X))
   }
 
   return createTupleHash(
@@ -435,12 +437,12 @@ export function tupleHash128XOF(d: number, S: Uint8Array = new Uint8Array()) {
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Uint8Array} S - 自定义参数 / Customization
  */
-export function tupleHash256XOF(d: number, S: Uint8Array = new Uint8Array()) {
+export function tuplehash256XOF(d: number, S: Uint8Array = new Uint8Array()) {
   const digest = (M: Uint8Array[]) => {
     const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], 136)
     M.forEach(m => X.push(...encodeString(m)))
     X.push(rightEncode(0))
-    return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(512, d, cshakePadding)(joinBuffer(...X))
   }
 
   return createTupleHash(
@@ -469,7 +471,7 @@ export function tupleHash256XOF(d: number, S: Uint8Array = new Uint8Array()) {
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Uint8Array} S - 自定义参数 / Customization
  */
-export function parallelHash128(b: number, d: number, S: Uint8Array = new Uint8Array()) {
+export function parallelhash128(b: number, d: number, S: Uint8Array = new Uint8Array()) {
   const bByte = b >> 3
   const digest = (M: Uint8Array) => {
     const n = Math.ceil(M.byteLength / bByte)
@@ -484,7 +486,7 @@ export function parallelHash128(b: number, d: number, S: Uint8Array = new Uint8A
     X.push(rightEncode(n))
     X.push(rightEncode(d))
 
-    return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(256, d, cshakePadding)(joinBuffer(...X))
   }
   return createHash(
     digest,
@@ -505,7 +507,7 @@ export function parallelHash128(b: number, d: number, S: Uint8Array = new Uint8A
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Uint8Array} S - 自定义参数 / Customization
  */
-export function parallelHash256(b: number, d: number, S: Uint8Array = new Uint8Array()) {
+export function parallelhash256(b: number, d: number, S: Uint8Array = new Uint8Array()) {
   const bByte = b >> 3
   const digest = (M: Uint8Array) => {
     S = S.slice()
@@ -521,7 +523,7 @@ export function parallelHash256(b: number, d: number, S: Uint8Array = new Uint8A
     X.push(rightEncode(n))
     X.push(rightEncode(d))
 
-    return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(512, d, cshakePadding)(joinBuffer(...X))
   }
   return createHash(
     digest,
@@ -542,7 +544,7 @@ export function parallelHash256(b: number, d: number, S: Uint8Array = new Uint8A
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Uint8Array} S - 自定义参数 / Customization
  */
-export function parallelHash128XOF(b: number, d: number, S: Uint8Array = new Uint8Array()) {
+export function parallelhash128XOF(b: number, d: number, S: Uint8Array = new Uint8Array()) {
   const bByte = b >> 3
   const digest = (M: Uint8Array) => {
     S = S.slice()
@@ -558,7 +560,7 @@ export function parallelHash128XOF(b: number, d: number, S: Uint8Array = new Uin
     X.push(rightEncode(n))
     X.push(rightEncode(0))
 
-    return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(256, d, cshakePadding)(joinBuffer(...X))
   }
   return createHash(
     digest,
@@ -579,7 +581,7 @@ export function parallelHash128XOF(b: number, d: number, S: Uint8Array = new Uin
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Uint8Array} S - 自定义参数 / Customization
  */
-export function parallelHash256XOF(b: number, d: number, S: Uint8Array = new Uint8Array()) {
+export function parallelhash256XOF(b: number, d: number, S: Uint8Array = new Uint8Array()) {
   const bByte = b >> 3
   const digest = (M: Uint8Array) => {
     S = S.slice()
@@ -595,7 +597,7 @@ export function parallelHash256XOF(b: number, d: number, S: Uint8Array = new Uin
     X.push(rightEncode(n))
     X.push(rightEncode(0))
 
-    return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
+    return Keccak_c(512, d, cshakePadding)(joinBuffer(...X))
   }
   return createHash(
     digest,

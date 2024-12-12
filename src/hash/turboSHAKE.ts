@@ -31,7 +31,7 @@ function turboShakePadding(rByte: number, D: number): SpongePadding {
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {number} [D] - 域分隔符 / Domain Separator (range: 0x01 ~ 0x7F, default: 0x1F)
  */
-export function turboSHAKE128(d: number, D = 0x1F) {
+export function turboshake128(d: number, D = 0x1F) {
   if (D < 0x01 || D > 0x7F) {
     throw new KitError('Invalid Domain Separator')
   }
@@ -55,7 +55,7 @@ export function turboSHAKE128(d: number, D = 0x1F) {
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {number} [D] - 域分隔符 / Domain Separator (range: 0x01 ~ 0x7F, default: 0x1F)
  */
-export function turboSHAKE256(d: number, D = 0x1F) {
+export function turboshake256(d: number, D = 0x1F) {
   if (D < 0x01 || D > 0x7F) {
     throw new KitError('Invalid Domain Separator')
   }

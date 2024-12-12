@@ -31,19 +31,25 @@ export { sha3_384, sha3_512 } from './hash/sha3'
 export { shake128, shake256 } from './hash/sha3'
 
 // * cSHAKE
-export { cShake128, cShake256 } from './hash/sha3Derived'
+export { cshake128, cshake256 } from './hash/sha3Derived'
 
 // * KMAC
 export { kmac128, kmac128XOF } from './hash/sha3Derived'
 export { kmac256, kmac256XOF } from './hash/sha3Derived'
 
 // * TupleHash
-export { tupleHash128, tupleHash128XOF } from './hash/sha3Derived'
-export { tupleHash256, tupleHash256XOF } from './hash/sha3Derived'
+export { tuplehash128, tuplehash128XOF } from './hash/sha3Derived'
+export { tuplehash256, tuplehash256XOF } from './hash/sha3Derived'
 
 // * ParallelHash
-export { parallelHash128, parallelHash128XOF } from './hash/sha3Derived'
-export { parallelHash256, parallelHash256XOF } from './hash/sha3Derived'
+export { parallelhash128, parallelhash128XOF } from './hash/sha3Derived'
+export { parallelhash256, parallelhash256XOF } from './hash/sha3Derived'
+
+// * TurboSHAKE
+export { turboshake128, turboshake256 } from './hash/turboSHAKE'
+
+// * KangarooTwelve
+export { kt128, kt256 } from './hash/kangaroo12'
 
 // * SM3
 export { sm3 } from './hash/sm3'
