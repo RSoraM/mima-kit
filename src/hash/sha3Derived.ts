@@ -249,7 +249,7 @@ export function kmac128(d: number, S = new Uint8Array(0), k_size: number = 128):
     return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
   }
   return wrap(
-    (K: Uint8Array) => createHash((M: Uint8Array) => digest(K, M), description),
+    (K: Uint8Array, M: Uint8Array) => digest(K, M),
     description,
   )
 }
@@ -280,7 +280,7 @@ export function kmac256(d: number, S = new Uint8Array(0), k_size: number = 256):
     return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
   }
   return wrap(
-    (K: Uint8Array) => createHash((M: Uint8Array) => digest(K, M), description),
+    (K: Uint8Array, M: Uint8Array) => digest(K, M),
     description,
   )
 }
@@ -311,7 +311,7 @@ export function kmac128XOF(d: number, S = new Uint8Array(0), k_size: number = 12
     return Keccak_c(256, d, cShakePadding)(joinBuffer(...X))
   }
   return wrap(
-    (K: Uint8Array) => createHash((M: Uint8Array) => digest(K, M), description),
+    (K: Uint8Array, M: Uint8Array) => digest(K, M),
     description,
   )
 }
@@ -342,7 +342,7 @@ export function kmac256XOF(d: number, S = new Uint8Array(0), k_size: number = 25
     return Keccak_c(512, d, cShakePadding)(joinBuffer(...X))
   }
   return wrap(
-    (K: Uint8Array) => createHash((M: Uint8Array) => digest(K, M), description),
+    (K: Uint8Array, M: Uint8Array) => digest(K, M),
     description,
   )
 }

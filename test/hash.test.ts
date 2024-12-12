@@ -112,17 +112,17 @@ describe('sha3', () => {
     expect(cShake256(512, fn2, custom)(meow).to(HEX)).toMatchInlineSnapshot('"6ba1b872ade77effc824d222654c841d8a99369b533e540007ac3383693d3ff68687892dbd2cc2ea3c8ae61578a6c3c0c7a89235db524db223ff7770293724a3"')
   })
   it('kmac', () => {
-    const _ = UTF8('')
+    const empty = UTF8('')
     const meow = UTF8('meow, 喵， 🐱')
     const custom = UTF8('custom')
     const key = UTF8('password')
-    expect(kmac128(256, _)(_)(_).to(HEX)).toMatchInlineSnapshot('"5c135c615152fb4d9784dd1155f9b6034e013fd77165c327dfa4d36701983ef7"')
-    expect(kmac128(256, custom)(key)(meow).to(HEX)).toMatchInlineSnapshot(`"ef74e577ff0eef49974b6c2a707067ac6d3fba7afeccc2ff3ea40935d0471635"`)
-    expect(kmac128XOF(256, custom)(key)(meow).to(HEX)).toMatchInlineSnapshot(`"8e8b4b4eacf9feee5bec9559a6091f48ee3c26de38adb4191e9eadf8f428f0fd"`)
+    expect(kmac128(256, empty)(empty, empty).to(HEX)).toMatchInlineSnapshot('"5c135c615152fb4d9784dd1155f9b6034e013fd77165c327dfa4d36701983ef7"')
+    expect(kmac128(256, custom)(key, meow).to(HEX)).toMatchInlineSnapshot(`"ef74e577ff0eef49974b6c2a707067ac6d3fba7afeccc2ff3ea40935d0471635"`)
+    expect(kmac128XOF(256, custom)(key, meow).to(HEX)).toMatchInlineSnapshot(`"8e8b4b4eacf9feee5bec9559a6091f48ee3c26de38adb4191e9eadf8f428f0fd"`)
 
-    expect(kmac256(512, _)(_)(_).to(HEX)).toMatchInlineSnapshot('"2b70c18a81bb6446868dbc411e0dc1331c4399101d6b8b14ea16e951eee001033207bfe3bede15b946bfc209c62fc5d95e3e7b530b507319f24947d6ad7c18fe"')
-    expect(kmac256(512, custom)(key)(meow).to(HEX)).toMatchInlineSnapshot(`"7ac4bd71ef93bfa57560f069ed832b785b9ddd855200974a9025240c44f39d8739c31c201f92919c075bcac16313761765c32a20b8a1dbae1cef32e015e3e7f5"`)
-    expect(kmac256XOF(512, custom)(key)(meow).to(HEX)).toMatchInlineSnapshot(`"16066139244a9b649547be5fa349a3f9ce568ab6dcb753b00573cca1d2f6b47e354e175520fff098c3124048f8524771518e4cae9de9f026c76b347dc79058f2"`)
+    expect(kmac256(512, empty)(empty, empty).to(HEX)).toMatchInlineSnapshot('"2b70c18a81bb6446868dbc411e0dc1331c4399101d6b8b14ea16e951eee001033207bfe3bede15b946bfc209c62fc5d95e3e7b530b507319f24947d6ad7c18fe"')
+    expect(kmac256(512, custom)(key, meow).to(HEX)).toMatchInlineSnapshot(`"7ac4bd71ef93bfa57560f069ed832b785b9ddd855200974a9025240c44f39d8739c31c201f92919c075bcac16313761765c32a20b8a1dbae1cef32e015e3e7f5"`)
+    expect(kmac256XOF(512, custom)(key, meow).to(HEX)).toMatchInlineSnapshot(`"16066139244a9b649547be5fa349a3f9ce568ab6dcb753b00573cca1d2f6b47e354e175520fff098c3124048f8524771518e4cae9de9f026c76b347dc79058f2"`)
   })
   it('tupleHash', () => {
     const m = ['meow', '喵', '🐱'].map(v => UTF8(v))
@@ -154,16 +154,16 @@ it('hmac', () => {
   const lorem = UTF8('xqxokmcswidaxxhpihnxorkqijxcuimukvkfpajpmxpgvvsoalctwhduvnatkhswijvngzpfwyxyycaxxiggtxhfucubguovxpwenosdnanqhefmqypqcehjmqxhnonipdlkfqufitmznkaautleeeestcwhvtdwmnfqsvjbxvsocmvshdqufdaxmvrjafpqcxwiczgoyhzgmxttlvydtnltebuqrwwoftgwokpuvnyccmeewauzvnixzpdksdlrqvdxthtyarobmwbyymqdnqaekczrhdupfcbtvzvdathjgrcytefgplbjfenjnzwohktafimwixswiggnidoatbeejlweuznphnxyhbbbwnubzuvwgjcdhhxszhnjulsavzfkkcbmjfgwiedqqzlhtjfcjeulcbjsaagglvmplprxqwhpxnyqfgtcqxghvbcahhguenbbzaaodqhlexgwpohwzmvcovmsksmvgkmbtfkomztnaabjzngbwujqbpuopytsotzyooikasrwftsjzkavfzhikvicsghrrmxeskcjrnhvlwaikwdjpdytnbfebliygpjzhsgcidtoyihtwlbwgrpngigonpjzbvuyyseibdgwgfefobvnduwympccyfevseqtbhwmbknldvzlkskbrxuxjdocpazjizixmthntuclfigpraiekufbpfgsfpytegmwdqvtxgxygcytxwjvjildrrqhfpittjnlydthgoysgfkpbypnbtagmpdyzmodogrxoxqiicjhzlmfqavbhtopxnmhdzzcukcqywzcyajckxqljnqzpsqkfenboayiqbfbqbjtiyxbxwzbirpbeikuyyhwbbrirzfbrbvkjpsftokpiezyiroxycqdjkrgssakuwrvuqqppecvwnufvapbgmblxleesdncjlhlqjiszvcxevtcnhgjdeoimdrziqjbmdqjiaoryodxepmweypxwwjczzkdnzmwbpmmpicihclwgxaxvrwfvsyawelwhwjzqeilmgykdyxzbtbnwlzyhyzsyolbwjujxlbilcjtgqqzrirznypkzwavchlwjzbjfmijoxacbdowbjbmifwctonqmxqvgsgmqnqraoqxezdkcqnmnpojxuktqopsuocsiqfjvtolsnflouvicscngescvvtoskngblqjwbxcczqgxfhjhajqhifylpuksaafoialypdgnywpevcmmepvopdircucjaylvecunojfyngozadyysfetqfutropvlewfkmpnefyttwogjevmriqbaxpddnajhhoxjvbbcnidkqlrtpgngqzxwcxfwjpldxwyoeuocafvhiooyhsdvpdahrivovnmzwgkbgorgcmatpkepzczorvfhmcnqazvykpxxwxjuxydtilfsrkxubzjcweqfywabddkuiqupungujxvjxlyifvfudnbnwahjpnyfnnjsmcebnoqxpqvxysygyrynxjuktjeojgklxbmxlulqrlfmiyjzvhkxikzesoxalpgxjwyhlxflyhzufoiskghnzrzcunmhhcdpmudbfipxdjaivyhamnxrseyoskjnnhpzpjkrqltrbcbnaodiiigfyxugifgujnqxhgumegxeyaonanmzcnjkidmnacxjzncfgpcagfbwcukjvusgtclkeouoqwpngtixbpixrdtlkxjysslzmorfbnnbmnehokdtqiwxmppmimfowmigausofrjflkotlhdszumlrtjrxkxlndzanfoalhvibkitklnrshlhpjzofjztsxmdfexhunxlkdpuhttxrppnflqsvwepneyvskubezsvnzwgsshclwgizsckghlxeyffkczxyrqdjtdrqasxybrdntputkarkxrqsdvueefrdctnltnnlmdedkqimqdvflnfqrlydsxzmriaydhirlyccpbtwhfxcraofzyrydpedrrirgfnbadexjbwuiufsozncrlgqqtuiwtaxscljvbfbpbpefzvecuoqc')
   const password = UTF8('password')
 
-  const hmac_sha256 = hmac(sha256)(password)
-  expect(hmac_sha256(meow).to(HEX)).toMatchInlineSnapshot('"d1460c736797bff7d4ff11940451421e7f693a7d1d7b10e2a2c163f11a9ca53c"')
-  expect(hmac_sha256(lorem).to(HEX)).toMatchInlineSnapshot('"6298a318f4926c6dab11ce985146d60fec36b6c10f863bbff67d0c301e0fb140"')
+  const hmac_sha256 = hmac(sha256)
+  expect(hmac_sha256(password, meow).to(HEX)).toMatchInlineSnapshot('"d1460c736797bff7d4ff11940451421e7f693a7d1d7b10e2a2c163f11a9ca53c"')
+  expect(hmac_sha256(password, lorem).to(HEX)).toMatchInlineSnapshot('"6298a318f4926c6dab11ce985146d60fec36b6c10f863bbff67d0c301e0fb140"')
 
-  const hmac_sm3 = hmac(sm3)(password)
-  expect(hmac_sm3(meow).to(HEX)).toMatchInlineSnapshot('"c8e111cdad100b08d04315081893bd5ac0b75180c492abe2fadcfbe027924904"')
-  expect(hmac_sm3(lorem).to(HEX)).toMatchInlineSnapshot('"396a39e89a34ed585d29c30ea316dac259cbcf6424512424e04f1cb96975f671"')
+  const hmac_sm3 = hmac(sm3)
+  expect(hmac_sm3(password, meow).to(HEX)).toMatchInlineSnapshot('"c8e111cdad100b08d04315081893bd5ac0b75180c492abe2fadcfbe027924904"')
+  expect(hmac_sm3(password, lorem).to(HEX)).toMatchInlineSnapshot('"396a39e89a34ed585d29c30ea316dac259cbcf6424512424e04f1cb96975f671"')
 
-  const hmac_sha3 = hmac(sha3_256)(password)
-  expect(hmac_sha3(meow).to(HEX)).toMatchInlineSnapshot('"969bdb3d05db27ee7df5ba69b6e2e2bf5d7abb3b13e8c181d6418d6f0403f3f0"')
+  const hmac_sha3 = hmac(sha3_256)
+  expect(hmac_sha3(password, meow).to(HEX)).toMatchInlineSnapshot('"969bdb3d05db27ee7df5ba69b6e2e2bf5d7abb3b13e8c181d6418d6f0403f3f0"')
 })
 // * TurboSHAKE
 function ptn(n: number) {

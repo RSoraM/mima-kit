@@ -451,10 +451,9 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
       const KE = K.slice(0, cipher.KEY_SIZE)
       const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + mac.KEY_SIZE)
       const _cipher = cipher(KE, iv)
-      const _mac = mac(KM)
       const R: ECPublicKey = { Q: s_key.Q }
       const C = _cipher.encrypt(M)
-      const D = _mac(joinBuffer(C, S2))
+      const D = mac(KM, joinBuffer(C, S2))
       return { R, C, D }
     }
     const decrypt = (s_key: ECPrivateKey, CT: ECIESCiphertext) => {
@@ -469,9 +468,8 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
       const KE = K.slice(0, cipher.KEY_SIZE)
       const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + mac.KEY_SIZE)
       const _cipher = cipher(KE, iv)
-      const _mac = mac(KM)
       // 校验
-      if (_mac(joinBuffer(C, S2)).some((v, i) => v !== D[i])) {
+      if (mac(KM, joinBuffer(C, S2)).some((v, i) => v !== D[i])) {
         throw new KitError('ECIES Decryption failed')
       }
       const M = _cipher.decrypt(C)

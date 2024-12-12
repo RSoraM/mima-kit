@@ -340,11 +340,11 @@ Specification: [RFC 2104](https://www.rfc-editor.org/rfc/rfc2104.txt)
 const key = UTF8('password')
 const m = UTF8('mima-kit')
 // HMAC-SM3
-hmac(sm3)(key)(m).to(HEX)
+hmac(sm3)(key, m).to(HEX)
 // HMAC-SHA1-80 with 80-bit digest and 160-bit key
-hmac(sha1, 80)(key)(m).to(HEX)
+hmac(sha1, 80)(key, m).to(HEX)
 // HMAC-SHA1-160 with 160-bit digest and 80-bit key
-hmac(sha1, 160, 80)(key)(m).to(HEX)
+hmac(sha1, 160, 80)(key, m).to(HEX)
 ```
 
 ### KMAC
@@ -357,10 +357,10 @@ const s = UTF8('custom')
 const key = UTF8('password')
 const m = UTF8('mima-kit')
 
-kmac128(256, s)(key)(m).to(HEX)
-kmac256(512, s)(key)(m).to(HEX)
-kmac128XOF(256, s)(key)(m).to(HEX)
-kmac256XOF(512, s)(key)(m).to(HEX)
+kmac128(256, s)(key, m).to(HEX)
+kmac256(512, s)(key, m).to(HEX)
+kmac128XOF(256, s)(key, m).to(HEX)
+kmac256XOF(512, s)(key, m).to(HEX)
 ```
 
 ## 包装您的加密散列算法

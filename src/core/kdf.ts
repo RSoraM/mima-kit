@@ -42,14 +42,14 @@ export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE))
   const d_bit = k_hash.DIGEST_SIZE << 3
   return (k_bit: number, ikm: Uint8Array, info = new Uint8Array(0)) => {
     /** Pseudo-Random Key */
-    const prk = k_hash(salt)(ikm)
+    const prk = k_hash(salt, ikm)
     /** Output Keying Material */
     const okm: Uint8Array[] = []
 
     const counter = new Uint8Array([1])
     let prv = new Uint8Array(0)
     for (let okm_bit = 0; okm_bit < k_bit; okm_bit += d_bit) {
-      prv = k_hash(prk)(joinBuffer(prv, info, counter))
+      prv = k_hash(prk, joinBuffer(prv, info, counter))
       okm.push(prv)
       counter[0]++
     }
@@ -80,7 +80,7 @@ export function pbkdf2(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE
       T = new Uint8Array(k_hash.DIGEST_SIZE)
       U = joinBuffer(salt, counter)
       for (let i = 0; i < iterations; i++) {
-        U = k_hash(ikm)(U)
+        U = k_hash(ikm, U)
         T.forEach((_, j) => T[j] ^= U[j])
       }
       okm.push(T)
