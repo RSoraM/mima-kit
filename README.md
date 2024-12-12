@@ -268,8 +268,8 @@ const n = UTF8('name')
 const s = UTF8('custom')
 const m = UTF8('mima-kit')
 
-cShake128(256, n, s)(m).to(HEX)
-cShake256(512, n, s)(m).to(HEX)
+cshake128(256, n, s)(m).to(HEX)
+cshake256(512, n, s)(m).to(HEX)
 ```
 
 ### TupleHash
@@ -280,10 +280,10 @@ Specification: [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublic
 // optional customization string
 const s = UTF8('custom')
 const m = ['mima', '-', 'kit'].map(v => UTF8(v))
-tupleHash128(256, s)(m).to(HEX)
-tupleHash256(512, s)(m).to(HEX)
-tupleHash128XOF(256, s)(m).to(HEX)
-tupleHash256XOF(512, s)(m).to(HEX)
+tuplehash128(256, s)(m).to(HEX)
+tuplehash256(512, s)(m).to(HEX)
+tuplehash128XOF(256, s)(m).to(HEX)
+tuplehash256XOF(512, s)(m).to(HEX)
 ```
 
 ### ParallelHash
@@ -297,10 +297,10 @@ Specification: [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublic
 const s = UTF8('custom')
 const m = UTF8('mima-kit')
 const blockSize = 1024
-parallelHash128(blockSize, 256, s)(m).to(HEX)
-parallelHash256(blockSize, 512, s)(m).to(HEX)
-parallelHash128XOF(blockSize, 256, s)(m).to(HEX)
-parallelHash256XOF(blockSize, 512, s)(m).to(HEX)
+parallelhash128(blockSize, 256, s)(m).to(HEX)
+parallelhash256(blockSize, 512, s)(m).to(HEX)
+parallelhash128XOF(blockSize, 256, s)(m).to(HEX)
+parallelhash256XOF(blockSize, 512, s)(m).to(HEX)
 ```
 
 ### TurboSHAKE
@@ -312,8 +312,8 @@ Specification: [TurboSHAKE](https://keccak.team/files/TurboSHAKE.pdf)
 // range: 0x01 ~ 0x7F, default: 0x1F
 const D = 0x0B
 const m = UTF8('mima-kit')
-turboSHAKE128(256, D)(m).to(HEX)
-turboSHAKE256(512, D)(m).to(HEX)
+turboshake128(256, D)(m).to(HEX)
+turboshake256(512, D)(m).to(HEX)
 ```
 
 ### KangarooTwelve
