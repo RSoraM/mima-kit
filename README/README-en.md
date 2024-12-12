@@ -309,13 +309,26 @@ parallelHash256XOF(blockSize, 512, s)(m).to(HEX)
 
 Specification: [TurboSHAKE](https://keccak.team/files/TurboSHAKE.pdf)
 
-TurboSHAKE will be available in version 0.0.7.
+```typescript
+// optional Domain Separator
+// range: 0x01 ~ 0x7F, default: 0x1F
+const D = 0x0B
+const m = UTF8('mima-kit')
+turboSHAKE128(256, D)(m).to(HEX)
+turboSHAKE256(512, D)(m).to(HEX)
+```
 
-### K12
+### KangarooTwelve
 
 Specification: [KangarooTwelve](https://keccak.team/files/KangarooTwelve.pdf)
 
-KangarooTwelve will be available in version 0.0.7.
+```typescript
+// optional customization string
+const s = UTF8('custom')
+const m = UTF8('mima-kit')
+kt128(256, s)(m).to(HEX)
+kt256(512, s)(m).to(HEX)
+```
 
 ## Keyed Hash Algorithm
 
