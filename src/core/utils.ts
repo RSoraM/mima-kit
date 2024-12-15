@@ -345,7 +345,7 @@ export class U8 extends Uint8Array {
    * 将 字符串 转换为 U8 (默认编码: UTF-8)
    *
    */
-  static fromString(input: string, codec = UTF8) {
+  static fromString(input: string, codec = UTF8): U8 {
     return codec(input)
   }
 
@@ -354,7 +354,7 @@ export class U8 extends Uint8Array {
    *
    * 将 BigInt 转换为 U8
    */
-  static fromBI(bigint: bigint, length?: number) {
+  static fromBI(bigint: bigint, length?: number): U8 {
     length = length || (getBIBits(bigint) + 7) >> 3
     const buffer = new U8(length)
     for (let i = buffer.length - 1; i >= 0; i--) {
@@ -364,18 +364,19 @@ export class U8 extends Uint8Array {
     return buffer
   }
 
+  static from(arrayLike: Iterable<number>): U8
+  static from<T>(arrayLike: Iterable<T>, mapfn: (v: T, k: number) => number, thisArg?: any): U8
   static from(arrayLike: ArrayLike<number>): U8
-  static from(arrayLike: Iterable<number>, mapfn?: (v: number, k: number) => number, thisArg?: any): U8
   static from<T>(arrayLike: ArrayLike<T>, mapfn: (v: T, k: number) => number, thisArg?: any): U8
   static from(arrayLike: any, mapfn?: any, thisArg?: any): U8 {
     return new U8(super.from(arrayLike, mapfn, thisArg))
   }
 
-  filter(predicate: (value: number, index: number, array: Uint8Array) => any, thisArg?: any): U8 {
+  filter(predicate: (value: number, index: number, array: this) => any, thisArg?: any): U8 {
     return new U8(super.filter(predicate, thisArg))
   }
 
-  map(callbackfn: (value: number, index: number, array: Uint8Array) => number, thisArg?: any): U8 {
+  map(callbackfn: (value: number, index: number, array: this) => number, thisArg?: any): U8 {
     return new U8(super.map(callbackfn, thisArg))
   }
 
@@ -383,16 +384,16 @@ export class U8 extends Uint8Array {
     return new U8(super.of(...items))
   }
 
-  toReversed(): U8 {
-    return new U8(super.reverse())
+  toReversed(): this {
+    return super.reverse()
   }
 
-  toSorted(compareFn?: ((a: number, b: number) => number) | undefined): U8 {
-    return new U8(super.sort(compareFn))
+  toSorted(compareFn?: ((a: number, b: number) => number) | undefined): this {
+    return super.sort(compareFn)
   }
 
-  reverse(): U8 {
-    return new U8(super.reverse())
+  reverse(): this {
+    return super.reverse()
   }
 
   slice(start?: number, end?: number): U8 {
@@ -413,7 +414,7 @@ export class U8 extends Uint8Array {
  *
  * 合并多个 ArrayBuffer
  */
-export function joinBuffer(...buffers: ArrayBuffer[]) {
+export function joinBuffer(...buffers: Uint8Array[]) {
   const byteTotal = buffers.reduce((acc, cur) => acc + cur.byteLength, 0)
   const result = new U8(byteTotal)
   let offset = 0
@@ -432,7 +433,7 @@ export function joinBuffer(...buffers: ArrayBuffer[]) {
  * @param {ArrayBuffer} buffer
  * @param {number} size - byte
  */
-export function resizeBuffer(buffer: ArrayBuffer, size: number) {
+export function resizeBuffer(buffer: Uint8Array, size: number) {
   const B = new U8(size)
   B.set(new U8(buffer))
   return B
