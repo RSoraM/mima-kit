@@ -117,16 +117,16 @@ function _des(K: Uint8Array) {
   const inv_key_set = reverseKeys(key_set)
   return {
     encrypt: (M: Uint8Array) => {
-      const buffer = new ArrayBuffer(8)
-      const view = new DataView(buffer)
+      const C = new U8(8)
+      const view = new DataView(C.buffer)
       view.setBigUint64(0, Cipher(M, key_set), false)
-      return new U8(buffer)
+      return C
     },
     decrypt: (C: Uint8Array) => {
-      const buffer = new ArrayBuffer(8)
-      const view = new DataView(buffer)
+      const M = new U8(8)
+      const view = new DataView(M.buffer)
       view.setBigUint64(0, Cipher(C, inv_key_set), false)
-      return new U8(buffer)
+      return M
     },
   }
 }
@@ -152,10 +152,9 @@ function _t_des(K: Uint8Array, l: number) {
 }
 
 /**
- * @description
- * Data Encryption Standard (DES) block cipher algorithm.
+ * Data Encryption Standard (DES) block cipher algorithm
  *
- * 数据加密标准（DES）分组密码算法.
+ * 数据加密标准（DES）分组密码算法
  */
 export const des = createCipher(
   _des,
@@ -169,12 +168,11 @@ export const des = createCipher(
 )
 
 /**
- * @description
- * Triple Data Encryption Standard (3DES) block cipher algorithm.
+ * Triple Data Encryption Standard (3DES) block cipher algorithm
  *
- * 三重数据加密标准（3DES）分组密码算法.
+ * 三重数据加密标准（3DES）分组密码算法
  *
- * @param {128 | 192} l - Key length (bits)
+ * @param {128 | 192} l - 密钥长度 / Key Size (bit)
  */
 export function t_des(l: 128 | 192) {
   return createCipher(

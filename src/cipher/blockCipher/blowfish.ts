@@ -5,7 +5,7 @@ import { KitError, U8 } from '../../core/utils'
 
 function _blowfish(K: Uint8Array) {
   if (K.byteLength < 4 || K.byteLength > 56) {
-    throw new KitError(`Blowfish requires a key of length 4 to 56 bytes`)
+    throw new KitError(`Blowfish key must be between 4 and 56 byte`)
   }
   const P = new Uint32Array([0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344, 0xA4093822, 0x299F31D0, 0x082EFA98, 0xEC4E6C89, 0x452821E6, 0x38D01377, 0xBE5466CF, 0x34E90C6C, 0xC0AC29B7, 0xC97C50DD, 0x3F84D5B5, 0xB5470917, 0x9216D5D9, 0x8979FB1B])
   const S = [
@@ -73,7 +73,7 @@ function _blowfish(K: Uint8Array) {
   return {
     encrypt: (M: Uint8Array) => {
       if (M.byteLength !== 8) {
-        throw new KitError(`Blowfish requires a block of 8 bytes`)
+        throw new KitError(`Blowfish block must be 8 byte`)
       }
       const C = M.slice(0)
       const CView = new DataView(C.buffer)
@@ -86,7 +86,7 @@ function _blowfish(K: Uint8Array) {
     },
     decrypt: (C: Uint8Array) => {
       if (C.byteLength !== 8) {
-        throw new KitError(`Blowfish requires a block of 8 bytes`)
+        throw new KitError(`Blowfish block must be 8 byte`)
       }
       const M = C.slice(0)
       const MView = new DataView(M.buffer)
@@ -101,10 +101,7 @@ function _blowfish(K: Uint8Array) {
 }
 
 /**
- * @description
- * Blowfish block cipher algorithm.
- *
- * Blowfish 分组密码算法.
+ * Blowfish 分组密码算法 / block cipher algorithm
  */
 export const blowfish = createCipher(
   _blowfish,

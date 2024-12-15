@@ -359,18 +359,18 @@ function _arc5(K: Uint8Array, WORD_SIZE: 8 | 16 | 32 | 64 | 128, round: number) 
       _decrypt = (C: Uint8Array) => decrypt128(C, S, round)
       break
     default:
-      throw new KitError('ARC5 requires a word size of 8, 16, 32, 64 or 128')
+      throw new KitError('ARC5 word size must be 8, 16, 32, 64 or 128 bit')
   }
   return {
     encrypt: (M: Uint8Array) => {
       if (M.byteLength !== WORD_SIZE >> 2) {
-        throw new KitError(`ARC5 requires a block of length ${WORD_SIZE >> 2} bytes`)
+        throw new KitError(`ARC5-${WORD_SIZE}/${round} block must be ${WORD_SIZE >> 2} byte`)
       }
       return new U8(_encrypt(M))
     },
     decrypt: (C: Uint8Array) => {
       if (C.byteLength !== WORD_SIZE >> 2) {
-        throw new KitError(`ARC5 requires a block of length ${WORD_SIZE >> 2} bytes`)
+        throw new KitError(`ARC5-${WORD_SIZE}/${round} block must be ${WORD_SIZE >> 2} byte`)
       }
       return new U8(_decrypt(C))
     },
@@ -378,10 +378,7 @@ function _arc5(K: Uint8Array, WORD_SIZE: 8 | 16 | 32 | 64 | 128, round: number) 
 }
 
 /**
- * @description
- * ARC5 Algorithm recommended using a key length of at least 16 bytes
- *
- * ARC5 算法推荐使用长度至少为 16 字节的密钥
+ * ARC5 分组加密算法 / block cipher algorithm
  *
  * ```ts
  * const spec8 = arc5(8, 8) // ARC5-8/8
@@ -391,12 +388,12 @@ function _arc5(K: Uint8Array, WORD_SIZE: 8 | 16 | 32 | 64 | 128, round: number) 
  * const spec128 = arc5(128, 24) // ARC5-128/24
  * ```
  *
- * @param {16 | 32 | 64} WORD_SIZE - default 32 bit
- * @param {number} round - default 16
+ * @param {16 | 32 | 64} WORD_SIZE - 工作字长 / Word size (default: 32 bit)
+ * @param {number} round - 轮数 / Rounds (default: 16)
  */
 export function arc5(WORD_SIZE: 8 | 16 | 32 | 64 | 128 = 32, round: number = 16) {
   if (round <= 0 || round > 255) {
-    throw new KitError('ARC5 requires a positive number of rounds less than 256')
+    throw new KitError('ARC5 round must be between 1 and 255')
   }
   return createCipher(
     (K: Uint8Array) => _arc5(K, WORD_SIZE, round),

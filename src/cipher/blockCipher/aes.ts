@@ -65,7 +65,7 @@ function KeyExpansion(K: Uint8Array, Nr: 10 | 12 | 14) {
 
 function Cipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   if (M.byteLength !== 16) {
-    throw new KitError(`Message length must be 16 bytes`)
+    throw new KitError(`AES block must be 16 byte`)
   }
   const S = new U8(M.slice(0))
 
@@ -134,7 +134,7 @@ function Cipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
 
 function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
   if (M.byteLength !== 16) {
-    throw new KitError(`Message length must be 16 bytes`)
+    throw new KitError(`AES block must be 16 byte`)
   }
   const S = new U8(M.slice(0))
 
@@ -203,7 +203,7 @@ function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
 
 function _aes(K: Uint8Array, b: 128 | 192 | 256) {
   if (K.byteLength !== b >> 3) {
-    throw new KitError(`Key length must be ${b >> 3} bytes`)
+    throw new KitError(`AES key must be ${b >> 3} byte`)
   }
   const Nr = b === 128 ? 10 : (b === 192 ? 12 : 14)
   const W = KeyExpansion(K, Nr)
@@ -215,12 +215,11 @@ function _aes(K: Uint8Array, b: 128 | 192 | 256) {
 }
 
 /**
- * @description
- * Advanced Encryption Standard (AES) block cipher algorithm.
+ * 高级加密标准 (AES) 分组密码算法
  *
- * 高级加密标准 (AES) 分组密码算法.
+ * Advanced Encryption Standard (AES) block cipher algorithm
  *
- * @param {128 | 192 | 256} b - Key length (bits).
+ * @param {128 | 192 | 256} b - 密钥长度 / Key size (bit)
  */
 export function aes(b: 128 | 192 | 256) {
   return createCipher(

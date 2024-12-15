@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, U8 } from '../../core/utils'
+import { KitError, U8, rotateL128, rotateR128 } from '../../core/utils'
 
 // * Constants
 
@@ -14,40 +14,21 @@ const C3 = new Uint8Array([0xDB, 0x92, 0x37, 0x1D, 0x21, 0x26, 0xE9, 0x70, 0x03,
 
 // * Functions
 
-function xor(x: Uint8Array, y: Uint8Array) {
-  x.forEach((_, i) => x[i] ^= y[i])
-  return x
+function XOR(x: Uint8Array, y: Uint8Array) {
+  return x.map((_, i) => x[i] ^ y[i])
 }
-function rotateL128(x: Uint8Array, n: number | bigint) {
-  n = typeof n === 'number' ? BigInt(n) : n
-  let t = 0n
-  for (let i = 0; i < 16; i++) t = (t << 8n) | BigInt(x[i])
-  t = (t << n) | (t >> (128n - n))
-  const R = new Uint8Array(16)
-  const RView = new DataView(R.buffer)
-  RView.setBigUint64(0, t >> 64n, false)
-  RView.setBigUint64(8, t, false)
-  return R
+function RL128(x: Uint8Array, n: number) {
+  return U8.fromBI(rotateL128(U8.from(x).toBI(), BigInt(n)))
 }
-function rotateR128(x: Uint8Array, n: number | bigint) {
-  n = typeof n === 'number' ? BigInt(n) : n
-  let t = 0n
-  for (let i = 0; i < 16; i++) t = (t << 8n) | BigInt(x[i])
-  t = (t >> n) | (t << (128n - n))
-  const R = new Uint8Array(16)
-  const RView = new DataView(R.buffer)
-  RView.setBigUint64(0, t >> 64n, false)
-  RView.setBigUint64(8, t, false)
-  return R
+function RR128(x: Uint8Array, n: number) {
+  return U8.fromBI(rotateR128(U8.from(x).toBI(), BigInt(n)))
 }
 
 function FO(D: Uint8Array, RK: Uint8Array) {
-  D = D.map((_, i) => _ ^ RK[i])
-  return A(SL1(D))
+  return A(SL1(XOR(D, RK)))
 }
 function FE(D: Uint8Array, RK: Uint8Array) {
-  D = D.map((_, i) => _ ^ RK[i])
-  return A(SL2(D))
+  return A(SL2(XOR(D, RK)))
 }
 function SL1(x: Uint8Array) {
   const y = new Uint8Array(16)
@@ -198,29 +179,29 @@ function computeEK(W: Uint8Array[], round: 12 | 14 | 16) {
   // ek15 = W2 ^ (W3 <<< 31)
   // ek16 = W3 ^ (W0 <<< 31)
   // ek17 = W0 ^ (W1 <<< 19)
-  const ek1 = xor(rotateR128(W1, 19), W0)
-  const ek2 = xor(rotateR128(W2, 19), W1)
-  const ek3 = xor(rotateR128(W3, 19), W2)
-  const ek4 = xor(rotateR128(W0, 19), W3)
-  const ek5 = xor(rotateR128(W1, 31), W0)
-  const ek6 = xor(rotateR128(W2, 31), W1)
-  const ek7 = xor(rotateR128(W3, 31), W2)
-  const ek8 = xor(rotateR128(W0, 31), W3)
-  const ek9 = xor(rotateL128(W1, 61), W0)
-  const ek10 = xor(rotateL128(W2, 61), W1)
-  const ek11 = xor(rotateL128(W3, 61), W2)
-  const ek12 = xor(rotateL128(W0, 61), W3)
-  const ek13 = xor(rotateL128(W1, 31), W0)
+  const ek1 = XOR(RR128(W1, 19), W0)
+  const ek2 = XOR(RR128(W2, 19), W1)
+  const ek3 = XOR(RR128(W3, 19), W2)
+  const ek4 = XOR(RR128(W0, 19), W3)
+  const ek5 = XOR(RR128(W1, 31), W0)
+  const ek6 = XOR(RR128(W2, 31), W1)
+  const ek7 = XOR(RR128(W3, 31), W2)
+  const ek8 = XOR(RR128(W0, 31), W3)
+  const ek9 = XOR(RL128(W1, 61), W0)
+  const ek10 = XOR(RL128(W2, 61), W1)
+  const ek11 = XOR(RL128(W3, 61), W2)
+  const ek12 = XOR(RL128(W0, 61), W3)
+  const ek13 = XOR(RL128(W1, 31), W0)
   if (round === 12) {
     return [ek1, ek2, ek3, ek4, ek5, ek6, ek7, ek8, ek9, ek10, ek11, ek12, ek13]
   }
-  const ek14 = xor(rotateL128(W2, 31), W1)
-  const ek15 = xor(rotateL128(W3, 31), W2)
+  const ek14 = XOR(RL128(W2, 31), W1)
+  const ek15 = XOR(RL128(W3, 31), W2)
   if (round === 14) {
     return [ek1, ek2, ek3, ek4, ek5, ek6, ek7, ek8, ek9, ek10, ek11, ek12, ek13, ek14, ek15]
   }
-  const ek16 = xor(rotateL128(W0, 31), W3)
-  const ek17 = xor(rotateL128(W1, 19), W0)
+  const ek16 = XOR(RL128(W0, 31), W3)
+  const ek17 = XOR(RL128(W1, 19), W0)
   return [ek1, ek2, ek3, ek4, ek5, ek6, ek7, ek8, ek9, ek10, ek11, ek12, ek13, ek14, ek15, ek16, ek17]
 }
 function computeDK(EK: Uint8Array[], round: 12 | 14 | 16) {
@@ -244,20 +225,28 @@ function computeDK(EK: Uint8Array[], round: 12 | 14 | 16) {
 
 function _aria(K: Uint8Array, b: 128 | 192 | 256) {
   if (K.byteLength !== b >> 3) {
-    throw new KitError(`Key length must be ${b >> 3} bytes`)
+    throw new KitError(`Aria-${b} key must be ${b >> 3} byte`)
   }
+  /**
+   * - 128-bit key: 12 rounds
+   * - 192-bit key: 14 rounds
+   * - 256-bit key: 16 rounds
+   */
   const round = b === 128 ? 12 : (b === 192 ? 14 : 16)
   const { EK, DK } = KeyScheduling(K, round)
   const cipher = (M: Uint8Array, RK: Uint8Array[]) => {
-    let P = M.slice(0)
+    if (M.byteLength !== 16) {
+      throw new KitError('ARIA block must be 16 byte')
+    }
+    let P = M
     let i = 0
     while (i < round - 2) {
       P = FO(P, RK[i++])
       P = FE(P, RK[i++])
     }
     P = FO(P, RK[i++])
-    P = SL2(xor(P, RK[i++]))
-    P = xor(P, RK[i++])
+    P = SL2(XOR(P, RK[i++]))
+    P = XOR(P, RK[i++])
     return new U8(P)
   }
   return {
@@ -267,12 +256,9 @@ function _aria(K: Uint8Array, b: 128 | 192 | 256) {
 }
 
 /**
- * @description
- * ARIA block cipher algorithm.
+ * ARIA 分组密码算法 / block cipher algorithm
  *
- * ARIA 分组密码算法.
- *
- * @param {128 | 192 | 256} b - Key length (bits).
+ * @param {128 | 192 | 256} b - 密钥长度 / Key size (bit)
  */
 export function aria(b: 128 | 192 | 256) {
   return createCipher(

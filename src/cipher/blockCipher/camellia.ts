@@ -423,14 +423,14 @@ function _decrypt256(C: Uint8Array, k: Uint32Array) {
 
 function cipher(M: Uint8Array, k: Uint32Array, _cipher: typeof _encrypt128) {
   if (M.byteLength !== 16) {
-    throw new KitError('camellia requires a block size of 16 bytes')
+    throw new KitError('Camellia block must be 16 byte')
   }
   return new U8(_cipher(M, k))
 }
 
 function _camellia(K: Uint8Array, b: 128 | 192 | 256) {
   if (K.byteLength !== b >>> 3) {
-    throw new KitError(`camellia-${b} requires a key size of ${b >>> 3} bytes`)
+    throw new KitError(`Camellia-${b} key must be ${b >>> 3} byte`)
   }
   const k = KeySchedule(K)
   const encrypt = b === 128
@@ -443,7 +443,6 @@ function _camellia(K: Uint8Array, b: 128 | 192 | 256) {
 }
 
 /**
- * @description
  * Camellia block cipher algorithm.
  *
  * Camellia 分组密码算法.

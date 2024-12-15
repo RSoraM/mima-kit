@@ -251,13 +251,13 @@ function initKeySchedule(K: Uint8Array) {
 
 function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
   if (K.byteLength !== b >> 3) {
-    throw new KitError(`Twofish requires a key of length ${b >> 3} bytes`)
+    throw new KitError(`Twofish key must be ${b >> 3} byte`)
   }
   const { Subkeys, SBox } = initKeySchedule(K)
 
   const encrypt = (M: Uint8Array) => {
     if (M.byteLength !== 16) {
-      throw new KitError('Twofish requires a block of 16 bytes')
+      throw new KitError('Twofish block must be 16 byte')
     }
     const M32 = new Uint32Array(M.buffer, M.byteOffset)
     // input whitening
@@ -294,7 +294,7 @@ function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
   }
   const decrypt = (C: Uint8Array) => {
     if (C.byteLength !== 16) {
-      throw new KitError('Twofish requires a block of 16 bytes')
+      throw new KitError('Twofish block must be 16 byte')
     }
     const M32 = new Uint32Array(C.buffer, C.byteOffset)
     // input whitening
@@ -333,12 +333,11 @@ function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
 }
 
 /**
- * @description
- * Twofish block cipher algorithm.
+ * Twofish 分组密码算法
  *
- * Twofish 分组密码算法.
+ * Twofish block cipher algorithm
  *
- * @param {128 | 192 | 256} b - Key length (bits).
+ * @param {128 | 192 | 256} b - 密钥长度 / Key size (bit)
  */
 export function twofish(b: 128 | 192 | 256) {
   return createCipher(

@@ -10,24 +10,22 @@ const CK = new Uint32Array([0x00070E15, 0x1C232A31, 0x383F464D, 0x545B6269, 0x70
 // * Functions
 
 /**
- * @description
- * Nonlinear transformation function `τ`.
- *
  * 非线性变换函数 `τ`.
  *
- * @param {number} A - 工作字
+ * Nonlinear transformation function `τ`.
+ *
+ * @param {number} A - 工作字 / word
  */
 function tau(A: number): number {
   return SBox[A >> 24 & 0xFF] << 24 | SBox[A >> 16 & 0xFF] << 16 | SBox[A >> 8 & 0xFF] << 8 | SBox[A & 0xFF]
 }
 
 /**
- * @description
- * Synthetic permutation function `T`, composed of function `τ` and function `L`.
- *
  * 合成置换函数 `T`, 由非线性变换函数 `τ` 和线性变换函数 `L` 组成.
  *
- * @param {number} A - 工作字
+ * Synthetic permutation function `T`, composed of function `τ` and function `L`.
+ *
+ * @param {number} A - 工作字 / word
  */
 function T(A: number) {
   const B = tau(A)
@@ -35,12 +33,11 @@ function T(A: number) {
 }
 
 /**
- * @description
- * Synthetic permutation function `T1`, composed of function `τ` and function `L1`.
- *
  * 合成置换函数 `T1`, 由非线性变换函数 `τ` 和线性变换函数 `L1` 组成.
  *
- * @param {number} A - 工作字
+ * Synthetic permutation function `T1`, composed of function `τ` and function `L1`.
+ *
+ * @param {number} A - 工作字 / word
  */
 function T1(A: number) {
   const B = tau(A)
@@ -48,16 +45,11 @@ function T1(A: number) {
 }
 
 /**
- * @description
- * Key expansion function.
- *
- * 密钥扩展函数.
- *
- * @param {Uint8Array} key - 密钥
+ * 密钥扩展函数 / Key expansion function
  */
 function expandKey(key: Uint8Array) {
   if (key.length !== 16) {
-    throw new KitError('Key length must be 16 bytes')
+    throw new KitError('SM4 key must be 16 byte')
   }
 
   const KView = new DataView(key.buffer)
@@ -79,16 +71,13 @@ function expandKey(key: Uint8Array) {
 }
 
 /**
- * @description
- * Round function `F`.
+ * 轮函数 `F` / Round function `F`
  *
- * 轮函数 `F`.
- *
- * @param {number} X0 - 工作字
- * @param {number} X1 - 工作字
- * @param {number} X2 - 工作字
- * @param {number} X3 - 工作字
- * @param {number} rk - 轮密钥
+ * @param {number} X0 - 工作字 / word
+ * @param {number} X1 - 工作字 / word
+ * @param {number} X2 - 工作字 / word
+ * @param {number} X3 - 工作字 / word
+ * @param {number} rk - 轮密钥 / round key
  */
 function F(X0: number, X1: number, X2: number, X3: number, rk: number) {
   return X0 ^ T(X1 ^ X2 ^ X3 ^ rk)
@@ -97,17 +86,12 @@ function F(X0: number, X1: number, X2: number, X3: number, rk: number) {
 // * SM4 Algorithm
 
 /**
- * @description
- * SM4 block cipher algorithm.
- *
- * SM4 分组密码算法.
- *
- * @param {Uint8Array} M - 消息
- * @param {Uint32Array} rk - 轮密钥组
+ * @param {Uint8Array} M - 输入块 / input block
+ * @param {Uint32Array} rk - 轮密钥 / round keys
  */
 function cipher(M: Uint8Array, rk: Uint32Array) {
   if (M.length !== 16) {
-    throw new KitError('Message length must be 16 bytes')
+    throw new KitError('SM4 block must be 16 byte')
   }
 
   const MView = new DataView(M.buffer, M.byteOffset)
@@ -144,10 +128,7 @@ function _sm4(K: Uint8Array) {
 }
 
 /**
- * @description
- * SM4 block cipher algorithm.
- *
- * SM4 分组密码算法.
+ * SM4 分组密码算法 / block cipher algorithm
  */
 export const sm4 = createCipher(
   _sm4,

@@ -9,13 +9,13 @@ const DELTA = 0x9E3779B9
 
 function _tea(K: Uint8Array, round: number) {
   if (K.byteLength !== 16) {
-    throw new KitError('TEA requires a key of length 16 bytes')
+    throw new KitError('TEA key must be 16 byte')
   }
   const K32 = new Uint32Array(K.buffer)
 
   const encrypt = (M: Uint8Array) => {
     if (M.byteLength !== 8) {
-      throw new KitError('TEA requires a block of length 8 bytes')
+      throw new KitError('TEA block must be 8 byte')
     }
     const C = M.slice(0)
     const C32 = new Uint32Array(C.buffer)
@@ -29,7 +29,7 @@ function _tea(K: Uint8Array, round: number) {
   }
   const decrypt = (C: Uint8Array) => {
     if (C.byteLength !== 8) {
-      throw new KitError('TEA requires a block of length 8 bytes')
+      throw new KitError('TEA block must be 8 byte')
     }
     const M = C.slice(0)
     const M32 = new Uint32Array(M.buffer)
@@ -46,13 +46,13 @@ function _tea(K: Uint8Array, round: number) {
 
 function _xtea(K: Uint8Array, round: number) {
   if (K.byteLength !== 16) {
-    throw new KitError('TEA requires a key of length 16 bytes')
+    throw new KitError('XTEA key must be 16 byte')
   }
   const K32 = new Uint32Array(K.buffer)
 
   const encrypt = (M: Uint8Array) => {
     if (M.byteLength !== 8) {
-      throw new KitError('TEA requires a block of length 8 bytes')
+      throw new KitError('XTEA block must be 8 byte')
     }
     const C = M.slice(0)
     const C32 = new Uint32Array(C.buffer)
@@ -66,7 +66,7 @@ function _xtea(K: Uint8Array, round: number) {
   }
   const decrypt = (C: Uint8Array) => {
     if (C.byteLength !== 8) {
-      throw new KitError('TEA requires a block of length 8 bytes')
+      throw new KitError('XTEA block must be 8 byte')
     }
     const M = C.slice(0)
     const M32 = new Uint32Array(M.buffer)
@@ -82,16 +82,15 @@ function _xtea(K: Uint8Array, round: number) {
 }
 
 /**
- * @description
- * Tiny Encryption Algorithm (TEA) block cipher algorithm.
+ * 微型加密算法 (TEA) 分组密码算法
  *
- * 微型加密算法 (TEA) 分组密码算法.
+ * Tiny Encryption Algorithm (TEA) block cipher algorithm
  *
- * @param {number} round - (default: 32)
+ * @param {number} round - 轮数 / Rounds (default: 32)
  */
 export function tea(round: number = 32) {
   if (round <= 0) {
-    throw new KitError('TEA requires a positive number of rounds')
+    throw new KitError('TEA round must be a positive number')
   }
   return createCipher(
     (K: Uint8Array) => _tea(K, round),
@@ -106,16 +105,15 @@ export function tea(round: number = 32) {
 }
 
 /**
- * @description
- * eXtended Tiny Encryption Algorithm (XTEA) block cipher algorithm.
+ * 扩展微型加密算法 (XTEA) 分组密码算法
  *
- * 扩展微型加密算法 (XTEA) 分组密码算法.
+ * eXtended Tiny Encryption Algorithm (XTEA) block cipher algorithm
  *
- * @param {number} round - (default: 32)
+ * @param {number} round - 轮数 / Rounds (default: 32)
  */
 export function xtea(round: number = 32) {
   if (round <= 0) {
-    throw new KitError('XTEA requires a positive number of rounds')
+    throw new KitError('XTEA round must be a positive number')
   }
   return createCipher(
     (K: Uint8Array) => _xtea(K, round),
