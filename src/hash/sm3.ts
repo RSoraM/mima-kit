@@ -1,7 +1,9 @@
 import { createHash } from '../core/hash'
-import { KitError, U8, rotateL32 } from '../core/utils'
+import { KitError, U8, genBitMask, rotateL } from '../core/utils'
 
 // * Function
+const mask32 = genBitMask(32)
+const rotateL32 = (x: number, n: number) => Number(rotateL(32, x, n, mask32))
 const FF = (X: number, Y: number, Z: number, j: number) => j < 16 ? X ^ Y ^ Z : (X & Y) | (X & Z) | (Y & Z)
 const GG = (X: number, Y: number, Z: number, j: number) => j < 16 ? X ^ Y ^ Z : (X & Y) | (~X & Z)
 const P0 = (X: number) => X ^ rotateL32(X, 9) ^ rotateL32(X, 17)
@@ -12,15 +14,15 @@ const P1 = (X: number) => X ^ rotateL32(X, 15) ^ rotateL32(X, 23)
 function digest(M: Uint8Array) {
   // * 初始化
   const state = new U8(32)
-  const stateView = new DataView(state.buffer)
-  stateView.setUint32(0, 0x7380166F, false)
-  stateView.setUint32(4, 0x4914B2B9, false)
-  stateView.setUint32(8, 0x172442D7, false)
-  stateView.setUint32(12, 0xDA8A0600, false)
-  stateView.setUint32(16, 0xA96F30BC, false)
-  stateView.setUint32(20, 0x163138AA, false)
-  stateView.setUint32(24, 0xE38DEE4D, false)
-  stateView.setUint32(28, 0xB0FB0E4E, false)
+  const state_view = state.view(4)
+  state_view.set(0, 0x7380166Fn)
+  state_view.set(1, 0x4914B2B9n)
+  state_view.set(2, 0x172442D7n)
+  state_view.set(3, 0xDA8A0600n)
+  state_view.set(4, 0xA96F30BCn)
+  state_view.set(5, 0x163138AAn)
+  state_view.set(6, 0xE38DEE4Dn)
+  state_view.set(7, 0xB0FB0E4En)
 
   const sigBytes = M.byteLength
   const BLOCK_SIZE = 64
@@ -48,14 +50,14 @@ function digest(M: Uint8Array) {
     const view = new DataView(currentBlock.buffer)
 
     // 准备状态字
-    const H0 = stateView.getUint32(0, false)
-    const H1 = stateView.getUint32(4, false)
-    const H2 = stateView.getUint32(8, false)
-    const H3 = stateView.getUint32(12, false)
-    const H4 = stateView.getUint32(16, false)
-    const H5 = stateView.getUint32(20, false)
-    const H6 = stateView.getUint32(24, false)
-    const H7 = stateView.getUint32(28, false)
+    const H0 = Number(state_view.get(0))
+    const H1 = Number(state_view.get(1))
+    const H2 = Number(state_view.get(2))
+    const H3 = Number(state_view.get(3))
+    const H4 = Number(state_view.get(4))
+    const H5 = Number(state_view.get(5))
+    const H6 = Number(state_view.get(6))
+    const H7 = Number(state_view.get(7))
     let A = H0
     let B = H1
     let C = H2
@@ -102,14 +104,14 @@ function digest(M: Uint8Array) {
     }
 
     // 更新状态字
-    stateView.setUint32(0, H0 ^ A, false)
-    stateView.setUint32(4, H1 ^ B, false)
-    stateView.setUint32(8, H2 ^ C, false)
-    stateView.setUint32(12, H3 ^ D, false)
-    stateView.setUint32(16, H4 ^ E, false)
-    stateView.setUint32(20, H5 ^ F, false)
-    stateView.setUint32(24, H6 ^ G, false)
-    stateView.setUint32(28, H7 ^ H, false)
+    state_view.set(0, BigInt(H0 ^ A))
+    state_view.set(1, BigInt(H1 ^ B))
+    state_view.set(2, BigInt(H2 ^ C))
+    state_view.set(3, BigInt(H3 ^ D))
+    state_view.set(4, BigInt(H4 ^ E))
+    state_view.set(5, BigInt(H5 ^ F))
+    state_view.set(6, BigInt(H6 ^ G))
+    state_view.set(7, BigInt(H7 ^ H))
   }
 
   // * 截断输出
