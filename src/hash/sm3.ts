@@ -70,7 +70,7 @@ function digest(message: Uint8Array) {
       // 拓展 W
       if (i < 16) {
         // W[i] = B(n)[i]
-        W[i] = p_view.getUint32(offset + i * 4, false)
+        W[i] = p_view.getUint32(offset + (i << 2), false)
       }
       else {
         W[i] = P1(W[i - 16] ^ W[i - 9] ^ rotateL32(W[i - 3], 15)) ^ rotateL32(W[i - 13], 7) ^ W[i - 6]

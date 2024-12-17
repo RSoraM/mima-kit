@@ -6,7 +6,7 @@ function _hmac(hash: Hash, K: Uint8Array, M: Uint8Array) {
   const { BLOCK_SIZE } = hash
 
   const K0 = new Uint8Array(BLOCK_SIZE)
-  K0.set(K.byteLength > BLOCK_SIZE ? hash(K) : K)
+  K0.set(K.length > BLOCK_SIZE ? hash(K) : K)
   const iPad = K0.map(byte => (byte ^ 0x36))
   const oPad = K0.map(byte => (byte ^ 0x5C))
 

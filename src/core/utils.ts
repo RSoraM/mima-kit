@@ -419,9 +419,10 @@ export class U8 extends Uint8Array {
    * @param {number} word_byte - 字长 / word size
    */
   view(word_byte: number) {
+    const length = Math.floor(this.length / word_byte)
     const get = (index: number, little_endian = false) => this.getWord(word_byte, index, little_endian)
     const set = (index: number, word: bigint | Uint8Array, little_endian = false) => this.setWord(word_byte, index, word, little_endian)
-    return { get, set }
+    return { get, set, length }
   }
 
   /**
@@ -565,7 +566,7 @@ export class Counter extends U8 {
    * @param {number} offset - 计数器偏移 / counter offset
    * @param {number} length - 计数器长度 / counter length
    */
-  inc(offset?: number, length?: number) {
+  inc(offset?: number, length?: number, little_endian = false) {
     // 如果不提供偏移，则默认计数器从 0 开始
     offset = offset || 0
     if (offset < 0 || offset >= this.length) {
@@ -576,12 +577,23 @@ export class Counter extends U8 {
     if (length < 0 || offset + length > this.length) {
       throw new KitError('Invalid counter length')
     }
-    for (let i = offset + length - 1; i >= offset; i--) {
-      if (this[i] < 0xFF) {
-        this[i] += 1
-        break
+    if (little_endian) {
+      for (let i = offset; i < offset + length; i++) {
+        if (this[i] < 0xFF) {
+          this[i] += 1
+          break
+        }
+        this[i] = 0
       }
-      this[i] = 0
+    }
+    else {
+      for (let i = offset + length - 1; i >= offset; i--) {
+        if (this[i] < 0xFF) {
+          this[i] += 1
+          break
+        }
+        this[i] = 0
+      }
     }
   }
 }
