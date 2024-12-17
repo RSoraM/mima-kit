@@ -1,4 +1,4 @@
-import { KitError, joinBuffer, rotateL64 } from '../core/utils'
+import { KitError, U8, genBitMask, joinBuffer, rotateL } from '../core/utils'
 
 // * Constants
 
@@ -6,11 +6,11 @@ import { KitError, joinBuffer, rotateL64 } from '../core/utils'
  * ρ(A) 位移表 / Shift Table
  */
 const R = [
-  [0, 36, 3, 41, 18],
-  [1, 44, 10, 45, 2],
-  [62, 6, 43, 15, 61],
-  [28, 55, 25, 21, 56],
-  [27, 20, 39, 8, 14],
+  [0n, 36n, 3n, 41n, 18n],
+  [1n, 44n, 10n, 45n, 2n],
+  [62n, 6n, 43n, 15n, 61n],
+  [28n, 55n, 25n, 21n, 56n],
+  [27n, 20n, 39n, 8n, 14n],
 ]
 /**
  * https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
@@ -59,6 +59,8 @@ const RC24 = [
   0x8000000080008008n,
 ]
 
+const mask64 = genBitMask(64)
+
 // * Keccak Utils
 
 /**
@@ -100,13 +102,14 @@ export function RCGen(l = 6, nr = 24) {
 /**
  * @param {number} w - 工作字长度 / Word Size
  */
-export function RGen(w: number) {
+export function RGen(w: number | bigint) {
+  w = BigInt(w)
   const R = [
-    [0, 36, 3, 105, 210],
-    [1, 300, 10, 45, 66],
-    [190, 6, 171, 15, 253],
-    [28, 276, 120, 136, 55],
-    [91, 276, 210, 66, 253],
+    [0n, 36n, 3n, 105n, 210n],
+    [1n, 300n, 10n, 45n, 66n],
+    [190n, 6n, 171n, 15n, 253n],
+    [28n, 276n, 120n, 136n, 55n],
+    [91n, 276n, 210n, 66n, 253n],
   ]
 
   return R.map(x => x.map(y => y % w))
@@ -173,7 +176,7 @@ function theta(A: StateArray1600) {
   }
 
   for (let x = 0; x < 5; x++) {
-    D[x] = C[(x + 4) % 5] ^ rotateL64(C[(x + 1) % 5], 1n)
+    D[x] = C[(x + 4) % 5] ^ rotateL(64, C[(x + 1) % 5], 1n, mask64)
 
     for (let y = 0; y < 5; y++) {
       A[x][y] = A[x][y] ^ D[x]
@@ -189,7 +192,7 @@ function rho(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[x][y] = rotateL64(A[x][y], BigInt(R[x][y]))
+      _A[x][y] = rotateL(64, A[x][y], R[x][y], mask64)
     }
   }
   return _A
@@ -216,7 +219,7 @@ function rhoPi(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[y][(2 * x + 3 * y) % 5] = rotateL64(A[x][y], BigInt(R[x][y]))
+      _A[y][(2 * x + 3 * y) % 5] = rotateL(64, A[x][y], R[x][y], mask64)
     }
   }
   return _A
@@ -282,7 +285,7 @@ export function keccak_p_1600(nr = 24): Keccak_p {
     for (let i = 0; i < nr; i++) {
       A = iota(chi(rhoPi(theta(A))), RC[i])
     }
-    return toState(A)
+    return new U8(toState(A))
   }
 }
 
@@ -316,7 +319,7 @@ export function sponge_1600(
     // * 填充
     const P = pad(M)
     // * 吸收
-    let S = new Uint8Array(200)
+    let S: Uint8Array = new Uint8Array(200)
     let i = 0
     while (i < P.byteLength) {
       const Pi = P.slice(i, i += r_byte)
