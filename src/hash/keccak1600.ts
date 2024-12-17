@@ -60,6 +60,7 @@ const RC24 = [
 ]
 
 const mask64 = genBitMask(64)
+const rotateL64 = (x: bigint, n: bigint) => rotateL(64, x, n, mask64)
 
 // * Keccak Utils
 
@@ -176,7 +177,7 @@ function theta(A: StateArray1600) {
   }
 
   for (let x = 0; x < 5; x++) {
-    D[x] = C[(x + 4) % 5] ^ rotateL(64, C[(x + 1) % 5], 1n, mask64)
+    D[x] = C[(x + 4) % 5] ^ rotateL64(C[(x + 1) % 5], 1n)
 
     for (let y = 0; y < 5; y++) {
       A[x][y] = A[x][y] ^ D[x]
@@ -192,7 +193,7 @@ function rho(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[x][y] = rotateL(64, A[x][y], R[x][y], mask64)
+      _A[x][y] = rotateL64(A[x][y], R[x][y])
     }
   }
   return _A
@@ -219,7 +220,7 @@ function rhoPi(A: StateArray1600) {
   const _A = createStateArray()
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
-      _A[y][(2 * x + 3 * y) % 5] = rotateL(64, A[x][y], R[x][y], mask64)
+      _A[y][(2 * x + 3 * y) % 5] = rotateL64(A[x][y], R[x][y])
     }
   }
   return _A

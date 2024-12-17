@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { U8, genBitMask, rotateL } from '../core/utils'
+import { U8, rotateL32 } from '../core/utils'
 
 // * Constants
 
@@ -14,8 +14,6 @@ function K(t: number) {
 }
 
 // * Function
-const mask32 = genBitMask(32)
-const rotateL32 = (x: number, n: number) => Number(rotateL(32, x, n, mask32))
 
 const Ch = (x: number, y: number, z: number) => (x & y) ^ ((~x) & z)
 const Parity = (x: number, y: number, z: number) => x ^ y ^ z

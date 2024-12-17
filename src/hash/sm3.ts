@@ -1,9 +1,8 @@
 import { createHash } from '../core/hash'
-import { U8, genBitMask, rotateL } from '../core/utils'
+import { U8, rotateL32 } from '../core/utils'
 
 // * Function
-const mask32 = genBitMask(32)
-const rotateL32 = (x: number, n: number) => Number(rotateL(32, x, n, mask32))
+
 const FF = (X: number, Y: number, Z: number, j: number) => j < 16 ? X ^ Y ^ Z : (X & Y) | (X & Z) | (Y & Z)
 const GG = (X: number, Y: number, Z: number, j: number) => j < 16 ? X ^ Y ^ Z : (X & Y) | (~X & Z)
 const P0 = (X: number) => X ^ rotateL32(X, 9) ^ rotateL32(X, 17)
