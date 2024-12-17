@@ -3,6 +3,8 @@ import { UTF8 } from './codec'
 
 // * Math utility functions
 
+// TODO 废弃一系列的 rotate 函数，统一使用 rotateL 和 rotateR
+
 /** 8-bit 循环左移 */
 export function rotateL8(x: number, n: number) {
   x &= 0xFF
@@ -52,7 +54,9 @@ export function rotateR32(x: number, n: number) {
 }
 
 /** 64-bit 循环左移 */
-export function rotateL64(x: bigint, n: bigint) {
+export function rotateL64(x: bigint | Uint8Array, n: number | bigint) {
+  x = typeof x === 'bigint' ? x : U8.from(x).toBI()
+  n = typeof n === 'bigint' ? n : BigInt(n)
   x &= 0xFFFFFFFFFFFFFFFFn
   n %= 64n
   x = (x << n) | (x >> (64n - n))
@@ -60,7 +64,9 @@ export function rotateL64(x: bigint, n: bigint) {
 }
 
 /** 64-bit 循环右移 */
-export function rotateR64(x: bigint, n: bigint) {
+export function rotateR64(x: bigint | Uint8Array, n: number | bigint) {
+  x = typeof x === 'bigint' ? x : U8.from(x).toBI()
+  n = typeof n === 'bigint' ? n : BigInt(n)
   x &= 0xFFFFFFFFFFFFFFFFn
   n %= 64n
   x = (x >> n) | (x << (64n - n))
@@ -68,7 +74,9 @@ export function rotateR64(x: bigint, n: bigint) {
 }
 
 /** 128-bit 循环左移 */
-export function rotateL128(x: bigint, n: bigint) {
+export function rotateL128(x: bigint | Uint8Array, n: number | bigint) {
+  x = typeof x === 'bigint' ? x : U8.from(x).toBI()
+  n = typeof n === 'bigint' ? n : BigInt(n)
   x &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
   n %= 128n
   x = (x << n) | (x >> (128n - n))
@@ -76,11 +84,79 @@ export function rotateL128(x: bigint, n: bigint) {
 }
 
 /** 128-bit 循环右移 */
-export function rotateR128(x: bigint, n: bigint) {
+export function rotateR128(x: bigint | Uint8Array, n: number | bigint) {
+  x = typeof x === 'bigint' ? x : U8.from(x).toBI()
+  n = typeof n === 'bigint' ? n : BigInt(n)
   x &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
   n %= 128n
   x = (x >> n) | (x << (128n - n))
   return x & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
+}
+
+/**
+ * 生成位掩码 / Generate Bit Mask
+ *
+ * @param {number} w - 位数 / bit
+ *
+ * ```ts
+ * const mask = genBitMask(8) // 0xFFn
+ * ```
+ */
+export function genBitMask(w: number | bigint) {
+  w = BigInt(w)
+  let mask = 0x0n
+  for (let i = 0n; i < w; i++) {
+    mask |= 1n << i
+  }
+  return mask
+}
+
+/**
+ * 位循环左移 / Rotate Left
+ *
+ * @param {number} bit - 位数 / bit
+ * @param {number | bigint} x - 数值 / value
+ * @param {number | bigint} n - 位移 / shift
+ * @param {bigint} [mask] - 位掩码 / bit mask
+ */
+export function rotateL(
+  bit: number,
+  x: number | bigint,
+  n: number | bigint,
+  mask?: bigint,
+) {
+  const w = BigInt(bit)
+  mask ??= genBitMask(bit)
+  x = BigInt(x)
+  n = BigInt(n)
+  x &= mask
+  n %= w
+  x = (x << n) | (x >> (w - n))
+  return x & mask
+}
+
+/**
+ * 位循环右移 / Rotate Right
+ *
+ * @param {number} bit - 位数 / bit
+ * @param {number | bigint} x - 数值 / value
+ * @param {number | bigint} n - 位移 / shift
+ * @param {bigint} [mask] - 位掩码 / bit mask
+ */
+export function rotateR(
+  bit: number,
+  x: number | bigint,
+  n: number | bigint,
+  mask?: bigint,
+) {
+  const w = BigInt(bit)
+  mask ??= genBitMask(bit)
+  x = BigInt(x)
+  n = BigInt(n)
+  x &= mask
+  n %= w
+  x = (x >> n) | (x << (w - n))
+  return x & mask
 }
 
 /**
@@ -311,22 +387,59 @@ export function modPrimeSquare(n: bigint, p: bigint): bigint {
  */
 export class U8 extends Uint8Array {
   /**
-   * stringify U8 to encoded string
+   * 从 U8 中获取一个字 / Get a word from U8
    *
-   * 将 U8 编码为字符串
+   * @param {number} word_byte - 字长 / word size
+   * @param {number} index - 字索引 / word index
+   * @param {boolean} [little_endian] - 是否为小端序 / little-endian (default: false)
+   */
+  getWord(word_byte: number, index: number, little_endian = false): bigint {
+    const offset = index * word_byte
+    const buffer = this.subarray(offset, offset + word_byte)
+    return little_endian ? buffer.toBI(true) : buffer.toBI()
+  }
+
+  /**
+   * 将一个字写入 U8 / Set a word to U8
+   *
+   * @param {number} word_byte - 字长 / word size
+   * @param {number} index - 字索引 / word index
+   * @param {bigint | Uint8Array} word - 字 / word
+   * @param {boolean} [little_endian] - 是否为小端序 / little-endian (default: false)
+   */
+  setWord(word_byte: number, index: number, word: bigint | Uint8Array, little_endian = false) {
+    const offset = index * word_byte
+    const buffer = typeof word === 'bigint' ? U8.fromBI(word, word_byte) : word
+    this.set(little_endian ? buffer.toReversed() : buffer, offset)
+  }
+
+  /**
+   * U8 视图 / U8 view
+   *
+   * @param {number} word_byte - 字长 / word size
+   */
+  view(word_byte: number) {
+    const get = (index: number, little_endian = false) => this.getWord(word_byte, index, little_endian)
+    const set = (index: number, word: bigint | Uint8Array, little_endian = false) => this.setWord(word_byte, index, word, little_endian)
+    return { get, set }
+  }
+
+  /**
+   * 将 U8 编码为字符串 / stringify U8 to encoded string
    */
   to(codec: Codec) {
     return codec(this)
   }
 
   /**
-   * Convert U8 to BigInt
+   * 将 U8 转换为 BigInt / Convert U8 to BigInt
    *
-   * 将 U8 转换为 BigInt
+   * @param {boolean} [little_endian] - 是否为小端序 / little-endian (default: false)
    */
-  toBI() {
+  toBI(little_endian = false) {
+    const buffer = little_endian ? this.toReversed() : this
     let bigint = 0n
-    this.forEach(byte => bigint = (bigint << 8n) | BigInt(byte))
+    buffer.forEach(byte => bigint = (bigint << 8n) | BigInt(byte))
     return bigint
   }
 
@@ -354,12 +467,20 @@ export class U8 extends Uint8Array {
    *
    * 将 BigInt 转换为 U8
    */
-  static fromBI(bigint: bigint, length?: number): U8 {
+  static fromBI(bigint: bigint, length?: number, little_endian = false): U8 {
     length = length || (getBIBits(bigint) + 7) >> 3
     const buffer = new U8(length)
-    for (let i = buffer.length - 1; i >= 0; i--) {
-      buffer[i] = Number(bigint & 0xFFn)
-      bigint >>= 8n
+    if (little_endian) {
+      for (let i = 0; i < buffer.length; i++) {
+        buffer[i] = Number(bigint & 0xFFn)
+        bigint >>= 8n
+      }
+    }
+    else {
+      for (let i = buffer.length - 1; i >= 0; i--) {
+        buffer[i] = Number(bigint & 0xFFn)
+        bigint >>= 8n
+      }
     }
     return buffer
   }
