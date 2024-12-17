@@ -1,13 +1,15 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, U8, resizeBuffer, rotateL32 } from '../../core/utils'
+import { Counter, KitError, U8, genBitMask, resizeBuffer, rotateL } from '../../core/utils'
 
 // * Functions
 
+const mask32 = genBitMask(32)
+
 function QR(a: number, b: number, c: number, d: number) {
-  b ^= rotateL32(a + d, 7)
-  c ^= rotateL32(b + a, 9)
-  d ^= rotateL32(c + b, 13)
-  a ^= rotateL32(d + c, 18)
+  b ^= Number(rotateL(32, a + d, 7, mask32))
+  c ^= Number(rotateL(32, b + a, 9, mask32))
+  d ^= Number(rotateL(32, c + b, 13, mask32))
+  a ^= Number(rotateL(32, d + c, 18, mask32))
   return [a, b, c, d]
 }
 
@@ -29,7 +31,7 @@ function hash(x: Uint8Array, rounds: number = 20) {
     [W[15], W[12], W[13], W[14]] = QR(W[15], W[12], W[13], W[14])
   }
   // mix
-  const Z = new Uint8Array(64)
+  const Z = new U8(64)
   const Z32 = new Uint32Array(Z.buffer)
   for (let i = 0; i < 16; i++) {
     Z32[i] = X[i] + W[i]
@@ -39,10 +41,10 @@ function hash(x: Uint8Array, rounds: number = 20) {
 
 function expand(K: Uint8Array, iv: Uint8Array) {
   if (iv.byteLength !== 8) {
-    throw new KitError(`Salsa20 requires a nonce of 8 bytes`)
+    throw new KitError(`Salsa20 iv must be 8 byte`)
   }
 
-  const S = new Uint8Array(64)
+  const S = new Counter(64)
   const S32 = new Uint32Array(S.buffer)
   const K32 = new Uint32Array(K.buffer)
   const N32 = new Uint32Array(iv.buffer)
@@ -80,7 +82,7 @@ function expand(K: Uint8Array, iv: Uint8Array) {
       S32[15] = 0x6B206574
       break
     default:
-      throw new KitError(`Salsa20 requires a key of length 16 or 32 bytes`)
+      throw new KitError(`Salsa20 key must be 16 or 32 byte`)
   }
 
   return S
@@ -88,28 +90,27 @@ function expand(K: Uint8Array, iv: Uint8Array) {
 
 // * Salsa20 Algorithm
 
-function _salsa20(K: Uint8Array, iv: Uint8Array) {
-  let E = expand(K, iv)
+function _salsa20(key: Uint8Array, iv: Uint8Array) {
+  /** Counter Block */
+  const E = expand(key, iv)
+  /** Presudo Random Byte Stream */
   let S = hash(E)
   let current = 1
 
-  const inc64 = (E: Uint8Array) => {
-    const E64 = new BigUint64Array(E.buffer)
-    E64[4] += 1n
-    return E
-  }
   const cipher = (M: Uint8Array) => {
-    const BLOCK_TOTAL = (M.byteLength >> 6) + 1
+    const R = U8.from(M)
+    const BLOCK_TOTAL = (R.length >> 6) + 1
     if (current > BLOCK_TOTAL) {
-      return new U8(M.map((byte, i) => byte ^ S[i]))
+      return R.map((byte, i) => byte ^ S[i])
     }
+    // Squeeze
     S = resizeBuffer(S, BLOCK_TOTAL << 6)
     while (BLOCK_TOTAL > current) {
-      E = inc64(E)
+      E.inc(32, 8, true)
       S.set(hash(E), current << 6)
       current++
     }
-    return new U8(M.map((byte, i) => byte ^ S[i]))
+    return R.map((byte, i) => byte ^ S[i])
   }
   return {
     encrypt: (M: Uint8Array) => cipher(M),
@@ -118,16 +119,7 @@ function _salsa20(K: Uint8Array, iv: Uint8Array) {
 }
 
 /**
- * @description
- * Salsa20 stream cipher
- *
- * Salsa20 流密码
- *
- * ```ts
- * const cipher = salsa20(k, iv)
- * cipher.encrypt(m)
- * cipher.decrypt(c)
- * ```
+ * Salsa20 流密码 / Stream Cipher
  */
 export const salsa20 = createCipher(
   _salsa20,
