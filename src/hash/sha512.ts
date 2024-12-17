@@ -189,7 +189,7 @@ export const sha512 = createHash(
 )
 
 /**
- * @param {number} t - 截断长度 bit / truncation length bit
+ * @param {number} t - 截断长度 / truncation length (bit)
  */
 export function sha512t(t: number) {
   // * 初始化 SHA-512/t 状态

@@ -69,7 +69,7 @@ const shakePadding: Sha3Padding = (r_byte: number) => {
 // * SHA3 Function Specification
 
 /**
- * @param {number} c - 安全容量 / capacity (bit)
+ * @param {number} c - 安全容量 / Capacity (bit)
  * @param {number} d - 输出长度 / Digest Size (bit)
  * @param {Sha3Padding} padding - 填充函数 / Padding Function
  */
@@ -121,7 +121,7 @@ export const sha3_512 = createHash(
 )
 
 /**
- * @param {number} d - 输出长度 bit / output length bit
+ * @param {number} d - 输出长度 / Digest Size (bit)
  */
 export function shake128(d: number) {
   return createHash(
@@ -135,7 +135,7 @@ export function shake128(d: number) {
 }
 
 /**
- * @param {number} d - 输出长度 bit / output length bit
+ * @param {number} d - 输出长度 / Digest Size (bit)
  */
 export function shake256(d: number) {
   return createHash(
