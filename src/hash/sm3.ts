@@ -27,7 +27,8 @@ function digest(message: Uint8Array) {
   const m_byte = message.length
   const m_bit = BigInt(m_byte) << 3n
   const block_size = 64
-  const block_total = Math.ceil((m_byte + 9) / block_size)
+  // ceil((M_BYTE + 9) / 64)
+  const block_total = (m_byte + 9 + 63) >> 6
 
   // * 填充
   const p = new U8(block_total * block_size)
