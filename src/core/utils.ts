@@ -5,38 +5,6 @@ import { UTF8 } from './codec'
 
 // TODO 废弃一系列的 rotate 函数，统一使用 rotateL 和 rotateR
 
-/** 8-bit 循环左移 */
-export function rotateL8(x: number, n: number) {
-  x &= 0xFF
-  n %= 8
-  x = (x << n) | (x >>> (8 - n))
-  return x & 0xFF
-}
-
-/** 8-bit 循环右移 */
-export function rotateR8(x: number, n: number) {
-  x &= 0xFF
-  n %= 8
-  x = (x >>> n) | (x << (8 - n))
-  return x & 0xFF
-}
-
-/** 16-bit 循环左移 */
-export function rotateL16(x: number, n: number) {
-  x &= 0xFFFF
-  n %= 16
-  x = (x << n) | (x >>> (16 - n))
-  return x & 0xFFFF
-}
-
-/** 16-bit 循环右移 */
-export function rotateR16(x: number, n: number) {
-  x &= 0xFFFF
-  n %= 16
-  x = (x >>> n) | (x << (16 - n))
-  return x & 0xFFFF
-}
-
 /** 32-bit 循环左移 */
 export function rotateL32(x: number, n: number) {
   x >>>= 0

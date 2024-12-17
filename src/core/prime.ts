@@ -10,9 +10,7 @@ const LOW_PRIMES_LIMIT = (1n << 26n) / LOW_PRIMES[LOW_PRIMES.length - 1]
 // * Functions
 
 /**
- * Miller-Rabin 素性测试
- *
- * Miller-Rabin primality test
+ * Miller-Rabin 素性测试 / Primality Test
  */
 function MillerRabin(n: bigint, t: number): boolean {
   const n1 = n - 1n

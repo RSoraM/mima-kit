@@ -11,21 +11,15 @@ export interface Digest {
 }
 export interface HashDescription {
   /**
-   * Algorithm name
-   *
-   * 算法名称
+   * 算法名称 / Algorithm name
    */
   ALGORITHM: string
   /**
-   * Block size (byte)
-   *
-   * 分块大小 (byte)
+   * 分块大小 / Block size (byte)
    */
   BLOCK_SIZE: number
   /**
-   * Digest size (byte)
-   *
-   * 摘要大小 (byte)
+   * 摘要大小 / Digest size (byte)
    */
   DIGEST_SIZE: number
   OID?: string
@@ -41,7 +35,7 @@ export interface Hash extends Digest, HashDescription {
  *
  * @param {Digest} digest - 摘要函数 / digest function
  * @param {HashDescription} description - 算法描述 / algorithm description
- * @example
+ *
  * ```ts
  * const digest: Digest = (M: Uint8Array): U8 => { ... }
  * const description: HashDescription = { ... }
@@ -53,12 +47,14 @@ export const createHash = (digest: Digest, description: HashDescription): Hash =
 // * 元组散列函数包装器
 
 export interface TupleDigest {
+  /**
+   * @param {Uint8Array[]} M - 消息 / message
+   */
   (M: Uint8Array[]): U8
 }
 export interface TupleHashDescription extends HashDescription {
 }
 export interface TupleHash extends TupleDigest, TupleHashDescription {
-  digest: TupleDigest
 }
 /**
  * 元组散列算法包装器
@@ -67,14 +63,14 @@ export interface TupleHash extends TupleDigest, TupleHashDescription {
  *
  * @param {TupleDigest} digest - 元组摘要函数 / tuple digest function
  * @param {TupleHashDescription} description - 算法描述 / algorithm description
- * @example
+ *
  * ```ts
  * const digest: TupleDigest = (M: Uint8Array[]): U8 => { ... }
  * const description: TupleHashDescription = { ... }
  * const hash = createTupleHash(digest, description)
  * ```
  */
-export const createTupleHash = (digest: TupleDigest, description: TupleHashDescription): TupleHash => wrap(digest, { digest, ...description })
+export const createTupleHash = (digest: TupleDigest, description: TupleHashDescription): TupleHash => wrap(digest, description)
 
 // * 密钥散列函数
 
@@ -87,16 +83,12 @@ export interface KeyDigest {
 }
 export interface KeyHashDescription extends HashDescription {
   /**
-   * Recommended key size (byte)
-   *
-   * 推荐的密钥大小 (字节)
+   * 推荐的密钥大小 / Recommended key size (byte)
    */
   KEY_SIZE: number
 }
 /**
- * 密钥散列函数
- *
- * Keyed hash function
+ * 密钥散列函数 / Keyed hash function
  */
 export interface KeyHash extends KeyDigest, KeyHashDescription {
 }
