@@ -120,18 +120,18 @@ export function genBitMask(w: number | bigint) {
  * @param {bigint} [mask] - 位掩码 / bit mask
  */
 export function rotateL(
-  bit: number,
+  bit: number | bigint,
   x: number | bigint,
   n: number | bigint,
   mask?: bigint,
 ) {
-  const w = BigInt(bit)
+  bit = BigInt(bit)
   mask ??= genBitMask(bit)
   x = BigInt(x)
   n = BigInt(n)
   x &= mask
-  n %= w
-  x = (x << n) | (x >> (w - n))
+  n %= bit
+  x = (x << n) | (x >> (bit - n))
   return x & mask
 }
 
@@ -144,18 +144,18 @@ export function rotateL(
  * @param {bigint} [mask] - 位掩码 / bit mask
  */
 export function rotateR(
-  bit: number,
+  bit: number | bigint,
   x: number | bigint,
   n: number | bigint,
   mask?: bigint,
 ) {
-  const w = BigInt(bit)
+  bit = BigInt(bit)
   mask ??= genBitMask(bit)
   x = BigInt(x)
   n = BigInt(n)
   x &= mask
-  n %= w
-  x = (x >> n) | (x << (w - n))
+  n %= bit
+  x = (x >> n) | (x << (bit - n))
   return x & mask
 }
 
