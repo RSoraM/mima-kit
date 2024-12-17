@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, U8, rotateL128, rotateR128 } from '../../core/utils'
+import { KitError, U8 } from '../../core/utils'
 
 // * Constants
 
@@ -14,14 +14,72 @@ const C3 = new Uint8Array([0xDB, 0x92, 0x37, 0x1D, 0x21, 0x26, 0xE9, 0x70, 0x03,
 
 // * Functions
 
-function XOR(x: Uint8Array, y: Uint8Array) {
-  return x.map((_, i) => x[i] ^ y[i])
-}
 function RL128(x: Uint8Array, n: number) {
-  return U8.fromBI(rotateL128(U8.from(x).toBI(), BigInt(n)))
+  const x_byte = x.length
+  const x_bit = x_byte << 3
+
+  // 规范化移位数
+  const shift = n % x_bit
+  if (shift === 0) {
+    return x.slice(0)
+  }
+
+  // 计算字节和位移
+  const byte_shift = shift >> 3
+  const bit_shift = shift % 8
+
+  const result = new U8(x.length)
+  for (let i = 0; i < x_byte; i++) {
+    const current = x[i]
+    const next = x[(i + 1) % x_byte]
+
+    result[i] = (current << bit_shift) | (next >> (8 - bit_shift))
+  }
+
+  // 处理字节移位
+  if (byte_shift > 0) {
+    const temp = new Uint8Array(result)
+    for (let i = 0; i < x_byte; i++) {
+      result[i] = temp[(i + byte_shift) % x_byte]
+    }
+  }
+
+  return result
 }
 function RR128(x: Uint8Array, n: number) {
-  return U8.fromBI(rotateR128(U8.from(x).toBI(), BigInt(n)))
+  const x_byte = x.length
+  const x_bit = x_byte << 3
+
+  // 规范化移位数
+  const shift = n % x_bit
+  if (shift === 0) {
+    return x.slice(0)
+  }
+
+  // 计算字节和位移
+  const byte_shift = shift >> 3
+  const bit_shift = shift % 8
+
+  const result = new U8(x.length)
+  for (let i = 0; i < x_byte; i++) {
+    const current = x[i]
+    const next = x[(i - 1 + x_byte) % x_byte]
+
+    result[i] = (current >> bit_shift) | (next << (8 - bit_shift))
+  }
+
+  // 处理字节移位
+  if (byte_shift > 0) {
+    const temp = new Uint8Array(result)
+    for (let i = 0; i < x_byte; i++) {
+      result[i] = temp[(i - byte_shift + x_byte) % x_byte]
+    }
+  }
+
+  return result
+}
+function XOR(x: Uint8Array, y: Uint8Array) {
+  return x.map((_, i) => x[i] ^ y[i])
 }
 
 function FO(D: Uint8Array, RK: Uint8Array) {
@@ -179,30 +237,30 @@ function computeEK(W: Uint8Array[], round: 12 | 14 | 16) {
   // ek15 = W2 ^ (W3 <<< 31)
   // ek16 = W3 ^ (W0 <<< 31)
   // ek17 = W0 ^ (W1 <<< 19)
-  const ek1 = XOR(RR128(W1, 19), W0)
-  const ek2 = XOR(RR128(W2, 19), W1)
-  const ek3 = XOR(RR128(W3, 19), W2)
-  const ek4 = XOR(RR128(W0, 19), W3)
-  const ek5 = XOR(RR128(W1, 31), W0)
-  const ek6 = XOR(RR128(W2, 31), W1)
-  const ek7 = XOR(RR128(W3, 31), W2)
-  const ek8 = XOR(RR128(W0, 31), W3)
-  const ek9 = XOR(RL128(W1, 61), W0)
+  const ek01 = XOR(RR128(W1, 19), W0)
+  const ek02 = XOR(RR128(W2, 19), W1)
+  const ek03 = XOR(RR128(W3, 19), W2)
+  const ek04 = XOR(RR128(W0, 19), W3)
+  const ek05 = XOR(RR128(W1, 31), W0)
+  const ek06 = XOR(RR128(W2, 31), W1)
+  const ek07 = XOR(RR128(W3, 31), W2)
+  const ek08 = XOR(RR128(W0, 31), W3)
+  const ek09 = XOR(RL128(W1, 61), W0)
   const ek10 = XOR(RL128(W2, 61), W1)
   const ek11 = XOR(RL128(W3, 61), W2)
   const ek12 = XOR(RL128(W0, 61), W3)
   const ek13 = XOR(RL128(W1, 31), W0)
   if (round === 12) {
-    return [ek1, ek2, ek3, ek4, ek5, ek6, ek7, ek8, ek9, ek10, ek11, ek12, ek13]
+    return [ek01, ek02, ek03, ek04, ek05, ek06, ek07, ek08, ek09, ek10, ek11, ek12, ek13]
   }
   const ek14 = XOR(RL128(W2, 31), W1)
   const ek15 = XOR(RL128(W3, 31), W2)
   if (round === 14) {
-    return [ek1, ek2, ek3, ek4, ek5, ek6, ek7, ek8, ek9, ek10, ek11, ek12, ek13, ek14, ek15]
+    return [ek01, ek02, ek03, ek04, ek05, ek06, ek07, ek08, ek09, ek10, ek11, ek12, ek13, ek14, ek15]
   }
   const ek16 = XOR(RL128(W0, 31), W3)
   const ek17 = XOR(RL128(W1, 19), W0)
-  return [ek1, ek2, ek3, ek4, ek5, ek6, ek7, ek8, ek9, ek10, ek11, ek12, ek13, ek14, ek15, ek16, ek17]
+  return [ek01, ek02, ek03, ek04, ek05, ek06, ek07, ek08, ek09, ek10, ek11, ek12, ek13, ek14, ek15, ek16, ek17]
 }
 function computeDK(EK: Uint8Array[], round: 12 | 14 | 16) {
   const DK = Array.from<Uint8Array>({ length: EK.length })

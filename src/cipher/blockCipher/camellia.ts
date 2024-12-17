@@ -43,13 +43,13 @@ function Camellia_Feistel(sh: Uint32Array, sl: Uint32Array, kh: number, kl: numb
 
 function KeySchedule(K: Uint8Array) {
   const KView = new DataView(K.buffer)
-  const k = K.byteLength === 16 ? new Uint32Array(52) : new Uint32Array(68)
+  const k = K.length === 16 ? new Uint32Array(52) : new Uint32Array(68)
   const s = new Uint32Array(4)
   const sh = s.subarray(0, 2)
   const sl = s.subarray(2, 4)
 
   /* Map the key to the keyTable */
-  switch (K.byteLength) {
+  switch (K.length) {
     case 16:
       mapKey128(KView, s, k)
       break
@@ -70,7 +70,7 @@ function KeySchedule(K: Uint8Array) {
   Camellia_Feistel(sl, sh, SIGMA[6], SIGMA[7])
 
   /* Fill the keyTable. Requires many block rotations. */
-  switch (K.byteLength) {
+  switch (K.length) {
     case 16:
       setup128(s, k)
       break
@@ -422,32 +422,30 @@ function _decrypt256(C: Uint8Array, k: Uint32Array) {
 }
 
 function cipher(M: Uint8Array, k: Uint32Array, _cipher: typeof _encrypt128) {
-  if (M.byteLength !== 16) {
+  if (M.length !== 16) {
     throw new KitError('Camellia block must be 16 byte')
   }
   return new U8(_cipher(M, k))
 }
 
-function _camellia(K: Uint8Array, b: 128 | 192 | 256) {
-  if (K.byteLength !== b >>> 3) {
+function _camellia(key: Uint8Array, b: 128 | 192 | 256) {
+  if (key.length !== b >>> 3) {
     throw new KitError(`Camellia-${b} key must be ${b >>> 3} byte`)
   }
-  const k = KeySchedule(K)
+  const K = KeySchedule(key)
   const encrypt = b === 128
-    ? (M: Uint8Array) => cipher(M, k, _encrypt128)
-    : (M: Uint8Array) => cipher(M, k, _encrypt256)
+    ? (M: Uint8Array) => cipher(M, K, _encrypt128)
+    : (M: Uint8Array) => cipher(M, K, _encrypt256)
   const decrypt = b === 128
-    ? (C: Uint8Array) => cipher(C, k, _decrypt128)
-    : (C: Uint8Array) => cipher(C, k, _decrypt256)
+    ? (C: Uint8Array) => cipher(C, K, _decrypt128)
+    : (C: Uint8Array) => cipher(C, K, _decrypt256)
   return { encrypt, decrypt }
 }
 
 /**
- * Camellia block cipher algorithm.
+ * Camellia 分组密码算法 / block cipher algorithm
  *
- * Camellia 分组密码算法.
- *
- * @param {128 | 192 | 256} b - Key length (bits).
+ * @param {128 | 192 | 256} b - 密钥长度 / Key size (bit)
  */
 export function camellia(b: 128 | 192 | 256) {
   return createCipher(

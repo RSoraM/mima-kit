@@ -133,7 +133,7 @@ function _des(K: Uint8Array) {
 
 function _t_des(K: Uint8Array, l: number) {
   if (K.byteLength !== l >> 3) {
-    throw new KitError(`Key length must be ${l >> 3} bytes`)
+    throw new KitError(`3DES key must be ${l >> 3} byte`)
   }
   const K1 = K.subarray(0, 8)
   const K2 = K.subarray(8, 16)

@@ -333,9 +333,7 @@ function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
 }
 
 /**
- * Twofish 分组密码算法
- *
- * Twofish block cipher algorithm
+ * Twofish 分组密码算法 / block cipher algorithm
  *
  * @param {128 | 192 | 256} b - 密钥长度 / Key size (bit)
  */

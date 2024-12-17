@@ -3,8 +3,8 @@ import { KitError, U8 } from '../../core/utils'
 
 // * Blowfish Algorithm
 
-function _blowfish(K: Uint8Array) {
-  if (K.byteLength < 4 || K.byteLength > 56) {
+function _blowfish(key: Uint8Array) {
+  if (key.length < 4 || key.length > 56) {
     throw new KitError(`Blowfish key must be between 4 and 56 byte`)
   }
   const P = new Uint32Array([0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344, 0xA4093822, 0x299F31D0, 0x082EFA98, 0xEC4E6C89, 0x452821E6, 0x38D01377, 0xBE5466CF, 0x34E90C6C, 0xC0AC29B7, 0xC97C50DD, 0x3F84D5B5, 0xB5470917, 0x9216D5D9, 0x8979FB1B])
@@ -49,8 +49,8 @@ function _blowfish(K: Uint8Array) {
     for (let i = 0; i < 18; i++) {
       let k = 0
       for (let j = 0; j < 4; j++) {
-        k = (k << 8) | K[p]
-        p = (p + 1) % K.byteLength
+        k = (k << 8) | key[p]
+        p = (p + 1) % key.length
       }
       P[i] ^= k
     }
@@ -71,31 +71,31 @@ function _blowfish(K: Uint8Array) {
   })()
 
   return {
-    encrypt: (M: Uint8Array) => {
-      if (M.byteLength !== 8) {
+    encrypt: (plaintext: Uint8Array) => {
+      if (plaintext.length !== 8) {
         throw new KitError(`Blowfish block must be 8 byte`)
       }
-      const C = M.slice(0)
-      const CView = new DataView(C.buffer)
-      let C0 = CView.getUint32(0, false)
-      let C1 = CView.getUint32(4, false);
-      [C0, C1] = _encrypt(C0, C1)
-      CView.setUint32(0, C0, false)
-      CView.setUint32(4, C1, false)
-      return new U8(C)
+      const c = U8.from(plaintext.slice(0))
+      const c_view = new DataView(c.buffer)
+      let c0 = c_view.getUint32(0, false)
+      let c1 = c_view.getUint32(4, false);
+      [c0, c1] = _encrypt(c0, c1)
+      c_view.setUint32(0, c0, false)
+      c_view.setUint32(4, c1, false)
+      return c
     },
-    decrypt: (C: Uint8Array) => {
-      if (C.byteLength !== 8) {
+    decrypt: (ciphertext: Uint8Array) => {
+      if (ciphertext.length !== 8) {
         throw new KitError(`Blowfish block must be 8 byte`)
       }
-      const M = C.slice(0)
-      const MView = new DataView(M.buffer)
-      let M0 = MView.getUint32(0, false)
-      let M1 = MView.getUint32(4, false);
-      [M0, M1] = _decrypt(M0, M1)
-      MView.setUint32(0, M0, false)
-      MView.setUint32(4, M1, false)
-      return new U8(M)
+      const p = U8.from(ciphertext.slice(0))
+      const p_view = new DataView(p.buffer)
+      let p0 = p_view.getUint32(0, false)
+      let p1 = p_view.getUint32(4, false);
+      [p0, p1] = _decrypt(p0, p1)
+      p_view.setUint32(0, p0, false)
+      p_view.setUint32(4, p1, false)
+      return p
     },
   }
 }
