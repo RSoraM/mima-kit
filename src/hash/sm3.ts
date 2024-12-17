@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { KitError, U8, genBitMask, rotateL } from '../core/utils'
+import { U8, genBitMask, rotateL } from '../core/utils'
 
 // * Function
 const mask32 = genBitMask(32)
@@ -11,7 +11,7 @@ const P1 = (X: number) => X ^ rotateL32(X, 15) ^ rotateL32(X, 23)
 
 // * Algorithm
 
-function digest(M: Uint8Array) {
+function digest(message: Uint8Array) {
   // * 初始化
   const state = new U8(32)
   const state_view = state.view(4)
@@ -24,30 +24,25 @@ function digest(M: Uint8Array) {
   state_view.set(6, 0xE38DEE4Dn)
   state_view.set(7, 0xB0FB0E4En)
 
-  const sigBytes = M.byteLength
-  const BLOCK_SIZE = 64
-  const BLOCK_TOTAL = Math.ceil((sigBytes + 9) / BLOCK_SIZE)
-  const BITS_TOTAL = BigInt(sigBytes) << 3n
-  if (BITS_TOTAL > 0xFFFFFFFFFFFFFFFFn) {
-    throw new KitError('Message is too long')
-  }
+  const m_byte = message.length
+  const m_bit = BigInt(m_byte) << 3n
+  const block_size = 64
+  const block_total = Math.ceil((m_byte + 9) / block_size)
 
   // * 填充
-  const P = new Uint8Array(BLOCK_TOTAL * BLOCK_SIZE)
-  P.set(M)
+  const p = new U8(block_total * block_size)
+  p.set(message)
 
   // appending the bit '1' to the message
-  P[sigBytes] = 0x80
+  p[m_byte] = 0x80
 
   // appending length
-  const PView = new DataView(P.buffer)
-  PView.setBigUint64(P.byteLength - 8, BITS_TOTAL, false)
+  const p_view = new DataView(p.buffer)
+  p_view.setBigUint64(p.length - 8, m_bit, false)
 
   // * 迭代压缩
-  for (let i = 0; i < BLOCK_TOTAL; i++) {
-    /** B(n) */
-    const currentBlock = P.slice(i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE)
-    const view = new DataView(currentBlock.buffer)
+  for (let offset = 0; offset < p.length; offset += block_size) {
+    /** B(n) = p[offset:offset + block_size] */
 
     // 准备状态字
     const H0 = Number(state_view.get(0))
@@ -73,7 +68,8 @@ function digest(M: Uint8Array) {
     for (let i = 0; i < 68; i++) {
       // 拓展 W
       if (i < 16) {
-        W[i] = view.getUint32(i * 4, false)
+        // W[i] = B(n)[i]
+        W[i] = p_view.getUint32(offset + i * 4, false)
       }
       else {
         W[i] = P1(W[i - 16] ^ W[i - 9] ^ rotateL32(W[i - 3], 15)) ^ rotateL32(W[i - 13], 7) ^ W[i - 6]
