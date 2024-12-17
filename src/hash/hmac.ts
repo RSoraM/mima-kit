@@ -18,12 +18,10 @@ function _hmac(hash: Hash, K: Uint8Array, M: Uint8Array) {
 
 /**
  * FIPS.198-1: 散列消息认证码 (HMAC).
- *
- * FIPS.198-1: The Keyed-Hash Message Authentication Code (HMAC).
- *
  * 如果 `d_size` 大于散列算法的摘要大小, 则回退到散列算法的摘要大小.
  *
- * If `d_size` is greater than the digest size of the hash algorithm, it falls back to the digest size of the hash algorithm.
+ * FIPS.198-1: The Keyed-Hash Message Authentication Code (HMAC).
+ * If `d_size` is larger than the hash algorithm's digest size, fallback to the hash algorithm's digest size.
  *
  * @param {Hash} hash - 散列算法 / hash algorithm
  * @param {number} [d_size] - 摘要大小 (bit) / digest size (bit)
