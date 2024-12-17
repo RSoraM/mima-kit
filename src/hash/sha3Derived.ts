@@ -507,7 +507,7 @@ export function parallelhash128XOF(b: number, d: number, S: Uint8Array = new Uin
     {
       ALGORITHM: `ParallelHash128XOF`,
       BLOCK_SIZE: 168,
-      DIGEST_SIZE: 0,
+      DIGEST_SIZE: d >> 3,
     },
   )
 }
@@ -527,7 +527,7 @@ export function parallelhash256XOF(b: number, d: number, S: Uint8Array = new Uin
     {
       ALGORITHM: `ParallelHash256XOF`,
       BLOCK_SIZE: 136,
-      DIGEST_SIZE: 0,
+      DIGEST_SIZE: d >> 3,
     },
   )
 }
