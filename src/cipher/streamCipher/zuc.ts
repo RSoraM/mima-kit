@@ -65,15 +65,15 @@ function next(S: Uint32Array, u?: number) {
 // * ZUC Algorithm (presudo-random generator)
 
 /**
- * 3GPP ZUC algorithm is used to generate a key stream, each call returns a 32-bit key stream.
- *
  * 3GPP ZUC 算法用于生成密钥流，每次调用返回一个 32 位的密钥流.
+ *
+ * 3GPP ZUC algorithm is used to generate a key stream, each call returns a 32-bit key stream.
  *
  * ```ts
  * const K = new Uint8Array(16)
  * const iv = new Uint8Array(16)
- * const zuc = zuc(K, iv)
- * zuc() // 32-bit number
+ * const prg = zuc(K, iv)
+ * prg() // 32-bit number
  * ```
  */
 export function zuc(K: Uint8Array, iv: Uint8Array) {
@@ -166,9 +166,7 @@ export interface ZUC3GPP {
   (param: ZUCParams): U8
 }
 /**
- * 3GPP ZUC encryption algorithm.
- *
- * 3GPP ZUC 加密算法.
+ * 3GPP ZUC 加密算法 / Encryption algorithm
  */
 export const eea3 = wrap<ZUC3GPP>(
   (param: ZUCParams) => {
@@ -198,9 +196,7 @@ export const eea3 = wrap<ZUC3GPP>(
   },
 )
 /**
- * 3GPP ZUC integrity algorithm.
- *
- * 3GPP ZUC 完整性算法.
+ * 3GPP ZUC 完整性算法 / Integrity algorithm
  */
 export const eia3 = wrap<ZUC3GPP>(
   (param: ZUCParams) => {

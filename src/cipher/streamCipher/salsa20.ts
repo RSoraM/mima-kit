@@ -1,15 +1,13 @@
 import { createCipher } from '../../core/cipher'
-import { Counter, KitError, U8, genBitMask, resizeBuffer, rotateL } from '../../core/utils'
+import { Counter, KitError, U8, resizeBuffer, rotateL32 } from '../../core/utils'
 
 // * Functions
 
-const mask32 = genBitMask(32)
-
 function QR(a: number, b: number, c: number, d: number) {
-  b ^= Number(rotateL(32, a + d, 7, mask32))
-  c ^= Number(rotateL(32, b + a, 9, mask32))
-  d ^= Number(rotateL(32, c + b, 13, mask32))
-  a ^= Number(rotateL(32, d + c, 18, mask32))
+  b ^= rotateL32(a + d, 7)
+  c ^= rotateL32(b + a, 9)
+  d ^= rotateL32(c + b, 13)
+  a ^= rotateL32(d + c, 18)
   return [a, b, c, d]
 }
 

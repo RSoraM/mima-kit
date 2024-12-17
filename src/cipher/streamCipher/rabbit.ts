@@ -7,9 +7,9 @@ const A = new Uint32Array([0x4D34D34D, 0xD34D34D3, 0x34D34D34, 0x4D34D34D, 0xD34
 
 // * Rabbit Algorithm
 
-function _rabbit(K: Uint8Array, iv: Uint8Array) {
-  if (K.byteLength !== 16) {
-    throw new KitError('rabbit requires a key of 16 bytes')
+function _rabbit(key: Uint8Array, iv: Uint8Array) {
+  if (key.length !== 16) {
+    throw new KitError('Rabbit key must be 16 byte')
   }
 
   // 内部状态
@@ -60,7 +60,7 @@ function _rabbit(K: Uint8Array, iv: Uint8Array) {
   // 初始化
   (() => {
     // 配置密钥
-    const K16 = new Uint16Array(K.buffer)
+    const K16 = new Uint16Array(key.buffer)
     for (let i = 0; i < 8; i++) {
       if ((i & 1) === 0) {
         const KH = K16[(i + 1) % 8]
@@ -87,7 +87,7 @@ function _rabbit(K: Uint8Array, iv: Uint8Array) {
     }
 
     // 配置 IV
-    if (iv.byteLength === 8) {
+    if (iv.length === 8) {
       const iv32 = new Uint32Array(iv.buffer)
       const iv16 = new Uint16Array(iv.buffer)
       C32[0] ^= iv32[0]
@@ -102,8 +102,8 @@ function _rabbit(K: Uint8Array, iv: Uint8Array) {
         nextState(true)
       }
     }
-    else if (iv.byteLength !== 0 && iv.byteLength !== 8) {
-      throw new KitError('rabbit requires a iv of 8 bytes')
+    else if (iv.length !== 0 && iv.length !== 8) {
+      throw new KitError('Rabbit iv must be 8 byte')
     }
   })()
 
@@ -122,7 +122,7 @@ function _rabbit(K: Uint8Array, iv: Uint8Array) {
     return S
   }
   const cipher = (M: Uint8Array) => {
-    const BLOCK_TOTAL = Math.ceil(M.byteLength >> 4) || 1
+    const BLOCK_TOTAL = Math.ceil(M.length >> 4) || 1
     S = squeeze(BLOCK_TOTAL)
     return new U8(M.map((_, i) => _ ^ S[i]))
   }
@@ -134,20 +134,7 @@ function _rabbit(K: Uint8Array, iv: Uint8Array) {
 }
 
 /**
- * @description
- * Rabbit stream cipher
- *
- * Rabbit 流密码
- *
- * ```ts
- * const cipher = rabbit(k, iv)
- * cipher.encrypt(m)
- * cipher.decrypt(c)
- *
- * // Skip iv setup
- * const cipher = rabbit(k, '')
- * const cipher = rabbit(k, new Uint8Array(0))
- * ```
+ * Rabbit 流密码 / stream cipher
  */
 export const rabbit = createCipher(
   _rabbit,

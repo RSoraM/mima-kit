@@ -34,7 +34,7 @@ function cipher(M: Uint8Array, SBox: Uint8Array) {
 
 function _arc4(K: Uint8Array) {
   if (K.byteLength < 5 || K.byteLength > 256) {
-    throw new KitError(`RC4 requires a key of length 5 to 256 bytes`)
+    throw new KitError(`RC4 key must be between 5 and 256 byte`)
   }
   const SBox = KSA(K)
   return {
@@ -44,16 +44,7 @@ function _arc4(K: Uint8Array) {
 }
 
 /**
- * @description
- * ARC4 stream cipher
- *
- * ARC4 流密码
- *
- * ```ts
- * const cipher = arc4(k)
- * cipher.encrypt(m)
- * cipher.decrypt(c)
- * ```
+ * ARC4 流密码 / stream cipher
  */
 export const arc4 = createCipher(
   _arc4,
