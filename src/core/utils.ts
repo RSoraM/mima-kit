@@ -3,8 +3,6 @@ import { UTF8 } from './codec'
 
 // * Math utility functions
 
-// TODO 废弃一系列的 rotate 函数，统一使用 rotateL 和 rotateR
-
 /** 32-bit 循环左移 */
 export function rotateL32(x: number, n: number) {
   x >>>= 0
@@ -19,46 +17,6 @@ export function rotateR32(x: number, n: number) {
   n %= 32
   x = (x >>> n) | (x << (32 - n))
   return x >>> 0
-}
-
-/** 64-bit 循环左移 */
-export function rotateL64(x: bigint | Uint8Array, n: number | bigint) {
-  x = typeof x === 'bigint' ? x : U8.from(x).toBI()
-  n = typeof n === 'bigint' ? n : BigInt(n)
-  x &= 0xFFFFFFFFFFFFFFFFn
-  n %= 64n
-  x = (x << n) | (x >> (64n - n))
-  return x & 0xFFFFFFFFFFFFFFFFn
-}
-
-/** 64-bit 循环右移 */
-export function rotateR64(x: bigint | Uint8Array, n: number | bigint) {
-  x = typeof x === 'bigint' ? x : U8.from(x).toBI()
-  n = typeof n === 'bigint' ? n : BigInt(n)
-  x &= 0xFFFFFFFFFFFFFFFFn
-  n %= 64n
-  x = (x >> n) | (x << (64n - n))
-  return x & 0xFFFFFFFFFFFFFFFFn
-}
-
-/** 128-bit 循环左移 */
-export function rotateL128(x: bigint | Uint8Array, n: number | bigint) {
-  x = typeof x === 'bigint' ? x : U8.from(x).toBI()
-  n = typeof n === 'bigint' ? n : BigInt(n)
-  x &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
-  n %= 128n
-  x = (x << n) | (x >> (128n - n))
-  return x & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
-}
-
-/** 128-bit 循环右移 */
-export function rotateR128(x: bigint | Uint8Array, n: number | bigint) {
-  x = typeof x === 'bigint' ? x : U8.from(x).toBI()
-  n = typeof n === 'bigint' ? n : BigInt(n)
-  x &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
-  n %= 128n
-  x = (x >> n) | (x << (128n - n))
-  return x & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
 }
 
 /**
