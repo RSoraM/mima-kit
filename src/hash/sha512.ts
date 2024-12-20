@@ -28,13 +28,13 @@ const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n)
  */
 function IVGen(t: number) {
   if (t <= 0) {
-    throw new KitError('t must be greater than 0')
+    throw new KitError('SHA-512 truncation must be greater than 0')
   }
   if (t >= 512) {
-    throw new KitError('t must be less than 512')
+    throw new KitError('SHA-512 truncation must be less than 512')
   }
   if (t === 384) {
-    throw new KitError('t must not be 384')
+    throw new KitError('SHA-512 truncation must not be 384')
   }
 
   const state = new U8(64)
