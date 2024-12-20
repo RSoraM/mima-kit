@@ -32,7 +32,7 @@ npm install mima-kit
 # 目录
 
 <!-- 字符编码 -->
-<a href="#字符编码" style="margin-left:1em">字符编码</a>
+▶ <a href="#字符编码">字符编码</a>
 <!-- 字符编码 -->
 
 <!-- 散列算法 -->
@@ -40,9 +40,9 @@ npm install mima-kit
 <summary>
 <a href="#散列算法">散列算法</a>
 </summary>
-<ul style="list-style-type: none;">
+<ul>
   <li><a href="#加密散列算法">加密散列算法</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#sm3">SM3</a></li>
     <li><a href="#md5">MD5</a></li>
     <li><a href="#sha-1">SHA-1</a></li>
@@ -55,7 +55,7 @@ npm install mima-kit
     <li><a href="#k12">K12</a></li>
   </ul>
   <li><a href="#带密钥的加密散列算法">带密钥的加密散列算法</a></li>
-  <ul style="list-style-type: none;padding-left: 1em;">
+  <ul>
     <li><a href="#hmac">HMAC</a></li>
     <li><a href="#kmac">KMAC</a></li>
   </ul>
@@ -69,9 +69,9 @@ npm install mima-kit
 <summary>
 <a href="#对称密钥算法">对称密钥算法</a>
 </summary>
-<ul style="list-style-type: none;">
+<ul>
   <li><a href="#分组密码算法">分组密码算法</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#sm4">SM4</a></li>
     <li><a href="#aes">AES</a></li>
     <li><a href="#aria">ARIA</a></li>
@@ -87,7 +87,7 @@ npm install mima-kit
   <li><a href="#填充模式">填充模式</a></li>
   <li><a href="#工作模式">工作模式</a></li>
   <li><a href="#流密码算法">流密码算法</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#zuc">ZUC</a></li>
     <li><a href="#arc4">ARC4</a></li>
     <li><a href="#salsa20">Salsa20</a></li>
@@ -103,9 +103,9 @@ npm install mima-kit
 <summary>
 <a href="#非对称密钥算法">非对称密钥算法</a>
 </summary>
-<ul style="list-style-type: none;">
+<ul>
   <li><a href="#rsa">RSA</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#pkcs1-mgf1">PKCS1-MGF1</a></li>
     <li><a href="#rsaes-pkcs1-v1_5">RSAES-PKCS-v1_5</a></li>
     <li><a href="#rsaes-oaep">RSAES-OAEP</a></li>
@@ -113,7 +113,7 @@ npm install mima-kit
     <li><a href="#rsassa-pss">RSASSA-PSS</a></li>
   </ul>
   <li><a href="#ecc">ECC</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#point-compress">Point Compress</a></li>
     <li><a href="#ecdh">ECDH</a></li>
     <li><a href="#eccdh">ECCDH</a></li>
@@ -130,9 +130,9 @@ npm install mima-kit
 <summary>
 <a href="#其他组件">其他组件</a>
 </summary>
-<ul style="list-style-type: none;">
+<ul>
   <li><a href="#密钥派生">密钥派生</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#x963kdf">X9.63KDF</a></li>
     <li><a href="#hkdf">HKDF</a></li>
     <li><a href="#pbkdf2">PBKDF2</a></li>
