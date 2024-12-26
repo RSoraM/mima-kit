@@ -3,7 +3,7 @@ import { cbc, createCipher } from '../../core/cipher'
 import { Fp, FpEC, type FpECUtils } from '../../core/ec'
 import type { FpECPoint, FpWECParams } from '../../core/ecParams'
 import type { Digest, KeyHash } from '../../core/hash'
-import { KitError, U8, genRandomBI, getBIBits, joinBuffer, mod, modInverse, modPrimeSquare } from '../../core/utils'
+import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modInverse, modPrimeSquare } from '../../core/utils'
 import type { KDF } from '../../core/kdf'
 import { x963kdf } from '../../core/kdf'
 import { aes } from '../blockCipher/aes'
@@ -242,14 +242,6 @@ export function defineECIES(config?: ECIESConfig) {
   return { cipher, mac, kdf, S1, S2, iv }
 }
 
-function createMask(n: number) {
-  let mask = 0n
-  for (let i = 0; i < n; i++) {
-    mask = (mask << 1n) | 1n
-  }
-  return mask
-}
-
 // * EC Algorithms
 
 /**
@@ -262,7 +254,7 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
   const p_bits = getBIBits(p)
   const p_bytes = (p_bits + 7) >> 3
   const n_bits = getBIBits(n)
-  const n_mask = createMask(n_bits)
+  const n_mask = genBitMask(n_bits)
   const FpECOpt = FpEC(curve)
   const FpOpt = Fp(p)
   const { addPoint, mulPoint } = FpECOpt

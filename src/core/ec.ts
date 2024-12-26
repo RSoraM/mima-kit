@@ -1,4 +1,4 @@
-import type { FpECPoint, FpWECParams } from './ecParams'
+import type { FpECPoint, FpMECParams, FpTECParams, FpWECParams } from './ecParams'
 import { mod, modInverse } from './utils'
 
 // * Interfaces
@@ -44,7 +44,23 @@ export function Fp(p: bigint) {
  *
  * Prime Field Elliptic Curve Operations
  */
-export function FpEC(curve: FpWECParams): FpECUtils {
+export function FpEC(curve: FpWECParams | FpMECParams | FpTECParams): FpECUtils {
+  switch (curve.type) {
+    case 'Weierstrass':
+      return FpWEC(curve)
+    case 'Montgomery':
+      return FpMEC(curve)
+    case 'TwistedEdwards':
+      return FpTEC(curve)
+  }
+}
+
+/**
+ * 素域 Weierstrass 椭圆曲线运算
+ *
+ * Prime Field Weierstrass Elliptic Curve Operations
+ */
+export function FpWEC(curve: FpWECParams): FpECUtils {
   const { p, a } = curve
   const { plus, multiply, subtract, divide } = Fp(p)
 
@@ -106,4 +122,26 @@ export function FpEC(curve: FpWECParams): FpECUtils {
   }
 
   return { addPoint, mulPoint }
+}
+
+/**
+ * 素域 Montgomery 椭圆曲线运算
+ *
+ * Prime Field Montgomery Elliptic Curve Operations
+ */
+// eslint-disable-next-line unused-imports/no-unused-vars
+export function FpMEC(curve: FpMECParams): FpECUtils {
+  // TODO
+  return {} as any
+}
+
+/**
+ * 素域 Twisted Edwards 椭圆曲线运算
+ *
+ * Prime Field Twisted Edwards Elliptic Curve Operations
+ */
+// eslint-disable-next-line unused-imports/no-unused-vars
+export function FpTEC(curve: FpTECParams): FpECUtils {
+  // TODO
+  return {} as any
 }

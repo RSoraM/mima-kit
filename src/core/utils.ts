@@ -31,8 +31,8 @@ export function rotateR32(x: number, n: number) {
 export function genBitMask(w: number | bigint) {
   w = BigInt(w)
   let mask = 0x0n
-  for (let i = 0n; i < w; i++) {
-    mask |= 1n << i
+  for (let i = 0; i < w; i++) {
+    mask = (mask << 1n) | 1n
   }
   return mask
 }
