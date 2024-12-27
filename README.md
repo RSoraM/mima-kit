@@ -121,6 +121,13 @@ npm install mima-kit
     <li><a href="#ecdsa">ECDSA</a></li>
     <li><a href="#ecies">ECIES</a></li>
   </ul>
+  <li><a href="#sm2">SM2</a></li>
+  <ul>
+    <li><a href="#sm2-identifier">SM2-Identifier</a></li>
+    <li><a href="#sm2-dh">SM2-DH</a></li>
+    <li><a href="#sm2-dsa">SM2-DSA</a></li>
+    <li><a href="#sm2-es">SM2-ES</a></li>
+  </ul>
 </ul>
 </details>
 <!-- 非对称密钥算法 -->
@@ -1251,6 +1258,179 @@ interface ECIESConfig {
   S2?: Uint8Array
   /** Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
   iv?: Uint8Array
+}
+```
+
+## SM2
+
+Specification: [GB/T 35276-2017](https://www.oscca.gov.cn/sca/xxgk/2010-12/17/1002386/files/b791a9f908bb4803875ab6aeeb7b4e03.pdf)
+
+`SM2` 算法是中国国家密码管理局发布的一种基于 `椭圆曲线` 的 `非对称加密算法`。理论上，`SM2` 算法可以使用任意的 `椭圆曲线`，但是在实际应用中，`SM2` 算法通常使用 `sm2p256v1` 曲线，所以 `mima-kit` 使用 `sm2p256v1` 曲线作为 `SM2` 算法的默认曲线。
+
+```typescript
+const sm2ec = sm2()
+const key = sm2ec.genKey()
+```
+
+### SM2-Identifier
+
+`SM2` 在 `ECC` 的基础上增加了 `可辨别标识 (Distinguishing Identifier)` 的概念。`可辨别标识` 利用用户标识、公钥和曲线的部分参数，实现无歧义地标识实体的身份信息。
+
+```typescript
+const sm2ec = sm2()
+const ID = UTF8('alice@rabbit.panic')
+const KA = sm2ec.genKey(ID)
+const ZA = sm2ec.di(ID, KA)
+```
+
+```typescript
+interface SM2DI {
+  /**
+   * @param {Uint8Array} id - User Identity
+   * @param {ECPublicKey} key - Public Key
+   * @param {Hash} hash - Hash Algorithm (default: SM3)
+   */
+  (id: Uint8Array, key: ECPublicKey, hash?: Hash): U8
+}
+```
+
+### SM2-DH
+
+`SM2` 算法的密钥协商协议。与标准不同，`mima-kit` 的 `SM2-DH` 直接返回 `共享密钥`。你需要另外使用 `KDF` 从 `共享密钥` 中派生密钥。`SM2` 标准使用的 `KDF` 是 `ANSI-X9.63-KDF with SM3`。`ANSI-X9.63-KDF` 和 `SM3` 都是 `mima-kit` 支持的算法，你可以直接使用她们。
+
+```typescript
+const sm2ec = sm2()
+const kdf = x963kdf(sm3)
+// Initiator: Alice
+// Responder: Bob
+
+// Step 1: Alice
+const KA = sm2ec.genKey()
+const KX = sm2ec.genKey()
+const ka = { Q: KA.Q } // public key of Alice
+const kx = { Q: KX.Q } // temporary public key of Alice
+const ID_A = UTF8('alice@rabbit.panic')
+const ZA = sm2ec.di(ID_A, KA) // Alice's distinguishable identifier
+// send ZA, ka, kx to Bob
+
+// Step 2: Bob
+const KB = sm2ec.genKey()
+const KY = sm2ec.genKey()
+const kb = { Q: KB.Q } // public key of Bob
+const ky = { Q: KY.Q } // temporary public key of Bo
+const ID_B = UTF8('bob@rolling.stone')
+const ZB = sm2ec.di(ID_B, KB) // Bob's distinguishable identifier
+const SB = sm2ec.dh(KB, KY, ka, kx, ZA, ZB) // shared secret key
+const DKB = kdf(256, S) // derive key
+// send ZB, kb, ky to Alice
+
+// Step 3: Alice
+const SA = sm2ec.dh(KA, KX, kb, ky, ZA, ZB) // shared secret key
+const DKA = kdf(256, S) // derive key
+
+SA === SB
+DKA === DKB
+```
+
+```typescript
+interface SM2DH {
+  /**
+   * @param {ECKeyPair} KA - Self Key Pair
+   * @param {ECPublicKey} KX - Self Temporary Key Pair
+   * @param {ECPublicKey} KB - Opposite Public Key
+   * @param {ECPublicKey} KY - Opposite Temporary Public Key
+   * @param [Uint8Array] ZA - Initiator Identity Derived Value
+   * @param [Uint8Array] ZB - Receiver Identity Derived Value
+   * @returns {U8} - Keying Material
+   */
+  (KA: ECKeyPair, KX: ECKeyPair, KB: ECPublicKey, KY: ECPublicKey, ZA?: Uint8Array, ZB?: Uint8Array): U8
+}
+```
+
+### SM2-DSA
+
+`SM2 Digital Signature Algorithm` 是 `SM2` 算法的签名方案。她接受一个 `Hash` 函数作为参数，`SM2-DSA` 使用 `SM3` 作为默认的 `Hash` 函数。
+
+> `SM2-DSA` 的 `签名` 方法返回的是 `SM2DSASignature` 类型，而不是 `U8` 类型。`SM2-DSA` 签名的结果包含了 `r` 和 `s` 两个值。
+
+```typescript
+const sm2ec = sm2()
+const ID = UTF8('alice@rabbit.panic')
+const KA = sm2ec.genKey(ID)
+const ZA = sm2ec.di(ID, KA)
+const M = UTF8('mima-kit')
+
+const signer = sm2ec.dsa() // using SM3 by default
+const signature = signer.sign(ZA, KA, M)
+signer.verify(ZA, KA, M, signature) // true
+```
+
+```typescript
+interface SM2DSASignature {
+  r: bigint
+  s: bigint
+}
+interface SM2DSA {
+  /**
+   * @param {Hash} hash - Hash Algorithm (default: SM3)
+   */
+  (hash?: Hash): {
+    /**
+     * @param {Uint8Array} Z - Identity Derived Value
+     * @param {ECPrivateKey} key - Signer Private Key
+     * @param {Uint8Array} M - Message
+     */
+    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature
+    /**
+     * @param {Uint8Array} Z - Identity Derived Value
+     * @param {ECPublicKey} key - Signer Public Key
+     * @param {Uint8Array} M - Message
+     * @param {SM2DSASignature} S - Signature
+     */
+    verify: (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => boolean
+  }
+}
+```
+
+### SM2-ES
+
+`SM2-ES` 是 `SM2` 算法的加密方案。
+
+```typescript
+const sm2ec = sm2(curve)
+const M = UTF8('The king\'s ears are donkey ears')
+
+const key = sm2ec.genKey()
+const cipher = sm2ec.es()
+const C = cipher.encrypt(key, M)
+cipher.decrypt(key, C) // M
+```
+
+```typescript
+interface SM2Encrypt {
+  /**
+   * @param {ECPublicKey} p_key - Receiver Public Key
+   * @param {Uint8Array} M - Plaintext
+   */
+  (p_key: ECPublicKey, M: Uint8Array): U8
+}
+interface SM2Decrypt {
+  /**
+   * @param {ECPrivateKey} s_key - Decryptor Private Key
+   * @param {Uint8Array} C - Ciphertext
+   */
+  (s_key: ECPrivateKey, C: Uint8Array): U8
+}
+interface SM2EncryptionScheme {
+  /**
+   * @param {Hash} hash - Hash Algorithm (default: SM3)
+   * @param {KDF} kdf - Key Derivation Function (default: X9.63 KDF with SM3)
+   * @param {'c1c2c3' | 'c1c3c2'} order - Ciphertext Segment Order (default: 'c1c3c2')
+   */
+  (hash?: Hash, kdf?: KDF, order?: 'c1c2c3' | 'c1c3c2'): {
+    encrypt: SM2Encrypt
+    decrypt: SM2Decrypt
+  }
 }
 ```
 
