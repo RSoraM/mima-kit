@@ -255,9 +255,9 @@ describe('sm2', () => {
 
     const key = sm2ec.genKey()
     const Z = sm2ec.di(ID_A, key)
-    const signer = sm2ec.dsa(Z)
-    const signature = signer.sign(key, M)
-    expect(signer.verify(key, M, signature)).toBe(true)
+    const signer = sm2ec.dsa()
+    const signature = signer.sign(Z, key, M)
+    expect(signer.verify(Z, key, M, signature)).toBe(true)
 
     // Vector Source: SM2椭圆曲线公钥密码算法 第2部分：数字签名算法
     const key_from_outside = {
@@ -269,12 +269,12 @@ describe('sm2', () => {
       },
     }
     const Z_from_outside = sm2ec.di(ID_A, key_from_outside)
-    const signer_from_outside = sm2ec.dsa(Z_from_outside)
+    const signer_from_outside = sm2ec.dsa()
     const sign_from_outside = {
       r: HEX('40F1EC59 F793D9F4 9E09DCEF 49130D41 94F79FB1 EED2CAA5 5BACDB49 C4E755D1').toBI(),
       s: HEX('6FC6DAC3 2C5D5CF1 0C77DFB2 0F7C2EB6 67A45787 2FB09EC5 6327A67E C7DEEBE7').toBI(),
     }
-    expect(signer_from_outside.verify(key_from_outside, M, sign_from_outside)).toBe(true)
+    expect(signer_from_outside.verify(Z_from_outside, key_from_outside, M, sign_from_outside)).toBe(true)
   })
   it('ecdh', () => {
     const sm2ec = sm2(curve)

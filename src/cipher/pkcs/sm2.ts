@@ -48,21 +48,22 @@ interface SM2DSA {
    *
    * SM2 Elliptic Curve Digital Signature Algorithm
    *
-   * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
    * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
    */
-  (Z: Uint8Array, hash?: Hash): {
+  (hash?: Hash): {
     /**
+     * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
      * @param {ECPrivateKey} key - 签名方私钥 / Signer Private Key
      * @param {Uint8Array} M - 消息 / Message
      */
-    sign: (key: ECPrivateKey, M: Uint8Array) => SM2DSASignature
+    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature
     /**
+     * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
      * @param {ECPublicKey} key - 签名方公钥 / Signer Public Key
      * @param {Uint8Array} M - 消息 / Message
      * @param {SM2DSASignature} S - 签名 / Signature
      */
-    verify: (key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => boolean
+    verify: (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => boolean
   }
 }
 
@@ -221,13 +222,13 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
     const yu = U8.fromBI(V.y)
     return joinBuffer(xu, yu, ZA, ZB)
   }
-  const dsa: SM2DSA = (Z: Uint8Array, hash: Hash = sm3) => {
+  const dsa: SM2DSA = (hash: Hash = sm3) => {
     if (hash.DIGEST_SIZE !== 32) {
       throw new KitError('不支持的哈希算法')
     }
 
     // shortcut
-    const sign = (key: ECPrivateKey, M: Uint8Array) => {
+    const sign = (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => {
       const dA = key.d
       let r = 0n
       let s = 0n
@@ -247,7 +248,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
       } while (1)
       return { r, s }
     }
-    const verify = (key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => {
+    const verify = (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => {
       const PA = key.Q
       const { r, s } = S
       if (r <= 0n || r >= n || s <= 0n || s >= n) {
