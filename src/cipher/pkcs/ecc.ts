@@ -37,30 +37,47 @@ export interface ECKeyPair extends ECPrivateKey, ECPublicKey {
 }
 
 interface ECDH {
+  /**
+   * @param {ECPrivateKey} s_key - 己方私钥 / Self Private Key
+   * @param {ECPublicKey} p_key - 对方公钥 / Counterparty Public Key
+   */
   (s_key: ECPrivateKey, p_key: ECPublicKey): FpECPoint
 }
 
 interface ECMQV {
+  /**
+   * @param {ECKeyPair} u1 - 己方密钥对 / Self Key Pair
+   * @param {ECKeyPair} u2 - 己方临时密钥对 / Self Temporary Key Pair
+   * @param {ECPublicKey} v1 - 对方公钥 / Counterparty Public Key
+   * @param {ECPublicKey} v2 - 对方临时公钥 / Counterparty Temporary Public Key
+   */
   (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey): FpECPoint
 }
 
 interface ECDSASignature {
   /**
-   * 临时公钥
-   *
-   * Temporary Public Key
+   * 临时公钥 / Temporary Public Key
    */
   r: bigint
   /**
-   * 签名值
-   *
-   * Signature Value
+   * 签名值 / Signature Value
    */
   s: bigint
 }
 interface ECDSA {
+  /**
+   * @param {Digest} [hash=sha256] - 摘要函数 / Digest Function
+   */
   (hash?: Digest): {
+    /**
+     * @param {ECPrivateKey} s_key - 签名方私钥 / Signer's Private Key
+     * @param {Uint8Array} M - 消息 / Message
+     */
     sign: (s_key: ECPrivateKey, M: Uint8Array) => ECDSASignature
+    /**
+     * @param {ECPublicKey} p_key - 签名方公钥 / Signer's Public Key
+     * @param {Uint8Array} M - 消息 / Message
+     */
     verify: (p_key: ECPublicKey, M: Uint8Array, signature: ECDSASignature) => boolean
   }
 }
@@ -96,21 +113,15 @@ interface ECIESConfig {
 }
 interface ECIESCiphertext {
   /**
-   * 临时公钥
-   *
-   * Temporary Public Key
+   * 临时公钥 / Temporary Public Key
    */
   R: ECPublicKey
   /**
-   * 密文
-   *
-   * Ciphertext
+   * 密文 / Ciphertext
    */
   C: Uint8Array
   /**
-   * 校验值
-   *
-   * Check Value
+   * 校验值 / Check Value
    */
   D: Uint8Array
 }
