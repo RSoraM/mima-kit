@@ -97,7 +97,7 @@ interface SM2EncryptionScheme {
    *
    * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
    * @param {KDF} kdf - 密钥派生函数 / Key Derivation Function (default: X9.63 KDF with SM3)
-   * @param {'c1c2c3' | 'c1c3c2'} order - 密文分段顺序 / Ciphertext Segment Order
+   * @param {'c1c2c3' | 'c1c3c2'} order - 密文分段顺序 / Ciphertext Segment Order (default: 'c1c3c2')
    */
   (hash?: Hash, kdf?: KDF, order?: 'c1c2c3' | 'c1c3c2'): {
     encrypt: SM2Encrypt

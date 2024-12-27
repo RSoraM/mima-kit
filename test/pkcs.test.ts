@@ -249,7 +249,7 @@ describe('sm2', () => {
   }
   const ID_A = UTF8('ALICE123@YAHOO.COM')
   const ID_B = UTF8('BILL456@YAHOO.COM')
-  it('ecdsa', () => {
+  it('dsa', () => {
     const sm2ec = sm2(curve)
     const M = UTF8('message digest')
 
@@ -276,7 +276,7 @@ describe('sm2', () => {
     }
     expect(signer_from_outside.verify(Z_from_outside, key_from_outside, M, sign_from_outside)).toBe(true)
   })
-  it('ecdh', () => {
+  it('dh', () => {
     const sm2ec = sm2(curve)
     const ka = sm2ec.genKey()
     const kx = sm2ec.genKey()
