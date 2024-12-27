@@ -12,7 +12,7 @@ import { hmac } from '../../hash/hmac'
 
 // * Interfaces
 
-interface ECPublicKey {
+export interface ECPublicKey {
   /**
    * 素域椭圆曲线公钥
    *
@@ -20,7 +20,7 @@ interface ECPublicKey {
    */
   readonly Q: Readonly<FpECPoint>
 }
-interface ECPrivateKey {
+export interface ECPrivateKey {
   /**
    * 素域椭圆曲线私钥
    *
@@ -33,7 +33,7 @@ interface ECPrivateKey {
  *
  * Elliptic Curve Key Pair
  */
-interface ECKeyPair extends ECPrivateKey, ECPublicKey {
+export interface ECKeyPair extends ECPrivateKey, ECPublicKey {
 }
 
 interface ECDH {

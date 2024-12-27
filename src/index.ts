@@ -1,5 +1,5 @@
 // * Utils
-export { U8 } from './core/utils'
+export { U8, joinBuffer } from './core/utils'
 export { genPrime } from './core/prime'
 
 // * Codec
@@ -114,3 +114,6 @@ export { w25519, w448 } from './core/ecParams'
 // export { ed25519, ed448 } from './core/ecParams'
 // export { curve25519, curve448 } from './core/ecParams'
 export { bp192r1, bp224r1, bp256r1, bp320r1, bp384r1, bp512r1 } from './core/ecParams'
+
+// * SM2
+export { sm2 } from './cipher/pkcs/sm2'

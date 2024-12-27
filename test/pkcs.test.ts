@@ -10,6 +10,8 @@ import { hmac } from '../src/hash/hmac'
 import { sha1 } from '../src/hash/sha1'
 import { sha256 } from '../src/hash/sha256'
 import * as pkcs1 from '../src/cipher/pkcs/pkcs1'
+import { sm2 } from '../src/cipher/pkcs/sm2'
+import { sm3 } from '../src/hash/sm3'
 
 const { pkcs1_es_1_5, pkcs1_es_oaep } = pkcs1
 const { pkcs1_ssa_1_5, pkcs1_ssa_pss } = pkcs1
@@ -228,5 +230,139 @@ describe('kdf', () => {
     const salt = UTF8('salt')
     const kdf = pbkdf2(hmac(sha1), salt, 5000)
     expect(kdf(20 << 3, ikm)).toMatchObject(HEX('edf738254821c55da61e6afa20efd0c657cb941c'))
+  })
+})
+
+describe('sm2', () => {
+  const curve: typeof secp160r1 = {
+    type: 'Weierstrass',
+    p: HEX('8542D69E4C044F18E8B92435BF6FF7DE457283915C45517D722EDB8B08F1DFC3').toBI(),
+    a: HEX('787968B4FA32C3FD2417842E73BBFEFF2F3C848B6831D7E0EC65228B3937E498').toBI(),
+    b: HEX('63E4C6D3B23B0C849CF84241484BFE48F61D59A5B16BA06E6E12D1DA27C5249A').toBI(),
+    G: {
+      isInfinity: false,
+      x: HEX('421DEBD61B62EAB6746434EBC3CC315E32220B3BADD50BDC4C4E6C147FEDD43D').toBI(),
+      y: HEX('0680512BCBB42C07D47349D2153B70C4E5D7FDFCBFA36EA1A85841B9E46E09A2').toBI(),
+    },
+    n: HEX('8542D69E4C044F18E8B92435BF6FF7DD297720630485628D5AE74EE7C32E79B7').toBI(),
+    h: 1n,
+  }
+  const ID_A = UTF8('ALICE123@YAHOO.COM')
+  const ID_B = UTF8('BILL456@YAHOO.COM')
+  it('ecdsa', () => {
+    const sm2ec = sm2(curve)
+    const M = UTF8('message digest')
+
+    const key = sm2ec.genKey()
+    const Z = sm2ec.gi(ID_A, key)
+    const signer = sm2ec.dsa(Z)
+    const signature = signer.sign(key, M)
+    expect(signer.verify(key, M, signature)).toBe(true)
+
+    // Vector Source: SM2椭圆曲线公钥密码算法 第2部分：数字签名算法
+    const key_from_outside = {
+      d: HEX('128B2FA8BD433C6C068C8D803DFF79792A519A55171B1B650C23661D15897263').toBI(),
+      Q: {
+        isInfinity: false,
+        x: HEX('0AE4C7798AA0F119471BEE11825BE46202BB79E2A5844495E97C04FF4DF2548A').toBI(),
+        y: HEX('7C0240F88F1CD4E16352A73C17B7F16F07353E53A176D684A9FE0C6BB798E857').toBI(),
+      },
+    }
+    const Z_from_outside = sm2ec.gi(ID_A, key_from_outside)
+    const signer_from_outside = sm2ec.dsa(Z_from_outside)
+    const sign_from_outside = {
+      r: HEX('40F1EC59 F793D9F4 9E09DCEF 49130D41 94F79FB1 EED2CAA5 5BACDB49 C4E755D1').toBI(),
+      s: HEX('6FC6DAC3 2C5D5CF1 0C77DFB2 0F7C2EB6 67A45787 2FB09EC5 6327A67E C7DEEBE7').toBI(),
+    }
+    expect(signer_from_outside.verify(key_from_outside, M, sign_from_outside)).toBe(true)
+  })
+  it('ecdh', () => {
+    const sm2ec = sm2(curve)
+    const ka = sm2ec.genKey()
+    const kx = sm2ec.genKey()
+    const ZA = sm2ec.gi(ID_A, ka)
+    const kb = sm2ec.genKey()
+    const ky = sm2ec.genKey()
+    const ZB = sm2ec.gi(ID_B, kb)
+    const sA = sm2ec.dh(ka, kx, kb, ky, ZA, ZB)
+    const sB = sm2ec.dh(kb, ky, ka, kx, ZA, ZB)
+    expect(sA.buffer).toMatchObject(sB.buffer)
+
+    // Vector Source: SM2椭圆曲线公钥密码算法 第3部分：数字证书
+    const ka_from_outside = {
+      d: HEX('6FCBA2EF 9AE0AB90 2BC3BDE3 FF915D44 BA4CC78F 88E2F8E7 F8996D3B 8CCEEDEE').toBI(),
+      Q: {
+        isInfinity: false,
+        x: HEX('3099093B F3C137D8 FCBBCDF4 A2AE50F3 B0F216C3 122D7942 5FE03A45 DBFE1655').toBI(),
+        y: HEX('3DF79E8D AC1CF0EC BAA2F2B4 9D51A4B3 87F2EFAF 48233908 6A27A8E0 5BAED98B').toBI(),
+      },
+    }
+    const kx_from_outside = {
+      d: HEX('83A2C9C8 B96E5AF7 0BD480B4 72409A9A 327257F1 EBB73F5B 073354B2 48668563').toBI(),
+      Q: {
+        isInfinity: false,
+        x: HEX('6CB56338 16F4DD56 0B1DEC45 8310CBCC 6856C095 05324A6D 23150C40 8F162BF0').toBI(),
+        y: HEX('0D6FCF62 F1036C0A 1B6DACCF 57399223 A65F7D7B F2D9637E 5BBBEB85 7961BF1A').toBI(),
+      },
+    }
+    const ZA_from_outside = sm2ec.gi(ID_A, ka_from_outside)
+    const kb_from_outside = {
+      d: HEX('5E35D7D3 F3C54DBA C72E6181 9E730B01 9A84208C A3A35E4C 2E353DFC CB2A3B53').toBI(),
+      Q: {
+        isInfinity: false,
+        x: HEX('245493D4 46C38D8C C0F11837 4690E7DF 633A8A4B FB3329B5 ECE604B2 B4F37F43').toBI(),
+        y: HEX('53C0869F 4B9E1777 3DE68FEC 45E14904 E0DEA45B F6CECF99 18C85EA0 47C60A4C').toBI(),
+      },
+    }
+    const ky_from_outside = {
+      d: HEX('33FE2194 0342161C 55619C4A 0C060293 D543C80A F19748CE 176D8347 7DE71C80').toBI(),
+      Q: {
+        isInfinity: false,
+        x: HEX('1799B2A2 C7782953 00D9A232 5C686129 B8F2B533 7B3DCF45 14E8BBC1 9D900EE5').toBI(),
+        y: HEX('54C9288C 82733EFD F7808AE7 F27D0E73 2F7C73A7 D9AC98B7 D8740A91 D0DB3CF4').toBI(),
+      },
+    }
+    const ZB_from_outside = sm2ec.gi(ID_B, kb_from_outside)
+    const sA_from_outside = sm2ec.dh(
+      ka_from_outside,
+      kx_from_outside,
+      kb_from_outside,
+      ky_from_outside,
+      ZA_from_outside,
+      ZB_from_outside,
+    )
+    const sB_from_outside = sm2ec.dh(
+      kb_from_outside,
+      ky_from_outside,
+      ka_from_outside,
+      kx_from_outside,
+      ZA_from_outside,
+      ZB_from_outside,
+    )
+    const kdf = x963kdf(sm3)
+    expect(kdf(128, sA_from_outside)).toMatchObject(HEX('55B0AC62 A6B927BA 23703832 C853DED4'))
+    expect(kdf(128, sB_from_outside)).toMatchObject(HEX('55B0AC62 A6B927BA 23703832 C853DED4'))
+  })
+  it('es', () => {
+    const sm2ec = sm2(curve)
+    const M = UTF8('encryption standard')
+
+    const key = sm2ec.genKey()
+    const cipher = sm2ec.es()
+    const C = cipher.encrypt(key, M)
+    expect(cipher.decrypt(key, C)).toMatchObject(M)
+
+    // Vector Source: SM2椭圆曲线公钥密码算法 第4部分：公钥加密算法
+    const key_from_outside = {
+      d: HEX('1649AB77 A00637BD 5E2EFE28 3FBF3535 34AA7F7C B89463F2 08DDBC29 20BB0DA0').toBI(),
+      Q: {
+        isInfinity: false,
+        x: HEX('435B39CC A8F3B508 C1488AFC 67BE491A 0F7BA07E 581A0E48 49A5CF70 628A7E0A').toBI(),
+        y: HEX('75DDBA78 F15FEECB 4C7895E2 C1CDF5FE 01DEBB2C DBADF453 99CCF77B BA076A42').toBI(),
+      },
+    }
+    const C_from_outside = HEX('04245C26FB68B1DDDDB12C4B6BF9F2B6D5FE60A383B0D18D1C4144ABF17F6252E776CB9264C2A7E88E52B19903FDC47378F605E36811F5C07423A24B84400F01B8650053A89B41C418B0C3AAD00D886C002864679C3D7360C30156FAB7C80A0276712DA9D8094A634B766D3A285E07480653426D')
+    const cipher_from_outside = sm2ec.es(undefined, undefined, 'c1c2c3')
+    expect(cipher_from_outside.decrypt(key_from_outside, C_from_outside)).toMatchObject(M)
   })
 })
