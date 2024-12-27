@@ -8,7 +8,7 @@ import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modI
 import type { ECKeyPair, ECPrivateKey, ECPublicKey } from './ecc'
 import { FpECC } from './ecc'
 
-interface SM2GI {
+interface SM2DI {
   /**
    * SM2 可辨别标识散列
    *
@@ -116,7 +116,7 @@ interface FpSM2Crypto {
    *
    * SM2 Distinguishable Identity Hash
    */
-  gi: SM2GI
+  di: SM2DI
   /**
    * SM2 椭圆曲线加密方案
    *
@@ -180,7 +180,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   const isLegalSK = ecc.isLegalSK
   const PointToU8 = ecc.PointToU8
   const U8ToPoint = ecc.U8ToPoint
-  const gi: SM2GI = (id: Uint8Array, key: ECPublicKey, hash: Hash = sm3) => {
+  const di: SM2DI = (id: Uint8Array, key: ECPublicKey, hash: Hash = sm3) => {
     const ent = id.length << 3
     if (ent > 0xFFFF) {
       throw new KitError('ID长度超过了最大限制')
@@ -327,7 +327,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
 
   return {
     genKey,
-    gi,
+    di,
     es,
     dh,
     dsa,

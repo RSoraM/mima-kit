@@ -254,7 +254,7 @@ describe('sm2', () => {
     const M = UTF8('message digest')
 
     const key = sm2ec.genKey()
-    const Z = sm2ec.gi(ID_A, key)
+    const Z = sm2ec.di(ID_A, key)
     const signer = sm2ec.dsa(Z)
     const signature = signer.sign(key, M)
     expect(signer.verify(key, M, signature)).toBe(true)
@@ -268,7 +268,7 @@ describe('sm2', () => {
         y: HEX('7C0240F88F1CD4E16352A73C17B7F16F07353E53A176D684A9FE0C6BB798E857').toBI(),
       },
     }
-    const Z_from_outside = sm2ec.gi(ID_A, key_from_outside)
+    const Z_from_outside = sm2ec.di(ID_A, key_from_outside)
     const signer_from_outside = sm2ec.dsa(Z_from_outside)
     const sign_from_outside = {
       r: HEX('40F1EC59 F793D9F4 9E09DCEF 49130D41 94F79FB1 EED2CAA5 5BACDB49 C4E755D1').toBI(),
@@ -280,10 +280,10 @@ describe('sm2', () => {
     const sm2ec = sm2(curve)
     const ka = sm2ec.genKey()
     const kx = sm2ec.genKey()
-    const ZA = sm2ec.gi(ID_A, ka)
+    const ZA = sm2ec.di(ID_A, ka)
     const kb = sm2ec.genKey()
     const ky = sm2ec.genKey()
-    const ZB = sm2ec.gi(ID_B, kb)
+    const ZB = sm2ec.di(ID_B, kb)
     const sA = sm2ec.dh(ka, kx, kb, ky, ZA, ZB)
     const sB = sm2ec.dh(kb, ky, ka, kx, ZA, ZB)
     expect(sA.buffer).toMatchObject(sB.buffer)
@@ -305,7 +305,7 @@ describe('sm2', () => {
         y: HEX('0D6FCF62 F1036C0A 1B6DACCF 57399223 A65F7D7B F2D9637E 5BBBEB85 7961BF1A').toBI(),
       },
     }
-    const ZA_from_outside = sm2ec.gi(ID_A, ka_from_outside)
+    const ZA_from_outside = sm2ec.di(ID_A, ka_from_outside)
     const kb_from_outside = {
       d: HEX('5E35D7D3 F3C54DBA C72E6181 9E730B01 9A84208C A3A35E4C 2E353DFC CB2A3B53').toBI(),
       Q: {
@@ -322,7 +322,7 @@ describe('sm2', () => {
         y: HEX('54C9288C 82733EFD F7808AE7 F27D0E73 2F7C73A7 D9AC98B7 D8740A91 D0DB3CF4').toBI(),
       },
     }
-    const ZB_from_outside = sm2ec.gi(ID_B, kb_from_outside)
+    const ZB_from_outside = sm2ec.di(ID_B, kb_from_outside)
     const sA_from_outside = sm2ec.dh(
       ka_from_outside,
       kx_from_outside,
