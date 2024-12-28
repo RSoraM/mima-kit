@@ -1,7 +1,24 @@
 import type { FpECPoint, FpMECParams, FpTECParams, FpWECParams } from './ecParams'
-import { mod, modInverse } from './utils'
+import { mod, modInverse, modPrimeSquare } from './utils'
 
 // * Interfaces
+
+export interface FpUtils {
+  /** 素域加法 / Prime Field Addition */
+  plus: (...args: bigint[]) => bigint
+  /** 素域乘法 / Prime Field Multiplication */
+  multiply: (...args: bigint[]) => bigint
+  /** 素域减法 / Prime Field Subtraction */
+  subtract: (a: bigint, ...args: bigint[]) => bigint
+  /** 素域除法 / Prime Field Division */
+  divide: (a: bigint, b: bigint) => bigint
+  /** 素域取模 / Prime Field Modulus */
+  mod: (a: bigint) => bigint
+  /** 素域逆元 / Prime Field Modular Inverse */
+  inverse: (a: bigint) => bigint
+  /** 素域平方根 / Prime Field Square Root */
+  root: (a: bigint) => bigint
+}
 
 export interface FpECUtils {
   /**
@@ -21,22 +38,29 @@ export interface FpECUtils {
 // * FpEC Components
 
 /**
- * 素域运算
- *
- * Prime Field Operations
+ * 素域运算 / Prime Field Operations
  */
-export function Fp(p: bigint) {
-  const plus = (...args: bigint[]) => args.reduce((acc, cur) => mod(acc + cur, p))
-  const multiply = (...args: bigint[]) => args.reduce((acc, cur) => mod(acc * cur, p))
+export function Fp(p: bigint): FpUtils {
+  const _mod = (a: bigint) => mod(a, p)
+  const inverse = (a: bigint) => modInverse(a, p)
+  const root = (a: bigint) => modPrimeSquare(a, p)
+
+  const plus = (...args: bigint[]) => args.reduce((acc, cur) => _mod(acc + cur))
+  const multiply = (...args: bigint[]) => args.reduce((acc, cur) => _mod(acc * cur))
   const subtract = (a: bigint, ...args: bigint[]) => {
-    const b: bigint[] = args.map(v => mod(p - v, p))
+    const b: bigint[] = args.map(v => _mod(p - v))
     return plus(a, ...b)
   }
-  const divide = (a: bigint, b: bigint) => {
-    b = modInverse(b, p)
-    return multiply(a, b)
+  const divide = (a: bigint, b: bigint) => multiply(a, inverse(b))
+  return {
+    plus,
+    multiply,
+    subtract,
+    divide,
+    mod: _mod,
+    inverse,
+    root,
   }
-  return { plus, multiply, subtract, divide }
 }
 
 /**
@@ -129,10 +153,67 @@ export function FpWEC(curve: FpWECParams): FpECUtils {
  *
  * Prime Field Montgomery Elliptic Curve Operations
  */
-// eslint-disable-next-line unused-imports/no-unused-vars
 export function FpMEC(curve: FpMECParams): FpECUtils {
-  // TODO
-  return {} as any
+  const { p, a, b } = curve
+  const { plus, multiply, subtract, divide } = Fp(p)
+
+  const addPoint = (A: FpECPoint, B: FpECPoint): FpECPoint => {
+    const [x1, y1] = [A.x, A.y]
+    const [x2, y2] = [B.x, B.y]
+
+    // O + P = P
+    if (A.isInfinity)
+      return B
+    if (B.isInfinity)
+      return A
+
+    // P + (-P) = O
+    if (x1 === x2 && y1 !== y2) {
+      return {
+        isInfinity: true,
+        x: 0n,
+        y: 0n,
+      }
+    }
+
+    // P1 + P2
+    if (x1 !== x2) {
+      const l = divide(subtract(y2, y1), subtract(x2, x1))
+      // x3 = b * l^2 - a - x1 - x2
+      const x3 = subtract(multiply(l, l, b), a, x1, x2)
+      // y3 = (2x1 + x2 + a)l - b * l^3 - y1
+      const y3 = subtract(multiply(2n * x1 + x2 + a, l), multiply(l, l, l, b), y1)
+      return { x: x3, y: y3 }
+    }
+    // P1 + P1
+    else {
+      // l = (3x^2 + 2ax + 1) / 2by
+      const l_numerator = plus(multiply(3n, x1, x1), multiply(2n, a, x1), 1n)
+      const l_denominator = multiply(2n, b, y1)
+      const l = divide(l_numerator, l_denominator)
+      // x3 = b * l^2 - a - 2x
+      const x3 = subtract(multiply(l, l, b), a, x1 << 1n)
+      // y3 = (2x + x + a)l - b * l^3 - y
+      const y3 = subtract(multiply(x1 * 3n + a, l), multiply(b, l, l, l), y1)
+      return { x: x3, y: y3 }
+    }
+  }
+  const mulPoint = (P: FpECPoint, k: bigint): FpECPoint => {
+    if (k === 0n) {
+      return { isInfinity: true, x: 0n, y: 0n }
+    }
+    else if (k === 1n) {
+      return P
+    }
+    else if (k & 1n) {
+      return addPoint(P, mulPoint(P, k - 1n))
+    }
+    else {
+      return mulPoint(addPoint(P, P), k / 2n)
+    }
+  }
+
+  return { addPoint, mulPoint }
 }
 
 /**

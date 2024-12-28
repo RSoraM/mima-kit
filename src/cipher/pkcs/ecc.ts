@@ -1,9 +1,9 @@
 import type { BlockCipher, BlockCipherInfo } from '../../core/cipher'
 import { cbc, createCipher } from '../../core/cipher'
 import { Fp, FpEC, type FpECUtils } from '../../core/ec'
-import type { FpECPoint, FpWECParams } from '../../core/ecParams'
+import type { FpECPoint, FpMECParams, FpWECParams } from '../../core/ecParams'
 import type { Digest, KeyHash } from '../../core/hash'
-import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modInverse, modPrimeSquare } from '../../core/utils'
+import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
 import type { KDF } from '../../core/kdf'
 import { x963kdf } from '../../core/kdf'
 import { aes } from '../blockCipher/aes'
@@ -260,7 +260,7 @@ export function defineECIES(config?: ECIESConfig) {
  *
  * Prime Field Elliptic Curve Cryptography Components
  */
-export function FpECC(curve: FpWECParams): FpECCrypto {
+export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
   const { p, a, b, G, n, h } = curve
   const p_bits = getBIBits(p)
   const p_bytes = (p_bits + 7) >> 3
@@ -269,7 +269,7 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
   const FpECOpt = FpEC(curve)
   const FpOpt = Fp(p)
   const { addPoint, mulPoint } = FpECOpt
-  const { plus, multiply } = FpOpt
+  const { plus, multiply, root } = FpOpt
 
   const isLegalPK = (p_key: ECPublicKey): boolean => {
     const { Q } = p_key
@@ -340,7 +340,7 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
       const x = u8.slice(1).toBI()
       let y = 0n
       y = plus(multiply(x, x, x), multiply(a, x), b)
-      y = modPrimeSquare(y, p)
+      y = root(y)
       y = (y & 1n) === (PC & 1n) ? y : p - y
       return { isInfinity: false, x, y }
     }
@@ -391,7 +391,7 @@ export function FpECC(curve: FpWECParams): FpECCrypto {
     const Q2u = mod(u2.Q.x, L) + L
     const Q2v = mod(v2.Q.x, L) + L
     const s = mod(u2.d + Q2u * u1.d, n)
-    const P = mulPoint(addPoint(v2.Q, mulPoint(v1.Q, Q2v)), s)
+    const P = mulPoint(addPoint(v2.Q, mulPoint(v1.Q, Q2v)), s * h)
     if (P.isInfinity) {
       throw new KitError('Public key not available')
     }
