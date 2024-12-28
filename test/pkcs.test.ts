@@ -5,7 +5,7 @@ import { NO_PAD, ecb } from '../src/core/cipher'
 import { hkdf, pbkdf2, x963kdf } from '../src/core/kdf'
 import * as ecParams from '../src/core/ecParams'
 import { rsa } from '../src/cipher/pkcs/rsa'
-import { FpECC, es_xor } from '../src/cipher/pkcs/ecc'
+import { FpECC, clampX25519, clampX448, es_xor } from '../src/cipher/pkcs/ecc'
 import { hmac } from '../src/hash/hmac'
 import { sha1 } from '../src/hash/sha1'
 import { sha256 } from '../src/hash/sha256'
@@ -17,6 +17,7 @@ const { pkcs1_es_1_5, pkcs1_es_oaep } = pkcs1
 const { pkcs1_ssa_1_5, pkcs1_ssa_pss } = pkcs1
 
 const { secp160r1 } = ecParams
+const { curve25519, curve448 } = ecParams
 
 describe('pkcs#1', () => {
   const m = UTF8('meow, 喵， 🐱')
@@ -205,6 +206,25 @@ describe('ecc', () => {
     const Q = ec.U8ToPoint(P_outside)
     expect(P).toMatchObject(P_outside)
     expect(Q.y).toBe(R.y)
+  })
+  // vector source: https://tools.ietf.org/html/rfc7748
+  it('x25519', () => {
+    const ec = FpECC(curve25519)
+
+    const k_a = HEX('77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a').toReversed()
+    const p_a = ec.utils.mulPoint(curve25519.G, clampX25519(k_a).toBI())
+    const p_a_x = U8.fromBI(p_a.x)
+    const p_a_x_outside = HEX('8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a').toReversed()
+    expect(p_a_x).toMatchObject(p_a_x_outside)
+  })
+  it('x448', () => {
+    const ec = FpECC(curve448)
+
+    const k_a = HEX('9a8f4925d1519f5775cf46b04b5800d4ee9ee8bae8bc5565d498c28dd9c9baf574a9419744897391006382a6f127ab1d9ac2d8c0a598726b').toReversed()
+    const p_a = ec.utils.mulPoint(curve448.G, clampX448(k_a).toBI())
+    const p_a_x = U8.fromBI(p_a.x)
+    const p_a_x_outside = HEX('9b08f7cc31b7e3e67d22d5aea121074a273bd2b83de09c63faa73d2c22c5d9bbc836647241d953d40c5b12da88120d53177f80e532c41fa0').toReversed()
+    expect(p_a_x).toMatchObject(p_a_x_outside)
   })
 })
 

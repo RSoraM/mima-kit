@@ -496,6 +496,38 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
   }
 }
 
+export function clampX25519(k: Uint8Array, little_endian: boolean = false): U8 {
+  if (k.length !== 32) {
+    throw new KitError('Invalid X25519 private key')
+  }
+  const _ = U8.from(k.slice())
+  if (little_endian) {
+    _[0] &= 0xF8
+    _[31] = (_[31] & 0x7F) | 0x40
+  }
+  else {
+    _[31] &= 0xF8
+    _[0] = (_[0] & 0x7F) | 0x40
+  }
+  return _
+}
+
+export function clampX448(k: Uint8Array, little_endian: boolean = false): U8 {
+  if (k.length !== 56) {
+    throw new KitError('Invalid X448 private key')
+  }
+  const _ = U8.from(k.slice())
+  if (little_endian) {
+    _[0] &= 0xFC
+    _[55] |= 0x80
+  }
+  else {
+    _[55] &= 0xFC
+    _[0] |= 0x80
+  }
+  return _
+}
+
 // * Algorithms for Test
 
 /**
