@@ -1125,7 +1125,12 @@ Specification: [SEC 1](https://www.secg.org/sec1-v2.pdf)
 ```typescript
 const ec = FpECC(secp256r1)
 // Generate ECC key pair
-const key = ec.genKey()
+const key = ec.gen()
+const key = ec.gen('key_pair')
+// Generate ECC private key
+const s_key = ec.gen('private_key')
+// Generate ECC public key
+const p_key = ec.gen('public_key', s_key)
 ```
 
 ```typescript
@@ -1152,7 +1157,7 @@ interface ECKeyPair extends ECPrivateKey, ECPublicKey {
 
 ```typescript
 const ec = FpECC(secp256r1)
-const P = ec.genKey().Q
+const P = ec.gen().Q
 // will not compress by default
 const U = ec.pointToU8(P)
 // compress
@@ -1167,8 +1172,8 @@ const P = ec.U8ToPoint(U)
 
 ```typescript
 const ec = FpECC(secp256r1)
-const keyA = ec.genKey()
-const keyB = ec.genKey()
+const keyA = ec.gen()
+const keyB = ec.gen()
 const secretA = ec.ecdh(keyA, keyB).x
 const secretB = ec.ecdh(keyB, keyA).x
 // secretA === secretB
@@ -1180,8 +1185,8 @@ const secretB = ec.ecdh(keyB, keyA).x
 
 ```typescript
 const ec = FpECC(w25519)
-const keyA = ec.genKey()
-const keyB = ec.genKey()
+const keyA = ec.gen()
+const keyB = ec.gen()
 const secretAc = ec.eccdh(keyA, keyB).x
 const secretBc = ec.eccdh(keyB, keyA).x
 // secretAc === secretBc
@@ -1193,10 +1198,10 @@ const secretBc = ec.eccdh(keyB, keyA).x
 
 ```typescript
 const ec = FpECC(secp256r1)
-const u_k1 = ec.genKey()
-const u_k2 = ec.genKey()
-const v_k1 = ec.genKey()
-const v_k2 = ec.genKey()
+const u_k1 = ec.gen()
+const u_k2 = ec.gen()
+const v_k1 = ec.gen()
+const v_k2 = ec.gen()
 const secretA = ec.ecmqv(u_k1, u_k2, v_k1, v_k2).x
 const secretB = ec.ecmqv(v_k1, v_k2, u_k1, u_k2).x
 // secretA === secretB
@@ -1210,7 +1215,7 @@ const secretB = ec.ecmqv(v_k1, v_k2, u_k1, u_k2).x
 
 ```typescript
 const ec = FpECC(secp256r1)
-const key = ec.genKey()
+const key = ec.gen()
 const p = UTF8('mima-kit')
 // using SHA-256 by default
 const cipher = ec.ecdsa()
@@ -1236,7 +1241,7 @@ interface ECDSASignature {
 
 ```typescript
 const ec = FpECC(secp256r1)
-const key = ec.genKey()
+const key = ec.gen()
 const cipher = ec.ecies()
 const p = UTF8('mima-kit')
 const c = cipher.encrypt(key, p)
@@ -1269,7 +1274,13 @@ Specification: [GB/T 35276-2017](https://www.oscca.gov.cn/sca/xxgk/2010-12/17/10
 
 ```typescript
 const sm2ec = sm2()
-const key = sm2ec.genKey()
+// Generate SM2 key pair
+const key = sm2ec.gen()
+const key = sm2ec.gen('key_pair')
+// Generate SM2 private key
+const s_key = sm2ec.gen('private_key')
+// Generate SM2 public key
+const p_key = sm2ec.gen('public_key', s_key)
 ```
 
 ### SM2-Identifier
@@ -1279,7 +1290,7 @@ const key = sm2ec.genKey()
 ```typescript
 const sm2ec = sm2()
 const ID = UTF8('alice@rabbit.panic')
-const KA = sm2ec.genKey(ID)
+const KA = sm2ec.gen()
 const ZA = sm2ec.di(ID, KA)
 ```
 
@@ -1305,8 +1316,8 @@ const kdf = x963kdf(sm3)
 // Responder: Bob
 
 // Step 1: Alice
-const KA = sm2ec.genKey()
-const KX = sm2ec.genKey()
+const KA = sm2ec.gen()
+const KX = sm2ec.gen()
 const ka = { Q: KA.Q } // public key of Alice
 const kx = { Q: KX.Q } // temporary public key of Alice
 const ID_A = UTF8('alice@rabbit.panic')
@@ -1314,8 +1325,8 @@ const ZA = sm2ec.di(ID_A, KA) // Alice's distinguishable identifier
 // send ZA, ka, kx to Bob
 
 // Step 2: Bob
-const KB = sm2ec.genKey()
-const KY = sm2ec.genKey()
+const KB = sm2ec.gen()
+const KY = sm2ec.gen()
 const kb = { Q: KB.Q } // public key of Bob
 const ky = { Q: KY.Q } // temporary public key of Bo
 const ID_B = UTF8('bob@rolling.stone')
@@ -1356,7 +1367,7 @@ interface SM2DH {
 ```typescript
 const sm2ec = sm2()
 const ID = UTF8('alice@rabbit.panic')
-const KA = sm2ec.genKey(ID)
+const KA = sm2ec.gen()
 const ZA = sm2ec.di(ID, KA)
 const M = UTF8('mima-kit')
 
@@ -1400,7 +1411,7 @@ interface SM2DSA {
 const sm2ec = sm2(curve)
 const M = UTF8('The king\'s ears are donkey ears')
 
-const key = sm2ec.genKey()
+const key = sm2ec.gen()
 const cipher = sm2ec.es()
 const C = cipher.encrypt(key, M)
 cipher.decrypt(key, C) // M
