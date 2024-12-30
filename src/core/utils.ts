@@ -20,24 +20,6 @@ export function rotateR32(x: number, n: number) {
 }
 
 /**
- * 生成位掩码 / Generate Bit Mask
- *
- * @param {number} w - 位数 / bit
- *
- * ```ts
- * const mask = genBitMask(8) // 0xFFn
- * ```
- */
-export function genBitMask(w: number | bigint) {
-  w = BigInt(w)
-  let mask = 0x0n
-  for (let i = 0; i < w; i++) {
-    mask = (mask << 1n) | 1n
-  }
-  return mask
-}
-
-/**
  * 位循环左移 / Rotate Left
  *
  * @param {number} bit - 位数 / bit
@@ -86,23 +68,7 @@ export function rotateR(
 }
 
 /**
- * 获取大整数的比特长度
- *
- * Get the bit length of a BigInt
- */
-export function getBIBits(n: bigint) {
-  let bytes = 0
-  while (n > 0) {
-    bytes++
-    n >>= 1n
-  }
-  return bytes
-}
-
-/**
- * 生成随机大整数
- *
- * Generate Random BigInt
+ * 生成随机大整数 / Generate Random BigInt
  */
 export function genRandomBI(max: bigint, byte: number = 0): bigint {
   let result = 0n
@@ -127,6 +93,38 @@ export function genRandomBI(max: bigint, byte: number = 0): bigint {
   } while (result >= max)
 
   return result
+}
+
+/**
+ * 获取大整数的比特长度
+ *
+ * Get the bit length of a BigInt
+ */
+export function getBIBits(n: bigint) {
+  let bytes = 0
+  while (n > 0) {
+    bytes++
+    n >>= 1n
+  }
+  return bytes
+}
+
+/**
+ * 生成位掩码 / Generate Bit Mask
+ *
+ * @param {number} w - 位数 / bit
+ *
+ * ```ts
+ * const mask = genBitMask(8) // 0xFFn
+ * ```
+ */
+export function genBitMask(w: number | bigint) {
+  w = BigInt(w)
+  let mask = 0x0n
+  for (let i = 0; i < w; i++) {
+    mask = (mask << 1n) | 1n
+  }
+  return mask
 }
 
 /**
@@ -485,6 +483,20 @@ export function resizeBuffer(buffer: Uint8Array, size: number) {
   const B = new U8(size)
   B.set(new U8(buffer))
   return B
+}
+
+const nibbleReverseMap = [0x0n, 0x8n, 0x4n, 0xCn, 0x2n, 0xAn, 0x6n, 0xEn, 0x1n, 0x9n, 0x5n, 0xDn, 0x3n, 0xBn, 0x7n, 0xFn]
+
+/**
+ * 快速翻转字节位序 / Fast Reverse Byte's Bit Order
+ *
+ * @param {number} byte - 字节 / byte
+ */
+export function reverseBit(byte: number) {
+  byte &= 0xFF
+  const b_h = nibbleReverseMap[byte >> 4]
+  const b_l = nibbleReverseMap[byte & 0xF]
+  return (b_l << 4n) | b_h
 }
 
 export class Counter extends U8 {
