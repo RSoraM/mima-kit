@@ -5,19 +5,19 @@ import { NO_PAD, ecb } from '../src/core/cipher'
 import { hkdf, pbkdf2, x963kdf } from '../src/core/kdf'
 import * as ecParams from '../src/core/ecParams'
 import { rsa } from '../src/cipher/pkcs/rsa'
-import { FpECC, clampX25519, clampX448, es_xor } from '../src/cipher/pkcs/ecc'
+import { FpECC, es_xor } from '../src/cipher/pkcs/ecc'
 import { hmac } from '../src/hash/hmac'
 import { sha1 } from '../src/hash/sha1'
 import { sha256 } from '../src/hash/sha256'
 import * as pkcs1 from '../src/cipher/pkcs/pkcs1'
 import { sm2 } from '../src/cipher/pkcs/sm2'
 import { sm3 } from '../src/hash/sm3'
+import { x25519, x448 } from '../src/cipher/pkcs/x25519_448'
 
 const { pkcs1_es_1_5, pkcs1_es_oaep } = pkcs1
 const { pkcs1_ssa_1_5, pkcs1_ssa_pss } = pkcs1
 
 const { secp160r1 } = ecParams
-const { curve25519, curve448 } = ecParams
 
 describe('pkcs#1', () => {
   const m = UTF8('meow, 喵， 🐱')
@@ -209,22 +209,26 @@ describe('ecc', () => {
   })
   // vector source: https://tools.ietf.org/html/rfc7748
   it('x25519', () => {
-    const ec = FpECC(curve25519)
-
-    const k_a = HEX('77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a').toReversed()
-    const p_a = ec.utils.mulPoint(curve25519.G, clampX25519(k_a).toBI())
-    const p_a_x = U8.fromBI(p_a.x)
-    const p_a_x_outside = HEX('8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a').toReversed()
-    expect(p_a_x).toMatchObject(p_a_x_outside)
+    const k_a_d = HEX('77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a').toReversed().toBI()
+    const k_a = x25519.gen('public_key', { d: k_a_d })
+    const k_b_d = HEX('5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb').toReversed().toBI()
+    const k_b = x25519.gen('public_key', { d: k_b_d })
+    const s_a = x25519.ecdh(k_a, k_b)
+    const s_b = x25519.ecdh(k_b, k_a)
+    const s_outside = HEX('4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742').toReversed().toBI()
+    expect(s_a.x).toBe(s_b.x)
+    expect(s_a.x).toBe(s_outside)
   })
   it('x448', () => {
-    const ec = FpECC(curve448)
-
-    const k_a = HEX('9a8f4925d1519f5775cf46b04b5800d4ee9ee8bae8bc5565d498c28dd9c9baf574a9419744897391006382a6f127ab1d9ac2d8c0a598726b').toReversed()
-    const p_a = ec.utils.mulPoint(curve448.G, clampX448(k_a).toBI())
-    const p_a_x = U8.fromBI(p_a.x)
-    const p_a_x_outside = HEX('9b08f7cc31b7e3e67d22d5aea121074a273bd2b83de09c63faa73d2c22c5d9bbc836647241d953d40c5b12da88120d53177f80e532c41fa0').toReversed()
-    expect(p_a_x).toMatchObject(p_a_x_outside)
+    const k_a_d = HEX('9a8f4925d1519f5775cf46b04b5800d4ee9ee8bae8bc5565d498c28dd9c9baf574a9419744897391006382a6f127ab1d9ac2d8c0a598726b').toReversed().toBI()
+    const k_a = x448.gen('public_key', { d: k_a_d })
+    const k_b_d = HEX('1c306a7ac2a0e2e0990b294470cba339e6453772b075811d8fad0d1d6927c120bb5ee8972b0d3e21374c9c921b09d1b0366f10b65173992d').toReversed().toBI()
+    const k_b = x448.gen('public_key', { d: k_b_d })
+    const s_a = x448.ecdh(k_a, k_b)
+    const s_b = x448.ecdh(k_b, k_a)
+    const s_outside = HEX('07fff4181ac6cc95ec1c16a94a0f74d12da232ce40a77552281d282bb60c0b56fd2464c335543936521c24403085d59a449a5037514a879d').toReversed().toBI()
+    expect(s_a.x).toBe(s_b.x)
+    expect(s_a.x).toBe(s_outside)
   })
 })
 
@@ -273,7 +277,7 @@ describe('sm2', () => {
     const sm2ec = sm2(curve)
     const M = UTF8('message digest')
 
-    const key = sm2ec.genKey()
+    const key = sm2ec.gen()
     const Z = sm2ec.di(ID_A, key)
     const signer = sm2ec.dsa()
     const signature = signer.sign(Z, key, M)
@@ -298,11 +302,11 @@ describe('sm2', () => {
   })
   it('dh', () => {
     const sm2ec = sm2(curve)
-    const ka = sm2ec.genKey()
-    const kx = sm2ec.genKey()
+    const ka = sm2ec.gen()
+    const kx = sm2ec.gen()
     const ZA = sm2ec.di(ID_A, ka)
-    const kb = sm2ec.genKey()
-    const ky = sm2ec.genKey()
+    const kb = sm2ec.gen()
+    const ky = sm2ec.gen()
     const ZB = sm2ec.di(ID_B, kb)
     const sA = sm2ec.dh(ka, kx, kb, ky, ZA, ZB)
     const sB = sm2ec.dh(kb, ky, ka, kx, ZA, ZB)
@@ -367,7 +371,7 @@ describe('sm2', () => {
     const sm2ec = sm2(curve)
     const M = UTF8('encryption standard')
 
-    const key = sm2ec.genKey()
+    const key = sm2ec.gen()
     const cipher = sm2ec.es()
     const C = cipher.encrypt(key, M)
     expect(cipher.decrypt(key, C)).toMatchObject(M)
