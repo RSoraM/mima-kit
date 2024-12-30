@@ -1,5 +1,5 @@
 import type { FpECPoint, FpMECParams, FpTECParams, FpWECParams } from './ecParams'
-import { mod, modInverse, modPrimeSquare } from './utils'
+import { mod, modInverse, modPow, modPrimeSquare } from './utils'
 
 // * Interfaces
 
@@ -14,6 +14,8 @@ export interface FpUtils {
   divide: (a: bigint, b: bigint) => bigint
   /** 素域取模 / Prime Field Modulus */
   mod: (a: bigint) => bigint
+  /** 素域幂运算 / Prime Field Power */
+  pow: (a: bigint, b: bigint) => bigint
   /** 素域逆元 / Prime Field Modular Inverse */
   inverse: (a: bigint) => bigint
   /** 素域平方根 / Prime Field Square Root */
@@ -44,6 +46,7 @@ export function Fp(p: bigint): FpUtils {
   const _mod = (a: bigint) => mod(a, p)
   const inverse = (a: bigint) => modInverse(a, p)
   const root = (a: bigint) => modPrimeSquare(a, p)
+  const pow = (a: bigint, b: bigint) => modPow(a, b, p)
 
   const plus = (...args: bigint[]) => args.reduce((acc, cur) => _mod(acc + cur))
   const multiply = (...args: bigint[]) => args.reduce((acc, cur) => _mod(acc * cur))
@@ -58,6 +61,7 @@ export function Fp(p: bigint): FpUtils {
     subtract,
     divide,
     mod: _mod,
+    pow,
     inverse,
     root,
   }
