@@ -5,7 +5,7 @@ import type { KDF } from '../../core/kdf'
 import { x963kdf } from '../../core/kdf'
 import { sm3 } from '../../hash/sm3'
 import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
-import type { ECKeyPair, ECPrivateKey, ECPublicKey } from './ecc'
+import type { ECKeyPair, ECPrivateKey, ECPublicKey, FpECCrypto } from './ecc'
 import { FpECC } from './ecc'
 
 interface SM2DI {
@@ -107,11 +107,11 @@ interface SM2EncryptionScheme {
 
 interface FpSM2Crypto {
   /**
-   * 生成椭圆曲线密钥对
+   * 生成 SM2 椭圆曲线密钥
    *
-   * Generate Elliptic Curve Key Pair
+   * Generate SM2 Elliptic Curve Key
    */
-  genKey: () => ECKeyPair
+  gen: FpECCrypto['gen']
   /**
    * SM2 可辨别标识散列
    *
@@ -176,7 +176,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   const ecc = FpECC(curve)
   const { addPoint, mulPoint } = ecc.utils
 
-  const genKey = ecc.genKey
+  const gen = ecc.gen
   const isLegalPK = ecc.isLegalPK
   const isLegalSK = ecc.isLegalSK
   const PointToU8 = ecc.PointToU8
@@ -271,7 +271,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   }
   const es: SM2EncryptionScheme = (hash = sm3, kdf = x963kdf(sm3), order = 'c1c3c2') => {
     const encrypt: SM2Encrypt = (p_key: ECPublicKey, M: Uint8Array) => {
-      const C1 = genKey()
+      const C1 = gen()
       const S = mulPoint(p_key.Q, h)
       if (S.isInfinity) {
         throw new KitError('加密失败')
@@ -327,7 +327,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   }
 
   return {
-    genKey,
+    gen,
     di,
     es,
     dh,

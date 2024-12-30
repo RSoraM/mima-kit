@@ -1,6 +1,7 @@
 import type { BlockCipher, BlockCipherInfo } from '../../core/cipher'
 import { cbc, createCipher } from '../../core/cipher'
-import { Fp, FpEC, type FpECUtils } from '../../core/ec'
+import type { FpECUtils } from '../../core/ec'
+import { Fp, FpEC } from '../../core/ec'
 import type { FpECPoint, FpMECParams, FpWECParams } from '../../core/ecParams'
 import type { Digest, KeyHash } from '../../core/hash'
 import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
@@ -36,7 +37,7 @@ export interface ECPrivateKey {
 export interface ECKeyPair extends ECPrivateKey, ECPublicKey {
 }
 
-interface ECDH {
+export interface ECDH {
   /**
    * @param {ECPrivateKey} s_key - 己方私钥 / Self Private Key
    * @param {ECPublicKey} p_key - 对方公钥 / Counterparty Public Key
@@ -44,7 +45,7 @@ interface ECDH {
   (s_key: ECPrivateKey, p_key: ECPublicKey): FpECPoint
 }
 
-interface ECMQV {
+export interface ECMQV {
   /**
    * @param {ECKeyPair} u1 - 己方密钥对 / Self Key Pair
    * @param {ECKeyPair} u2 - 己方临时密钥对 / Self Temporary Key Pair
@@ -54,7 +55,7 @@ interface ECMQV {
   (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey): FpECPoint
 }
 
-interface ECDSASignature {
+export interface ECDSASignature {
   /**
    * 临时公钥 / Temporary Public Key
    */
@@ -64,7 +65,7 @@ interface ECDSASignature {
    */
   s: bigint
 }
-interface ECDSA {
+export interface ECDSA {
   /**
    * @param {Digest} [hash=sha256] - 摘要函数 / Digest Function
    */
@@ -82,10 +83,10 @@ interface ECDSA {
   }
 }
 
-interface IVBlockCipher extends BlockCipherInfo {
+export interface IVBlockCipher extends BlockCipherInfo {
   (K: Uint8Array, iv: Uint8Array): ReturnType<BlockCipher>
 }
-interface ECIESConfig {
+export interface ECIESConfig {
   /**
    * 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
    */
@@ -111,7 +112,7 @@ interface ECIESConfig {
    */
   iv?: Uint8Array
 }
-interface ECIESCiphertext {
+export interface ECIESCiphertext {
   /**
    * 临时公钥 / Temporary Public Key
    */
@@ -125,7 +126,7 @@ interface ECIESCiphertext {
    */
   D: Uint8Array
 }
-interface ECIESEncrypt {
+export interface ECIESEncrypt {
   /**
    * 椭圆曲线集成加密算法
    *
@@ -136,7 +137,7 @@ interface ECIESEncrypt {
    */
   (p_key: ECPublicKey, M: Uint8Array): ECIESCiphertext
 }
-interface ECIESDecrypt {
+export interface ECIESDecrypt {
   /**
    * 椭圆曲线集成解密算法
    *
@@ -147,7 +148,7 @@ interface ECIESDecrypt {
    */
   (s_key: ECPrivateKey, C: ECIESCiphertext): U8
 }
-interface ECIES {
+export interface ECIES {
   /**
    * @param {IVBlockCipher} [config.cipher] - 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
    * @param {KeyHash} [config.mac] - 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
@@ -162,14 +163,29 @@ interface ECIES {
   }
 }
 
-interface FpECCrypto {
+export interface FpECCrypto {
   utils: FpECUtils
   /**
-   * 生成椭圆曲线密钥对
+   * 生成椭圆曲线密钥
    *
-   * Generate Elliptic Curve Key Pair
+   * Generate Elliptic Curve Key
    */
-  genKey: () => ECKeyPair
+  gen: {
+    /**
+     * 生成密钥对 / Generate Key Pair
+     */
+    (type?: 'key_pair'): ECKeyPair
+    /**
+     * 生成私钥 / Generate Private Key
+     */
+    (type: 'private_key'): ECPrivateKey
+    /**
+     * 生成公钥 / Generate Public Key
+     *
+     * @param {ECPrivateKey} s_key - 私钥 / Private Key
+     */
+    (type: 'public_key', s_key: ECPrivateKey): ECKeyPair
+  }
   /**
    * 椭圆曲线迪菲-赫尔曼, 密钥协商算法
    *
@@ -345,13 +361,36 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       return { isInfinity: false, x, y }
     }
   }
-  const genKey = () => {
-    // private key
-    const d = genRandomBI(n - 2n, n_bits >> 3)
-    // public key
-    const Q = mulPoint(G, d)
-    return { Q, d }
+  // Key generation
+  function gen(type?: 'key_pair'): ECKeyPair
+  function gen(type: 'private_key'): ECPrivateKey
+  function gen(type: 'public_key', s_key: ECPrivateKey): ECKeyPair
+  function gen(
+    type: 'key_pair' | 'private_key' | 'public_key' = 'key_pair',
+    s_key?: ECPrivateKey,
+  ) {
+    let d = 0n
+    if (type === 'key_pair') {
+      // private key
+      d = genRandomBI(n - 2n, n_bits >> 3)
+      // public key
+      const Q = mulPoint(G, d)
+      return { Q, d }
+    }
+    else if (type === 'private_key') {
+      d = genRandomBI(n - 2n, n_bits >> 3)
+      return { d }
+    }
+    else if (type === 'public_key') {
+      d = s_key?.d ?? 0n
+      if (d === 0n) {
+        throw new KitError('Invalid private key')
+      }
+      const Q = mulPoint(G, d)
+      return { Q, d }
+    }
   }
+  // Key agreement
   const ecdh: ECDH = (s_key: ECPrivateKey, p_key: ECPublicKey) => {
     if (!isLegalPK(p_key)) {
       throw new KitError('Invalid public key')
@@ -397,6 +436,7 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
     }
     return P
   }
+  // Digital signature
   const ecdsa: ECDSA = (hash: Digest = sha256) => {
     const sign = (s_key: ECPrivateKey, M: Uint8Array) => {
       const { d } = s_key
@@ -407,7 +447,7 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
         z = z >> 1n
       }
       do {
-        const K = genKey()
+        const K = gen()
         const [k, x1] = [K.d, K.Q.x]
         r = mod(x1, n)
         if (r === 0n)
@@ -437,6 +477,7 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
     }
     return { sign, verify }
   }
+  // Integrated encryption scheme
   const ecies: ECIES = (config?: ECIESConfig) => {
     const { cipher, mac, kdf, S1, S2, iv } = defineECIES(config)
     const encrypt = (p_key: ECPublicKey, M: Uint8Array) => {
@@ -446,7 +487,7 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       let s_key: ECKeyPair
       let deriveShare: FpECPoint
       do {
-        s_key = genKey()
+        s_key = gen()
         deriveShare = ecdh(s_key, p_key)
       } while (deriveShare.isInfinity)
       const Z = U8.fromBI(deriveShare.x)
@@ -481,51 +522,20 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
     }
     return { encrypt, decrypt }
   }
+
   return {
     utils: FpECOpt,
     isLegalPK,
     isLegalSK,
     PointToU8,
     U8ToPoint,
-    genKey,
+    gen,
     ecdh,
     eccdh,
     ecmqv,
     ecdsa,
     ecies,
   }
-}
-
-export function clampX25519(k: Uint8Array, little_endian: boolean = false): U8 {
-  if (k.length !== 32) {
-    throw new KitError('Invalid X25519 private key')
-  }
-  const _ = U8.from(k.slice())
-  if (little_endian) {
-    _[0] &= 0xF8
-    _[31] = (_[31] & 0x7F) | 0x40
-  }
-  else {
-    _[31] &= 0xF8
-    _[0] = (_[0] & 0x7F) | 0x40
-  }
-  return _
-}
-
-export function clampX448(k: Uint8Array, little_endian: boolean = false): U8 {
-  if (k.length !== 56) {
-    throw new KitError('Invalid X448 private key')
-  }
-  const _ = U8.from(k.slice())
-  if (little_endian) {
-    _[0] &= 0xFC
-    _[55] |= 0x80
-  }
-  else {
-    _[55] &= 0xFC
-    _[0] |= 0x80
-  }
-  return _
 }
 
 // * Algorithms for Test

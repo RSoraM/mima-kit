@@ -176,27 +176,27 @@ export function FpMEC(curve: FpMECParams): FpECUtils {
       }
     }
 
+    let λ = 0n
     // P1 + P2
     if (x1 !== x2) {
-      const l = divide(subtract(y2, y1), subtract(x2, x1))
-      // x3 = b * l^2 - a - x1 - x2
-      const x3 = subtract(multiply(l, l, b), a, x1, x2)
-      // y3 = (2x1 + x2 + a)l - b * l^3 - y1
-      const y3 = subtract(multiply(2n * x1 + x2 + a, l), multiply(l, l, l, b), y1)
-      return { x: x3, y: y3 }
+      // λ = (y2 - y1) / (x2 - x1)
+      const numerator = subtract(y2, y1)
+      const denominator = subtract(x2, x1)
+      λ = divide(numerator, denominator)
     }
     // P1 + P1
     else {
-      // l = (3x^2 + 2ax + 1) / 2by
-      const l_numerator = plus(multiply(3n, x1, x1), multiply(2n, a, x1), 1n)
-      const l_denominator = multiply(2n, b, y1)
-      const l = divide(l_numerator, l_denominator)
-      // x3 = b * l^2 - a - 2x
-      const x3 = subtract(multiply(l, l, b), a, x1 << 1n)
-      // y3 = (2x + x + a)l - b * l^3 - y
-      const y3 = subtract(multiply(x1 * 3n + a, l), multiply(b, l, l, l), y1)
-      return { x: x3, y: y3 }
+      // λ = (3 * x1 * x1 + 2 * a * x1 + 1) / 2 * b * y1
+      const numerator = plus(multiply(3n, x1, x1), multiply(2n, a, x1), 1n)
+      const denominator = multiply(2n, b, y1)
+      λ = divide(numerator, denominator)
     }
+
+    // x3 = b * λ * λ - a - x1 - x2
+    const x3 = subtract(multiply(λ, λ, b), a, x1, x2)
+    // y3 = (2 x1 + x2 + a) * λ - b * λ * λ * λ - y1
+    const y3 = subtract(multiply(2n * x1 + x2 + a, λ), multiply(λ, λ, λ, b), y1)
+    return { x: x3, y: y3 }
   }
   const mulPoint = (P: FpECPoint, k: bigint): FpECPoint => {
     if (k === 0n) {
