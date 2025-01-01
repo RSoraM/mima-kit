@@ -1,5 +1,3 @@
-import type { U8 } from './utils'
-
 // * Prime Filed Elliptic Curve Interfaces
 
 /**
@@ -7,21 +5,10 @@ import type { U8 } from './utils'
  *
  * Affine Coordinates of Elliptic Curve Point
  */
-export interface FpECPoint {
+export interface FpECPoint<T = bigint | Uint8Array> {
   isInfinity: boolean
-  x: U8
-  y: U8
-}
-
-/**
- * 伪射坐标表示的椭圆曲线的点
- *
- * Affine Coordinates of Elliptic Curve Point
- */
-interface ECPoint {
-  isInfinity: boolean
-  x: bigint
-  y: bigint
+  x: T
+  y: T
 }
 
 /**
@@ -38,7 +25,7 @@ export interface FpWECParams {
   /** Coefficient b */
   readonly b: bigint
   /** Base point */
-  readonly G: Readonly<ECPoint>
+  readonly G: Readonly<FpECPoint<bigint>>
   /** Order */
   readonly n: bigint
   /** co-factor */
@@ -59,7 +46,7 @@ export interface FpMECParams {
   /** Coefficient b */
   readonly b: 1n
   /** Base point */
-  readonly G: Readonly<ECPoint>
+  readonly G: Readonly<FpECPoint<bigint>>
   /** Order */
   readonly n: bigint
   /** co-factor */
@@ -80,7 +67,7 @@ export interface FpTECParams {
   /** Coefficient b */
   readonly d: bigint
   /** Base point */
-  readonly G: Readonly<ECPoint>
+  readonly G: Readonly<FpECPoint<bigint>>
   /** Order */
   readonly n: bigint
   /** co-factor */
@@ -89,7 +76,7 @@ export interface FpTECParams {
 
 // * Binary Field Elliptic Curve Interfaces
 
-export interface F2mECPoint extends ECPoint {
+export interface F2mECPoint extends FpECPoint {
 }
 
 /**

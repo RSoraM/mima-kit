@@ -90,11 +90,11 @@ describe('ecc', () => {
     }
     const s_u = ec.ecdh(u_k, v_k)
     const s_v = ec.ecdh(v_k, u_k)
-    const s_outside = 1155982782519895915997745984453282631351432623114n
-    expect(s_u.x).toBe(s_v.x)
-    expect(s_u.x).toBe(s_outside)
+    const s_outside = U8.fromBI(1155982782519895915997745984453282631351432623114n)
+    expect(s_u.x).toMatchObject(s_v.x)
+    expect(s_u.x).toMatchObject(s_outside)
     const kdf = x963kdf(sha1)
-    const K = kdf(20 << 3, U8.fromBI(s_outside))
+    const K = kdf(20 << 3, s_outside)
     const K_outside = HEX('744AB703F5BC082E59185F6D049D2D367DB245C2')
     expect(K_outside.every((v, i) => v === K[i])).toBe(true)
   })
@@ -134,11 +134,11 @@ describe('ecc', () => {
     }
     const s_u = ec.ecmqv(u_k1, u_k2, v_k1, v_k2)
     const s_v = ec.ecmqv(v_k1, v_k2, u_k1, u_k2)
-    const s_outside = 516158222599696982690660648801682584432269985196n
-    expect(s_u.x).toBe(s_v.x)
-    expect(s_u.x).toBe(s_outside)
+    const s_outside = U8.fromBI(516158222599696982690660648801682584432269985196n)
+    expect(s_u.x).toMatchObject(s_v.x)
+    expect(s_u.x).toMatchObject(s_outside)
     const kdf = x963kdf(sha1)
-    const K = kdf(20 << 3, U8.fromBI(s_outside))
+    const K = kdf(20 << 3, s_outside)
     const K_outside = HEX('C06763F8C3D2452C1CC5D29BD61918FB485063F6')
     expect(K_outside.every((v, i) => v === K[i])).toBe(true)
   })
@@ -196,39 +196,40 @@ describe('ecc', () => {
   })
   it('secp160r1-point-compress', () => {
     const ec = FpECC(secp160r1)
+    const { PointToU8, U8ToPoint } = ec.utils
     const R = {
       isInfinity: false,
       x: 1176954224688105769566774212902092897866168635793n,
       y: 1130322298812061698910820170565981471918861336822n,
     }
-    const P = ec.PointToU8(R, true)
+    const P = PointToU8(R, true)
     const P_outside = HEX('02CE2873E5BE449563391FEB47DDCBA2DC16379191')
-    const Q = ec.U8ToPoint(P_outside)
+    const Q = U8ToPoint(P_outside)
     expect(P).toMatchObject(P_outside)
-    expect(Q.y).toBe(R.y)
+    expect(Q.y.toBI()).toBe(R.y)
   })
   // vector source: https://tools.ietf.org/html/rfc7748
   it('x25519', () => {
-    const k_a_d = HEX('77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a').toReversed().toBI()
+    const k_a_d = HEX('77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a').toReversed()
     const k_a = x25519.gen('public_key', { d: k_a_d })
-    const k_b_d = HEX('5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb').toReversed().toBI()
+    const k_b_d = HEX('5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb').toReversed()
     const k_b = x25519.gen('public_key', { d: k_b_d })
     const s_a = x25519.ecdh(k_a, k_b)
     const s_b = x25519.ecdh(k_b, k_a)
-    const s_outside = HEX('4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742').toReversed().toBI()
-    expect(s_a.x).toBe(s_b.x)
-    expect(s_a.x).toBe(s_outside)
+    const s_outside = HEX('4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742').toReversed()
+    expect(s_a).toMatchObject(s_b)
+    expect(s_a).toMatchObject(s_outside)
   })
   it('x448', () => {
-    const k_a_d = HEX('9a8f4925d1519f5775cf46b04b5800d4ee9ee8bae8bc5565d498c28dd9c9baf574a9419744897391006382a6f127ab1d9ac2d8c0a598726b').toReversed().toBI()
+    const k_a_d = HEX('9a8f4925d1519f5775cf46b04b5800d4ee9ee8bae8bc5565d498c28dd9c9baf574a9419744897391006382a6f127ab1d9ac2d8c0a598726b').toReversed()
     const k_a = x448.gen('public_key', { d: k_a_d })
-    const k_b_d = HEX('1c306a7ac2a0e2e0990b294470cba339e6453772b075811d8fad0d1d6927c120bb5ee8972b0d3e21374c9c921b09d1b0366f10b65173992d').toReversed().toBI()
+    const k_b_d = HEX('1c306a7ac2a0e2e0990b294470cba339e6453772b075811d8fad0d1d6927c120bb5ee8972b0d3e21374c9c921b09d1b0366f10b65173992d').toReversed()
     const k_b = x448.gen('public_key', { d: k_b_d })
     const s_a = x448.ecdh(k_a, k_b)
     const s_b = x448.ecdh(k_b, k_a)
-    const s_outside = HEX('07fff4181ac6cc95ec1c16a94a0f74d12da232ce40a77552281d282bb60c0b56fd2464c335543936521c24403085d59a449a5037514a879d').toReversed().toBI()
-    expect(s_a.x).toBe(s_b.x)
-    expect(s_a.x).toBe(s_outside)
+    const s_outside = HEX('07fff4181ac6cc95ec1c16a94a0f74d12da232ce40a77552281d282bb60c0b56fd2464c335543936521c24403085d59a449a5037514a879d').toReversed()
+    expect(s_a).toMatchObject(s_b)
+    expect(s_a).toMatchObject(s_outside)
   })
 })
 

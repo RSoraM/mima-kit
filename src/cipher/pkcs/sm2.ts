@@ -1,10 +1,9 @@
-import type { FpECPoint } from '../../core/ecParams'
 import { sm2p256v1 } from '../../core/ecParams'
 import type { Hash } from '../../core/hash'
 import type { KDF } from '../../core/kdf'
 import { x963kdf } from '../../core/kdf'
 import { sm3 } from '../../hash/sm3'
-import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
+import { KitError, U8, genBitMask, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
 import type { ECKeyPair, ECPrivateKey, ECPublicKey, FpECCrypto } from './ecc'
 import { FpECC } from './ecc'
 
@@ -38,9 +37,9 @@ interface SM2DH {
   (KA: ECKeyPair, KX: ECKeyPair, KB: ECPublicKey, KY: ECPublicKey, ZA?: Uint8Array, ZB?: Uint8Array): U8
 }
 
-interface SM2DSASignature {
-  r: bigint
-  s: bigint
+interface SM2DSASignature<T = bigint | Uint8Array> {
+  r: T
+  s: T
 }
 interface SM2DSA {
   /**
@@ -56,7 +55,7 @@ interface SM2DSA {
      * @param {ECPrivateKey} key - 签名方私钥 / Signer Private Key
      * @param {Uint8Array} M - 消息 / Message
      */
-    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature
+    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature<U8>
     /**
      * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
      * @param {ECPublicKey} key - 签名方公钥 / Signer Public Key
@@ -106,6 +105,7 @@ interface SM2EncryptionScheme {
 }
 
 interface FpSM2Crypto {
+  utils: FpECCrypto['utils']
   /**
    * 生成 SM2 椭圆曲线密钥
    *
@@ -136,30 +136,6 @@ interface FpSM2Crypto {
    * SM2 Elliptic Curve Digital Signature Algorithm
    */
   dsa: SM2DSA
-  /**
-   * 判断公钥是否合法
-   *
-   * Determine if the public key is legal
-   */
-  isLegalPK: (p_key: ECPublicKey) => boolean
-  /**
-   * 判断私钥是否合法
-   *
-   * Determine if the private key is legal
-   */
-  isLegalSK: (s_key: ECPrivateKey) => boolean
-  /**
-   * 点转换为字节串，默认不压缩
-   *
-   * Convert Point to Byte String, not compressed by default
-   */
-  PointToU8: (point: FpECPoint, compress?: boolean) => U8
-  /**
-   * 字节串转换为点
-   *
-   * Convert Byte String to Point
-   */
-  U8ToPoint: (buffer: Uint8Array) => FpECPoint
 }
 
 /**
@@ -171,29 +147,33 @@ interface FpSM2Crypto {
  */
 export function sm2(curve = sm2p256v1): FpSM2Crypto {
   const { p, a, b, G, n, h } = curve
-  const p_bits = getBIBits(p)
-  const p_bytes = (p_bits + 7) >> 3
+  const p_bit = getBIBits(p)
+  const p_byte = (p_bit + 7) >> 3
   const ecc = FpECC(curve)
   const { addPoint, mulPoint } = ecc.utils
 
+  const a_buffer = U8.fromBI(a)
+  const b_buffer = U8.fromBI(b)
+  const Gx_buffer = U8.fromBI(G.x)
+  const Gy_buffer = U8.fromBI(G.y)
+
   const gen = ecc.gen
-  const isLegalPK = ecc.isLegalPK
-  const isLegalSK = ecc.isLegalSK
-  const PointToU8 = ecc.PointToU8
-  const U8ToPoint = ecc.U8ToPoint
+  const isLegalPK = ecc.utils.isLegalPK
+  const PointToU8 = ecc.utils.PointToU8
+  const U8ToPoint = ecc.utils.U8ToPoint
   const di: SM2DI = (id: Uint8Array, key: ECPublicKey, hash: Hash = sm3) => {
     const ent = id.length << 3
     if (ent > 0xFFFF) {
       throw new KitError('ID长度超过了最大限制')
     }
     const ENT = new Uint8Array([ent >> 8, ent & 0xFF])
-    const _a = U8.fromBI(a)
-    const _b = U8.fromBI(b)
-    const xG = U8.fromBI(G.x)
-    const yG = U8.fromBI(G.y)
-    const xA = U8.fromBI(key.Q.x)
-    const yA = U8.fromBI(key.Q.y)
-    const ZA = hash(joinBuffer(ENT, id, _a, _b, xG, yG, xA, yA))
+    const a = a_buffer
+    const b = b_buffer
+    const Gx = Gx_buffer
+    const Gy = Gy_buffer
+    const Ax = typeof key.Q.x === 'bigint' ? U8.fromBI(key.Q.x) : U8.from(key.Q.x)
+    const Ay = typeof key.Q.y === 'bigint' ? U8.fromBI(key.Q.y) : U8.from(key.Q.y)
+    const ZA = hash(joinBuffer(ENT, id, a, b, Gx, Gy, Ax, Ay))
 
     return ZA
   }
@@ -210,10 +190,14 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
     if (isLegalPK(KB) === false || isLegalPK(KY) === false) {
       throw new KitError('非法的公钥')
     }
-    const x1 = (1n << BigInt(w)) + (KX.Q.x & w_mask)
-    const x2 = (1n << BigInt(w)) + (KY.Q.x & w_mask)
+    const KA_d = typeof KA.d === 'bigint' ? KA.d : U8.from(KA.d).toBI()
+    const KX_d = typeof KX.d === 'bigint' ? KX.d : U8.from(KX.d).toBI()
+    const KX_Q_x = typeof KX.Q.x === 'bigint' ? KX.Q.x : U8.from(KX.Q.x).toBI()
+    const KY_Q_x = typeof KY.Q.x === 'bigint' ? KY.Q.x : U8.from(KY.Q.x).toBI()
+    const x1 = (1n << BigInt(w)) + (KX_Q_x & w_mask)
+    const x2 = (1n << BigInt(w)) + (KY_Q_x & w_mask)
 
-    const t = mod(KA.d + KX.d * x1, n)
+    const t = mod(KA_d + KX_d * x1, n)
     const V = mulPoint(addPoint(KB.Q, mulPoint(KY.Q, x2)), h * t)
     if (V.isInfinity) {
       throw new KitError('协商失败')
@@ -226,31 +210,36 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
     if (hash.DIGEST_SIZE !== 32) {
       throw new KitError('不支持的哈希算法')
     }
-
-    // shortcut
     const sign = (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => {
-      const dA = key.d
+      const dA = typeof key.d === 'bigint' ? key.d : U8.from(key.d).toBI()
       let r = 0n
       let s = 0n
       const e = hash(joinBuffer(Z, M)).toBI()
       do {
-        const k = genRandomBI(n)
+        const k = gen('private_key').d.toBI()
         const p = mulPoint(G, k)
         r = mod(e + p.x, n)
         if (r === 0n || r + k === n) {
           continue
         }
-        s = mod(mod(k - r * dA, n) * modInverse(1n + dA, n), n)
+        const numerator = mod(k - r * dA, n)
+        const denominator = modInverse(1n + dA, n)
+        s = mod(numerator * denominator, n)
         if (s === 0n) {
           continue
         }
         break
       } while (1)
-      return { r, s }
+      const r_buffer = new U8(p_byte)
+      const s_buffer = new U8(p_byte)
+      r_buffer.set(U8.fromBI(r))
+      s_buffer.set(U8.fromBI(s))
+      return { r: r_buffer, s: s_buffer }
     }
     const verify = (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => {
       const PA = key.Q
-      const { r, s } = S
+      const r = typeof S.r === 'bigint' ? S.r : U8.from(S.r).toBI()
+      const s = typeof S.s === 'bigint' ? S.s : U8.from(S.s).toBI()
       if (r <= 0n || r >= n || s <= 0n || s >= n) {
         return false
       }
@@ -266,7 +255,6 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
       const R = mod(e + p.x, n)
       return R === r
     }
-
     return { sign, verify }
   }
   const es: SM2EncryptionScheme = (hash = sm3, kdf = x963kdf(sm3), order = 'c1c3c2') => {
@@ -291,7 +279,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
       }
     }
     const decrypt: SM2Decrypt = (s_key: ECPrivateKey, C: Uint8Array) => {
-      const C1_Length = (p_bytes << 1) + 1
+      const C1_Length = (p_byte << 1) + 1
       const C3_Length = hash.DIGEST_SIZE
       const C2_Length = C.length - C1_Length - C3_Length
       const C1 = U8ToPoint(C.subarray(0, C1_Length))
@@ -327,14 +315,11 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   }
 
   return {
+    utils: ecc.utils,
     gen,
     di,
     es,
     dh,
     dsa,
-    isLegalPK,
-    isLegalSK,
-    PointToU8,
-    U8ToPoint,
   }
 }
