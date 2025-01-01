@@ -276,8 +276,8 @@ export function U8Point(point?: FpECPoint, byte?: number): FpECPoint<U8> {
   const x = byte ? new U8(byte) : x_buffer
   const y = byte ? new U8(byte) : y_buffer
   if (byte) {
-    x.set(x_buffer)
-    y.set(y_buffer)
+    x.set(x_buffer, byte - x_buffer.length)
+    y.set(y_buffer, byte - y_buffer.length)
   }
   return { isInfinity, x, y }
 }
