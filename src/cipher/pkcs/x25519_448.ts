@@ -1,7 +1,6 @@
 import { Fp } from '../../core/ec'
 import { curve25519, curve448 } from '../../core/ecParams'
-import { KitError, U8, getBIBits } from '../../core/utils'
-import { FpECC } from './ecc'
+import { KitError, U8, genRandomBI, getBIBits } from '../../core/utils'
 
 // * Interfaces
 
@@ -88,23 +87,20 @@ function cSwap(swap: bigint, x_2: bigint, x_3: bigint) {
   x_3 ^= dummy
   return [x_2, x_3]
 }
-/**
- * 蒙哥马利梯子算法 / Montgomery Ladder Algorithm
- */
-function ladder(k: bigint, u: bigint, p: bigint, a24: bigint, bit: bigint) {
+/** 蒙哥马利梯子算法 / Montgomery Ladder Algorithm */
+function ladder(k: bigint, u: bigint, p: bigint, a24: bigint, bit: number) {
   const { plus, subtract, pow, multiply } = Fp(p)
   let x_2 = 1n
   let z_2 = 0n
   let x_3 = u
   let z_3 = 1n
   let swap = 0n
-
-  for (let i = bit - 1n; i >= 0n; i--) {
-    const k_t = (k >> i) & 1n
-    swap ^= k_t;
+  const bit_array = k.toString(2).padStart(bit, '0').split('').map(BigInt)
+  for (const bit of bit_array) {
+    swap ^= bit;
     [x_2, x_3] = cSwap(swap, x_2, x_3);
     [z_2, z_3] = cSwap(swap, z_2, z_3)
-    swap = k_t
+    swap = bit
 
     const A = plus(x_2, z_2)
     const AA = pow(A, 2n)
@@ -127,19 +123,18 @@ function ladder(k: bigint, u: bigint, p: bigint, a24: bigint, bit: bigint) {
 
 /** x25519 椭圆曲线算法 / Elliptic Curve Algorithm */
 export const x25519: X25519 = (() => {
-  const { p, G } = curve25519
-  const Gx = typeof G.x === 'bigint' ? G.x : U8.from(G.x).toBI()
+  const { p, G, n } = curve25519
   const p_bit = getBIBits(p)
   const p_byte = (p_bit + 7) >> 3
-  const ec = FpECC(curve25519)
+
   const a24 = 121665n
+  const Gx = typeof G.x === 'bigint' ? G.x : U8.from(G.x).toBI()
 
   function clamp(d: bigint) {
     d = d & 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8n
     d = d | 0x4000000000000000000000000000000000000000000000000000000000000000n
     return d
   }
-
   function gen(type?: 'key_pair'): X25519KeyPair<U8>
   function gen(type: 'private_key'): X25519PrivateKey<U8>
   function gen(type: 'public_key', s_key: X25519PrivateKey): X25519KeyPair<U8>
@@ -149,34 +144,33 @@ export const x25519: X25519 = (() => {
   ) {
     if (type === 'key_pair') {
       // private key
-      const d_buffer = ec.gen('private_key').d
-      const d = d_buffer.toBI()
+      const t = genRandomBI(n, p_byte)
+      const d_buffer = t.buffer
+      const d = t.result
       // public key
-      const x = ladder(clamp(d), Gx, p, a24, 255n)
-      const Q = new U8(p_byte)
-      Q.set(U8.fromBI(x))
+      const x = ladder(clamp(d), Gx, p, a24, 255)
+      const Q = U8.fromBI(x, p_byte)
       return { Q, d: d_buffer }
     }
     else if (type === 'private_key') {
-      return ec.gen('private_key')
+      return { d: genRandomBI(n, p_byte).buffer }
     }
     else if (type === 'public_key') {
       const d_buffer = typeof s_key!.d === 'bigint' ? U8.fromBI(s_key!.d) : U8.from(s_key!.d)
-      const d = d_buffer.toBI()
+      const d = typeof s_key!.d === 'bigint' ? s_key!.d : d_buffer.toBI()
       if (d === 0n) {
         throw new KitError('Invalid private key')
       }
-      const x = ladder(clamp(d), Gx, p, a24, 255n)
-      const Q = new U8(p_byte)
-      Q.set(U8.fromBI(x))
+      const x = ladder(clamp(d), Gx, p, a24, 255)
+      const Q = U8.fromBI(x, p_byte)
       return { Q, d: d_buffer }
     }
   }
   const ecdh: X25519['ecdh'] = (s_key: X25519PrivateKey, p_key: X25519PublicKey): U8 => {
     const u = typeof p_key.Q === 'bigint' ? p_key.Q : U8.from(p_key.Q).toBI()
     const k = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
-    const x = ladder(clamp(k), u, p, a24, 255n)
-    return U8.fromBI(x)
+    const x = ladder(clamp(k), u, p, a24, 255)
+    return U8.fromBI(x, p_byte)
   }
   return { gen, ecdh }
 })()
@@ -184,18 +178,17 @@ export const x25519: X25519 = (() => {
 /** x448 椭圆曲线算法 / Elliptic Curve Algorithm */
 export const x448: X448 = (() => {
   const { p, G, n } = curve448
-  const Gx = typeof G.x === 'bigint' ? G.x : U8.from(G.x).toBI()
-  const n_bit = getBIBits(n)
-  const n_byte = (n_bit + 7) >> 3
-  const ec = FpECC(curve448)
+  const p_bit = getBIBits(p)
+  const p_byte = (p_bit + 7) >> 3
+
   const a24 = 39081n
+  const Gx = typeof G.x === 'bigint' ? G.x : U8.from(G.x).toBI()
 
   function clamp(d: bigint) {
     d = d & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCn
     d = d | 0x8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000n
     return d
   }
-
   function gen(type?: 'key_pair'): X448KeyPair<U8>
   function gen(type: 'private_key'): X448PrivateKey<U8>
   function gen(type: 'public_key', s_key: X448PrivateKey): X448KeyPair<U8>
@@ -205,34 +198,33 @@ export const x448: X448 = (() => {
   ) {
     if (type === 'key_pair') {
       // private key
-      const d_buffer = ec.gen('private_key').d
-      const d = d_buffer.toBI()
+      const t = genRandomBI(n, p_byte)
+      const d_buffer = t.buffer
+      const d = t.result
       // public key
-      const x = ladder(clamp(d), Gx, p, a24, 448n)
-      const Q = new U8(n_byte)
-      Q.set(U8.fromBI(x))
+      const x = ladder(clamp(d), Gx, p, a24, 448)
+      const Q = U8.fromBI(x, p_byte)
       return { Q, d: d_buffer }
     }
     else if (type === 'private_key') {
-      return ec.gen('private_key')
+      return { d: genRandomBI(n, p_byte).buffer }
     }
     else if (type === 'public_key') {
       const d_buffer = typeof s_key!.d === 'bigint' ? U8.fromBI(s_key!.d) : U8.from(s_key!.d)
-      const d = d_buffer.toBI()
+      const d = typeof s_key!.d === 'bigint' ? s_key!.d : d_buffer.toBI()
       if (d === 0n) {
         throw new KitError('Invalid private key')
       }
-      const x = ladder(clamp(d), Gx, p, a24, 448n)
-      const Q = new U8(n_byte)
-      Q.set(U8.fromBI(x))
+      const x = ladder(clamp(d), Gx, p, a24, 448)
+      const Q = U8.fromBI(x, p_byte)
       return { Q, d: d_buffer }
     }
   }
   const ecdh: X448['ecdh'] = (s_key: X448PrivateKey, p_key: X448PublicKey): U8 => {
     const u = typeof p_key.Q === 'bigint' ? p_key.Q : U8.from(p_key.Q).toBI()
     const k = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
-    const x = ladder(clamp(k), u, p, a24, 448n)
-    return U8.fromBI(x)
+    const x = ladder(clamp(k), u, p, a24, 448)
+    return U8.fromBI(x, p_byte)
   }
   return { gen, ecdh }
 })()

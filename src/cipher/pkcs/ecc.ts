@@ -380,13 +380,11 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       return { Q, d: buffer }
     }
     else if (type === 'private_key') {
-      // private key
-      const buffer = genRandomBI(n, p_byte).buffer
-      return { d: buffer }
+      return { d: genRandomBI(n, p_byte).buffer }
     }
     else if (type === 'public_key') {
       const d_buffer = typeof s_key!.d === 'bigint' ? U8.fromBI(s_key!.d) : U8.from(s_key!.d)
-      const d = d_buffer.toBI() ?? 0n
+      const d = typeof s_key!.d === 'bigint' ? s_key!.d : d_buffer.toBI()
       if (d === 0n) {
         throw new KitError('Invalid private key')
       }
