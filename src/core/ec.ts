@@ -39,6 +39,73 @@ export interface FpECUtils {
 
 // * FpEC Components
 
+/**
+ * 将椭圆曲线点转换为 U8 格式
+ *
+ * Convert EC Point to U8 Format
+ */
+export function U8Point(point?: FpECPoint, byte?: number): FpECPoint<U8> {
+  if (!point) {
+    return { isInfinity: true, x: new U8(), y: new U8() }
+  }
+  const isInfinity = point.isInfinity
+  const x = typeof point.x === 'bigint'
+    ? U8.fromBI(point.x, byte)
+    : U8.from(point.x)
+  const y = typeof point.y === 'bigint'
+    ? U8.fromBI(point.y, byte)
+    : U8.from(point.y)
+  return { isInfinity, x, y }
+}
+
+/**
+ * 将椭圆曲线点转换为 bigint 格式
+ *
+ * Convert EC Point to bigint Format
+ */
+export function BIPoint(point?: FpECPoint): FpECPoint<bigint> {
+  if (!point) {
+    return { isInfinity: true, x: 0n, y: 0n }
+  }
+  const isInfinity = point.isInfinity
+  const x = typeof point.x === 'bigint'
+    ? point.x
+    : U8.from(point.x).toBI()
+  const y = typeof point.y === 'bigint'
+    ? point.y
+    : U8.from(point.y).toBI()
+  return { isInfinity, x, y }
+}
+
+/**
+ * 蒙哥马利梯子点乘法
+ *
+ * Montgomery Ladder Point Multiplication
+ *
+ * @param addPoint 素域椭圆曲线点加法函数 / Prime Field EC Point Addition Function
+ * @param {FpECPoint} P 椭圆曲线点 / EC Point
+ * @param {bigint | Uint8Array} k 标量 / Scalar
+ */
+function LadderMultiply(addPoint: FpECUtils['addPoint'], P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> {
+  k = typeof k === 'bigint' ? k : U8.from(k).toBI()
+
+  let R0 = BIPoint()
+  let R1 = BIPoint(P)
+  // MSb -> LSb
+  const bit_array = k.toString(2).split('')
+  for (const bit of bit_array) {
+    if (bit === '1') {
+      R0 = addPoint(R0, R1)
+      R1 = addPoint(R1, R1)
+    }
+    else {
+      R1 = addPoint(R0, R1)
+      R0 = addPoint(R0, R0)
+    }
+  }
+  return R0
+}
+
 /** 素域运算 / Prime Field Operations */
 export function Fp(p: bigint): FpUtils {
   const _mod = (a: bigint) => mod(a, p)
@@ -91,6 +158,14 @@ export function FpWEC(curve: FpWECParams): FpECUtils {
   const { plus, multiply, subtract, divide } = Fp(p)
 
   const addPoint = (A: FpECPoint, B: FpECPoint): FpECPoint<bigint> => {
+    // O + P = P
+    if (A.isInfinity) {
+      return BIPoint(B)
+    }
+    if (B.isInfinity) {
+      return BIPoint(A)
+    }
+
     let [x1, y1] = [A.x, A.y]
     let [x2, y2] = [B.x, B.y]
 
@@ -99,19 +174,9 @@ export function FpWEC(curve: FpWECParams): FpECUtils {
     x2 = typeof x2 === 'bigint' ? x2 : U8.from(x2).toBI()
     y2 = typeof y2 === 'bigint' ? y2 : U8.from(y2).toBI()
 
-    // O + P = P
-    if (A.isInfinity) {
-      const isInfinity = B.isInfinity
-      return { isInfinity, x: x2, y: y2 }
-    }
-    if (B.isInfinity) {
-      const isInfinity = A.isInfinity
-      return { isInfinity, x: x1, y: y1 }
-    }
-
     // P + (-P) = O
     if (x1 === x2 && y1 !== y2) {
-      return { isInfinity: true, x: 0n, y: 0n }
+      return BIPoint()
     }
 
     let λ = 0n
@@ -137,24 +202,7 @@ export function FpWEC(curve: FpWECParams): FpECUtils {
 
     return { isInfinity: false, x: x3, y: y3 }
   }
-  const mulPoint = (P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> => {
-    k = typeof k === 'bigint' ? k : U8.from(k).toBI()
-    if (k === 0n) {
-      return { isInfinity: true, x: 0n, y: 0n }
-    }
-    else if (k === 1n) {
-      const isInfinity = P.isInfinity
-      const x = typeof P.x === 'bigint' ? P.x : U8.from(P.x).toBI()
-      const y = typeof P.y === 'bigint' ? P.y : U8.from(P.y).toBI()
-      return { isInfinity, x, y }
-    }
-    else if (k & 1n) {
-      return addPoint(P, mulPoint(P, k - 1n))
-    }
-    else {
-      return mulPoint(addPoint(P, P), k / 2n)
-    }
-  }
+  const mulPoint = (P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> => LadderMultiply(addPoint, P, k)
   return { addPoint, mulPoint }
 }
 
@@ -167,8 +215,15 @@ export function FpMEC(curve: FpMECParams): FpECUtils {
   const { p, a, b } = curve
   const { plus, multiply, subtract, divide } = Fp(p)
 
-  // TODO 蒙哥马利梯子优化
   const addPoint = (A: FpECPoint, B: FpECPoint): FpECPoint<bigint> => {
+    // O + P = P
+    if (A.isInfinity) {
+      return BIPoint(B)
+    }
+    if (B.isInfinity) {
+      return BIPoint(A)
+    }
+
     let [x1, y1] = [A.x, A.y]
     let [x2, y2] = [B.x, B.y]
 
@@ -177,19 +232,9 @@ export function FpMEC(curve: FpMECParams): FpECUtils {
     x2 = typeof x2 === 'bigint' ? x2 : U8.from(x2).toBI()
     y2 = typeof y2 === 'bigint' ? y2 : U8.from(y2).toBI()
 
-    // O + P = P
-    if (A.isInfinity) {
-      const isInfinity = B.isInfinity
-      return { isInfinity, x: x2, y: y2 }
-    }
-    if (B.isInfinity) {
-      const isInfinity = A.isInfinity
-      return { isInfinity, x: x1, y: y1 }
-    }
-
     // P + (-P) = O
     if (x1 === x2 && y1 !== y2) {
-      return { isInfinity: true, x: 0n, y: 0n }
+      return BIPoint()
     }
 
     let λ = 0n
@@ -214,24 +259,7 @@ export function FpMEC(curve: FpMECParams): FpECUtils {
     const y3 = subtract(multiply(2n * x1 + x2 + a, λ), multiply(λ, λ, λ, b), y1)
     return { isInfinity: false, x: x3, y: y3 }
   }
-  const mulPoint = (P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> => {
-    k = typeof k === 'bigint' ? k : U8.from(k).toBI()
-    if (k === 0n) {
-      return { isInfinity: true, x: 0n, y: 0n }
-    }
-    else if (k === 1n) {
-      const isInfinity = P.isInfinity
-      const x = typeof P.x === 'bigint' ? P.x : U8.from(P.x).toBI()
-      const y = typeof P.y === 'bigint' ? P.y : U8.from(P.y).toBI()
-      return { isInfinity, x, y }
-    }
-    else if (k & 1n) {
-      return addPoint(P, mulPoint(P, k - 1n))
-    }
-    else {
-      return mulPoint(addPoint(P, P), k / 2n)
-    }
-  }
+  const mulPoint = (P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> => LadderMultiply(addPoint, P, k)
   return { addPoint, mulPoint }
 }
 
