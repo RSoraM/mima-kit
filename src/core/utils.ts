@@ -67,23 +67,9 @@ export function rotateR(
   return x & mask
 }
 
-/**
- * 生成随机大整数 / Generate Random BigInt
- */
-export function genRandomBI(max: bigint, byte: number = 0): bigint {
+/** 生成随机大整数 / Generate Random BigInt */
+export function genRandomBI(max: bigint, byte: number) {
   let result = 0n
-
-  // 计算字节数
-  let _byte = 0
-  for (let _ = max; _ > 0; _ >>= 8n) {
-    _byte++
-  }
-  if (byte > _byte) {
-    throw new KitError('Byte length exceeds the maximum value')
-  }
-
-  // 使用指定字节数
-  byte = byte || _byte
 
   // 生成随机数
   const buffer = new U8(byte)
@@ -92,7 +78,7 @@ export function genRandomBI(max: bigint, byte: number = 0): bigint {
     result = buffer.toBI()
   } while (result >= max)
 
-  return result
+  return { buffer, result }
 }
 
 /**

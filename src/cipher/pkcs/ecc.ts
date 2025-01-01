@@ -1,10 +1,10 @@
 import type { BlockCipher, BlockCipherInfo } from '../../core/cipher'
 import { cbc, createCipher } from '../../core/cipher'
 import type { FpECUtils } from '../../core/ec'
-import { Fp, FpEC } from '../../core/ec'
+import { Fp, FpEC, U8Point } from '../../core/ec'
 import type { FpECPoint, FpMECParams, FpWECParams } from '../../core/ecParams'
 import type { Digest, KeyHash } from '../../core/hash'
-import { KitError, U8, genBitMask, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
+import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
 import type { KDF } from '../../core/kdf'
 import { x963kdf } from '../../core/kdf'
 import { aes } from '../blockCipher/aes'
@@ -262,40 +262,6 @@ export function defineECIES(config?: ECIESConfig) {
   return { cipher, mac, kdf, S1, S2, iv }
 }
 
-export function U8Point(point?: FpECPoint, byte?: number): FpECPoint<U8> {
-  if (!point) {
-    return { isInfinity: true, x: new U8(), y: new U8() }
-  }
-  const isInfinity = point.isInfinity
-  const x_buffer = typeof point.x === 'bigint'
-    ? U8.fromBI(point.x)
-    : U8.from(point.x)
-  const y_buffer = typeof point.y === 'bigint'
-    ? U8.fromBI(point.y)
-    : U8.from(point.y)
-  const x = byte ? new U8(byte) : x_buffer
-  const y = byte ? new U8(byte) : y_buffer
-  if (byte) {
-    x.set(x_buffer, byte - x_buffer.length)
-    y.set(y_buffer, byte - y_buffer.length)
-  }
-  return { isInfinity, x, y }
-}
-
-export function BIPoint(point?: FpECPoint): FpECPoint<bigint> {
-  if (!point) {
-    return { isInfinity: true, x: 0n, y: 0n }
-  }
-  const isInfinity = point.isInfinity
-  const x = typeof point.x === 'bigint'
-    ? point.x
-    : U8.from(point.x).toBI()
-  const y = typeof point.y === 'bigint'
-    ? point.y
-    : U8.from(point.y).toBI()
-  return { isInfinity, x, y }
-}
-
 // * EC Algorithms
 
 /**
@@ -309,10 +275,8 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
   const p_byte = (p_bit + 7) >> 3
   const n_bit = getBIBits(n)
   const n_mask = genBitMask(n_bit)
-  const FpECOpt = FpEC(curve)
-  const FpOpt = Fp(p)
-  const { addPoint, mulPoint } = FpECOpt
-  const { plus, multiply, root } = FpOpt
+  const { addPoint, mulPoint } = FpEC(curve)
+  const { plus, multiply, root } = Fp(p)
 
   const isLegalPK: FpECCrypto['utils']['isLegalPK'] = (p_key: ECPublicKey): boolean => {
     const { Q } = p_key
@@ -407,27 +371,18 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
     type: 'key_pair' | 'private_key' | 'public_key' = 'key_pair',
     s_key?: ECPrivateKey,
   ) {
-    let d = 0n
     if (type === 'key_pair') {
       // private key
-      const d_buffer = new U8(p_byte)
-      do {
-        crypto.getRandomValues(d_buffer)
-        d = d_buffer.toBI()
-      } while (d > n)
+      const { buffer, result: d } = genRandomBI(n, p_byte)
       // public key
       const _ = mulPoint(G, d)
       const Q = U8Point(_, p_byte)
-      return { Q, d: d_buffer }
+      return { Q, d: buffer }
     }
     else if (type === 'private_key') {
       // private key
-      const d_buffer = new U8(p_byte)
-      do {
-        crypto.getRandomValues(d_buffer)
-        d = d_buffer.toBI()
-      } while (d > n)
-      return { d: d_buffer }
+      const buffer = genRandomBI(n, p_byte).buffer
+      return { d: buffer }
     }
     else if (type === 'public_key') {
       const d_buffer = typeof s_key!.d === 'bigint' ? U8.fromBI(s_key!.d) : U8.from(s_key!.d)
@@ -586,7 +541,8 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
 
   return {
     utils: {
-      ...FpECOpt,
+      addPoint,
+      mulPoint,
       isLegalPK,
       isLegalSK,
       PointToU8,
