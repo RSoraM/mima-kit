@@ -110,10 +110,13 @@ export { secp384r1, secp521r1 } from './core/ecParams'
 export { prime192v1, prime256v1 } from './core/ecParams'
 export { p192, p224, p256, p384, p521 } from './core/ecParams'
 export { w25519, w448 } from './core/ecParams'
-// TODO 实现 蒙哥马利曲线 和 爱德华曲线 后再开放
+// TODO 实现 爱德华曲线 后再开放
 // export { ed25519, ed448 } from './core/ecParams'
-// export { curve25519, curve448 } from './core/ecParams'
+export { curve25519, curve448 } from './core/ecParams'
 export { bp192r1, bp224r1, bp256r1, bp320r1, bp384r1, bp512r1 } from './core/ecParams'
 
 // * SM2
 export { sm2 } from './cipher/pkcs/sm2'
+
+// * X25519
+export { x25519, x448 } from './cipher/pkcs/x25519_448'
