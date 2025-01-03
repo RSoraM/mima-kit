@@ -41,7 +41,7 @@ interface X25519 {
    *
    * x25519 Elliptic Curve Diffie-Hellman Key Agreement Algorithm
    */
-  ecdh: {
+  dh: {
     /**
      * @param {X25519PrivateKey} s_key - 己方私钥 / Self Private Key
      * @param {X25519PublicKey} p_key - 对方公钥 / Counterparty Public Key
@@ -69,7 +69,7 @@ interface X448 {
    *
    * x448 Elliptic Curve Diffie-Hellman Key Agreement Algorithm
    */
-  ecdh: {
+  dh: {
     /**
      * @param {X448PrivateKey} s_key - 己方私钥 / Self Private Key
      * @param {X448PublicKey} p_key - 对方公钥 / Counterparty Public Key
@@ -166,13 +166,13 @@ export const x25519: X25519 = (() => {
       return { Q, d: d_buffer }
     }
   }
-  const ecdh: X25519['ecdh'] = (s_key: X25519PrivateKey, p_key: X25519PublicKey): U8 => {
+  const ecdh: X25519['dh'] = (s_key: X25519PrivateKey, p_key: X25519PublicKey): U8 => {
     const u = typeof p_key.Q === 'bigint' ? p_key.Q : U8.from(p_key.Q).toBI()
     const k = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
     const x = ladder(clamp(k), u, p, a24, 255)
     return U8.fromBI(x, p_byte)
   }
-  return { gen, ecdh }
+  return { gen, dh: ecdh }
 })()
 
 /** x448 椭圆曲线算法 / Elliptic Curve Algorithm */
@@ -220,11 +220,11 @@ export const x448: X448 = (() => {
       return { Q, d: d_buffer }
     }
   }
-  const ecdh: X448['ecdh'] = (s_key: X448PrivateKey, p_key: X448PublicKey): U8 => {
+  const ecdh: X448['dh'] = (s_key: X448PrivateKey, p_key: X448PublicKey): U8 => {
     const u = typeof p_key.Q === 'bigint' ? p_key.Q : U8.from(p_key.Q).toBI()
     const k = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
     const x = ladder(clamp(k), u, p, a24, 448)
     return U8.fromBI(x, p_byte)
   }
-  return { gen, ecdh }
+  return { gen, dh: ecdh }
 })()

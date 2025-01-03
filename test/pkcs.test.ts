@@ -88,8 +88,8 @@ describe('ecc', () => {
         y: 221937774842090227911893783570676792435918278531n,
       },
     }
-    const s_u = ec.ecdh(u_k, v_k)
-    const s_v = ec.ecdh(v_k, u_k)
+    const s_u = ec.dh(u_k, v_k)
+    const s_v = ec.dh(v_k, u_k)
     const s_outside = U8.fromBI(1155982782519895915997745984453282631351432623114n)
     expect(s_u.x).toMatchObject(s_v.x)
     expect(s_u.x).toMatchObject(s_outside)
@@ -132,8 +132,8 @@ describe('ecc', () => {
         y: 560813476551307469487939594456722559518188737232n,
       },
     }
-    const s_u = ec.ecmqv(u_k1, u_k2, v_k1, v_k2)
-    const s_v = ec.ecmqv(v_k1, v_k2, u_k1, u_k2)
+    const s_u = ec.mqv(u_k1, u_k2, v_k1, v_k2)
+    const s_v = ec.mqv(v_k1, v_k2, u_k1, u_k2)
     const s_outside = U8.fromBI(516158222599696982690660648801682584432269985196n)
     expect(s_u.x).toMatchObject(s_v.x)
     expect(s_u.x).toMatchObject(s_outside)
@@ -144,7 +144,7 @@ describe('ecc', () => {
   })
   it('secp160r1-ecdsa', () => {
     const ec = FpECC(secp160r1)
-    const dsa = ec.ecdsa(sha1)
+    const dsa = ec.dsa(sha1)
     const key = {
       d: 971761939728640320549601132085879836204587084162n,
       Q: {
@@ -168,7 +168,7 @@ describe('ecc', () => {
     const kdf = x963kdf(sha1)
     /** HMAC-SHA-1-160 with 20 bytes keys */
     const mac = hmac(sha1, 160, 160)
-    const ecies = ec.ecies({ cipher, mac, kdf })
+    const ecies = ec.ies({ cipher, mac, kdf })
 
     const key = {
       d: 399525573676508631577122671218044116107572676710n,
@@ -214,8 +214,8 @@ describe('ecc', () => {
     const k_a = x25519.gen('public_key', { d: k_a_d })
     const k_b_d = HEX('5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb').toReversed()
     const k_b = x25519.gen('public_key', { d: k_b_d })
-    const s_a = x25519.ecdh(k_a, k_b)
-    const s_b = x25519.ecdh(k_b, k_a)
+    const s_a = x25519.dh(k_a, k_b)
+    const s_b = x25519.dh(k_b, k_a)
     const s_outside = HEX('4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742').toReversed()
     expect(s_a).toMatchObject(s_b)
     expect(s_a).toMatchObject(s_outside)
@@ -225,8 +225,8 @@ describe('ecc', () => {
     const k_a = x448.gen('public_key', { d: k_a_d })
     const k_b_d = HEX('1c306a7ac2a0e2e0990b294470cba339e6453772b075811d8fad0d1d6927c120bb5ee8972b0d3e21374c9c921b09d1b0366f10b65173992d').toReversed()
     const k_b = x448.gen('public_key', { d: k_b_d })
-    const s_a = x448.ecdh(k_a, k_b)
-    const s_b = x448.ecdh(k_b, k_a)
+    const s_a = x448.dh(k_a, k_b)
+    const s_b = x448.dh(k_b, k_a)
     const s_outside = HEX('07fff4181ac6cc95ec1c16a94a0f74d12da232ce40a77552281d282bb60c0b56fd2464c335543936521c24403085d59a449a5037514a879d').toReversed()
     expect(s_a).toMatchObject(s_b)
     expect(s_a).toMatchObject(s_outside)

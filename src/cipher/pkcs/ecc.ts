@@ -208,31 +208,31 @@ export interface FpECCrypto {
    *
    * Elliptic Curve Diffie-Hellman Key Agreement Algorithm
    */
-  ecdh: ECDH
+  dh: ECDH
   /**
    * 椭圆曲线余因子迪菲-赫尔曼, 密钥协商算法
    *
    * Elliptic Curve Co-factor Diffie-Hellman Key Agreement Algorithm
    */
-  eccdh: ECDH
+  cdh: ECDH
   /**
    * 椭圆曲线梅内泽斯-奎-范斯通密钥协商算法
    *
    * Elliptic Curve Menezes-Qu-Vanstone Key Agreement Algorithm
    */
-  ecmqv: ECMQV
+  mqv: ECMQV
   /**
    * 椭圆曲线数字签名
    *
    * Elliptic Curve Digital Signature Algorithm
    */
-  ecdsa: ECDSA
+  dsa: ECDSA
   /**
    * 椭圆曲线集成加密算法
    *
    * Elliptic Curve Integrated Encryption Scheme
    */
-  ecies: ECIES
+  ies: ECIES
 }
 
 // * Functions
@@ -547,11 +547,11 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       U8ToPoint,
     },
     gen,
-    ecdh,
-    eccdh,
-    ecmqv,
-    ecdsa,
-    ecies,
+    dh: ecdh,
+    cdh: eccdh,
+    mqv: ecmqv,
+    dsa: ecdsa,
+    ies: ecies,
   }
 }
 
