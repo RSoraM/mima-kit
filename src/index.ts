@@ -7,6 +7,9 @@ export type { Codec } from './core/codec'
 export { UTF8, HEX, B64, B64URL, CSV } from './core/codec'
 
 // * Hash Utils
+export type { Digest, HashDescription, Hash } from './core/hash'
+export type { KeyDigest, KeyHashDescription, KeyHash } from './core/hash'
+export type { TupleDigest, TupleHashDescription, TupleHash } from './core/hash'
 export { createHash, createTupleHash } from './core/hash'
 
 // * MD5
@@ -58,6 +61,9 @@ export { sm3 } from './hash/sm3'
 export { hmac } from './hash/hmac'
 
 // * Cipher Utils
+export type { Cipher, IVCipher } from './core/cipher'
+export type { BlockCipherInfo, StreamCipherInfo, IVCipherInfo } from './core/cipher'
+export type { BlockCipher, StreamCipher, IVStreamCipher } from './core/cipher'
 export { createCipher } from './core/cipher'
 
 // * Block Cipher
@@ -85,6 +91,7 @@ export { salsa20 } from './cipher/streamCipher/salsa20'
 export { rabbit } from './cipher/streamCipher/rabbit'
 
 // * RSA
+export type { RSAPublicKey, RSAPrivateKey } from './cipher/pkcs/rsa'
 export { rsa } from './cipher/pkcs/rsa'
 export { pkcs1_es_1_5, pkcs1_es_oaep } from './cipher/pkcs/pkcs1'
 export { pkcs1_ssa_1_5, pkcs1_ssa_pss } from './cipher/pkcs/pkcs1'
@@ -98,7 +105,12 @@ export type { KDF } from './core/kdf'
 export { x963kdf, hkdf, pbkdf2 } from './core/kdf'
 
 // * ECC
+export type { ECPrivateKey, ECPublicKey, ECKeyPair } from './cipher/pkcs/ecc'
+export type { IVBlockCipher, ECIESCiphertext, ECDSASignature } from './cipher/pkcs/ecc'
+export type { FpECCrypto } from './cipher/pkcs/ecc'
 export { FpECC } from './cipher/pkcs/ecc'
+export type { FpECPoint } from './core/ecParams'
+export type { FpWECParams, FpMECParams } from './core/ecParams'
 export { sm2p256v1 } from './core/ecParams'
 // export { secp112r1, secp112r2 } from './core/ecParams'
 // export { secp128r1, secp128r2 } from './core/ecParams'
@@ -116,7 +128,12 @@ export { curve25519, curve448 } from './core/ecParams'
 export { bp192r1, bp224r1, bp256r1, bp320r1, bp384r1, bp512r1 } from './core/ecParams'
 
 // * SM2
+export type { FpSM2Crypto } from './cipher/pkcs/sm2'
+export type { SM2DSASignature } from './cipher/pkcs/sm2'
 export { sm2 } from './cipher/pkcs/sm2'
 
 // * X25519
+export type { X25519PrivateKey, X25519PublicKey, X25519KeyPair } from './cipher/pkcs/x25519_448'
+export type { X448PrivateKey, X448PublicKey, X448KeyPair } from './cipher/pkcs/x25519_448'
+export type { X25519, X448 } from './cipher/pkcs/x25519_448'
 export { x25519, x448 } from './cipher/pkcs/x25519_448'

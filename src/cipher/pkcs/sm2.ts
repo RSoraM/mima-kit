@@ -7,7 +7,7 @@ import { KitError, U8, genBitMask, getBIBits, joinBuffer, mod, modInverse } from
 import type { ECKeyPair, ECPrivateKey, ECPublicKey, FpECCrypto } from './ecc'
 import { FpECC } from './ecc'
 
-interface SM2DI {
+export interface SM2DI {
   /**
    * SM2 可辨别标识散列
    *
@@ -20,7 +20,7 @@ interface SM2DI {
   (id: Uint8Array, key: ECPublicKey, hash?: Hash): U8
 }
 
-interface SM2DH {
+export interface SM2DH {
   /**
    * SM2 椭圆曲线迪菲-赫尔曼, 密钥协商算法
    *
@@ -37,11 +37,11 @@ interface SM2DH {
   (KA: ECKeyPair, KX: ECKeyPair, KB: ECPublicKey, KY: ECPublicKey, ZA?: Uint8Array, ZB?: Uint8Array): U8
 }
 
-interface SM2DSASignature<T = bigint | Uint8Array> {
+export interface SM2DSASignature<T = bigint | Uint8Array> {
   r: T
   s: T
 }
-interface SM2DSA {
+export interface SM2DSA {
   /**
    * SM2 椭圆曲线数字签名
    *
@@ -66,7 +66,7 @@ interface SM2DSA {
   }
 }
 
-interface SM2Encrypt {
+export interface SM2Encrypt {
   /**
    * SM2 椭圆曲线加密
    *
@@ -77,7 +77,7 @@ interface SM2Encrypt {
    */
   (p_key: ECPublicKey, M: Uint8Array): U8
 }
-interface SM2Decrypt {
+export interface SM2Decrypt {
   /**
    * SM2 椭圆曲线解密
    *
@@ -88,7 +88,7 @@ interface SM2Decrypt {
    */
   (s_key: ECPrivateKey, C: Uint8Array): U8
 }
-interface SM2EncryptionScheme {
+export interface SM2EncryptionScheme {
   /**
    * SM2 椭圆曲线加密方案
    *
@@ -104,7 +104,7 @@ interface SM2EncryptionScheme {
   }
 }
 
-interface FpSM2Crypto {
+export interface FpSM2Crypto {
   utils: FpECCrypto['utils']
   /**
    * 生成 SM2 椭圆曲线密钥

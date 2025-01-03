@@ -4,25 +4,25 @@ import { KitError, U8, genRandomBI, getBIBits } from '../../core/utils'
 
 // * Interfaces
 
-interface X25519PrivateKey<T = bigint | Uint8Array> {
+export interface X25519PrivateKey<T = bigint | Uint8Array> {
   /** 私钥 / Private Key */
   d: T
 }
-interface X25519PublicKey<T = bigint | Uint8Array> {
+export interface X25519PublicKey<T = bigint | Uint8Array> {
   /** 公钥 / Public Key */
   Q: T
 }
-interface X25519KeyPair<T = bigint | Uint8Array> extends X25519PrivateKey<T>, X25519PublicKey<T> {
+export interface X25519KeyPair<T = bigint | Uint8Array> extends X25519PrivateKey<T>, X25519PublicKey<T> {
 }
 
-interface X448PrivateKey<T = bigint | Uint8Array> extends X25519PrivateKey<T> {
+export interface X448PrivateKey<T = bigint | Uint8Array> extends X25519PrivateKey<T> {
 }
-interface X448PublicKey<T = bigint | Uint8Array> extends X25519PublicKey<T> {
+export interface X448PublicKey<T = bigint | Uint8Array> extends X25519PublicKey<T> {
 }
-interface X448KeyPair<T = bigint | Uint8Array> extends X25519KeyPair<T> {
+export interface X448KeyPair<T = bigint | Uint8Array> extends X25519KeyPair<T> {
 }
 
-interface X25519 {
+export interface X25519 {
   /**
    * 生成 x25519 椭圆曲线密钥
    *
@@ -50,7 +50,7 @@ interface X25519 {
   }
 }
 
-interface X448 {
+export interface X448 {
   /**
    * 生成 x448 椭圆曲线密钥
    *
