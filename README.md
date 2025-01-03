@@ -128,6 +128,10 @@ npm install mima-kit
     <li><a href="#sm2-dsa">SM2-DSA</a></li>
     <li><a href="#sm2-es">SM2-ES</a></li>
   </ul>
+  <li><a href="#x25519">x25519</a></li>
+  <ul>
+    <li><a href="#x25519-dh">x25519-DH</a></li>
+  </ul>
 </ul>
 </details>
 <!-- 非对称密钥算法 -->
@@ -1116,7 +1120,7 @@ const v = cipher.verify(p, s)
 
 Specification: [SEC 1](https://www.secg.org/sec1-v2.pdf)
 
-`Elliptic-Curve Cryptography` 是一种基于椭圆曲线的非对称加密算法。`mima-kit` 目前仅支持基于素域 `Weierstrass` 椭圆曲线的 `ECC` 算法。
+`Elliptic-Curve Cryptography` 是一种基于椭圆曲线的非对称加密算法。`mima-kit` 目前仅支持基于素域 `Weierstrass` 和 `Montgomery` 椭圆曲线的 `ECC` 算法。
 
 使用 `ECC` 算法前需要选择一个 `椭圆曲线`。参考 [椭圆曲线列表](#椭圆曲线列表)。
 
@@ -1124,30 +1128,31 @@ Specification: [SEC 1](https://www.secg.org/sec1-v2.pdf)
 
 ```typescript
 const ec = FpECC(secp256r1)
-// Generate ECC key pair
+// Generate ECC key pair: ECKeyPair<U8>
 const key = ec.gen()
 const key = ec.gen('key_pair')
-// Generate ECC private key
+// Generate ECC private key: ECPrivateKey<U8>
 const s_key = ec.gen('private_key')
-// Generate ECC public key
+// Generate ECC public key: ECKeypair<U8>
 const p_key = ec.gen('public_key', s_key)
 ```
 
 ```typescript
-interface FpECPoint {
-  isInfinity?: boolean
-  x: bigint
-  y: bigint
+interface FpECPoint<T = bigint | Uint8Array> {
+  isInfinity: boolean
+  x: T
+  y: T
 }
-interface ECPublicKey {
-  /** Elliptic Curve Public Key */
-  readonly Q: Readonly<FpECPoint>
+interface ECPublicKey<T = bigint | Uint8Array> {
+  /** Prime Field Elliptic Curve Public Key */
+  readonly Q: Readonly<FpECPoint<T>>
 }
-interface ECPrivateKey {
-  /** Elliptic Curve Private Key */
-  readonly d: bigint
+interface ECPrivateKey<T = bigint | Uint8Array> {
+  /** Prime Field Elliptic Curve Private Key */
+  readonly d: T
 }
-interface ECKeyPair extends ECPrivateKey, ECPublicKey {
+/** Elliptic Curve Key Pair */
+interface ECKeyPair<T = bigint | Uint8Array> extends ECPrivateKey<T>, ECPublicKey<T> {
 }
 ```
 
@@ -1157,25 +1162,28 @@ interface ECKeyPair extends ECPrivateKey, ECPublicKey {
 
 ```typescript
 const ec = FpECC(secp256r1)
+const { PointToU8, U8ToPoint } = ec.utils
 const P = ec.gen().Q
 // will not compress by default
-const U = ec.pointToU8(P)
+const U = pointToU8(P)
 // compress
-const U = ec.pointToU8(P, true)
-// decompress
-const P = ec.U8ToPoint(U)
+const U = pointToU8(P, true)
+// decompress: FpECPoint<U8>
+const P = U8ToPoint(U)
 ```
 
 ### ECDH
 
 `Elliptic Curve Diffie-Hellman` 是 `ECC` 算法的一种密钥协商协议。在计算得到共享密钥后，通常会使用 `KDF` 从共享密钥中派生出一个或多个密钥。
 
+> `ECDH` 的结果是一个 `FpECPoint<U8>`，通常会使用 `x` 作为 `KDF` 的密钥材料。
+
 ```typescript
 const ec = FpECC(secp256r1)
 const keyA = ec.gen()
 const keyB = ec.gen()
-const secretA = ec.ecdh(keyA, keyB).x
-const secretB = ec.ecdh(keyB, keyA).x
+const secretA = ec.dh(keyA, keyB).x
+const secretB = ec.dh(keyB, keyA).x
 // secretA === secretB
 ```
 
@@ -1183,12 +1191,14 @@ const secretB = ec.ecdh(keyB, keyA).x
 
 `Elliptic Curve Co-factor Diffie-Hellman` 是基于 `ECDH` 的一种密钥协商协议。对曲线参数中 `co-factor` 为 `1` 的曲线，`ECDH` 和 `ECCDH` 的结果是相同的。
 
+> `ECCDH` 的结果是一个 `FpECPoint<U8>`，通常会使用 `x` 作为 `KDF` 的密钥材料。
+
 ```typescript
 const ec = FpECC(w25519)
 const keyA = ec.gen()
 const keyB = ec.gen()
-const secretAc = ec.eccdh(keyA, keyB).x
-const secretBc = ec.eccdh(keyB, keyA).x
+const secretAc = ec.cdh(keyA, keyB).x
+const secretBc = ec.cdh(keyB, keyA).x
 // secretAc === secretBc
 ```
 
@@ -1196,14 +1206,16 @@ const secretBc = ec.eccdh(keyB, keyA).x
 
 `Elliptic Curve Menezes-Qu-Vanstone` 是基于 `ECDH` 的一种密钥协商协议。
 
+> `ECMQV` 的结果是一个 `FpECPoint<U8>`，通常会使用 `x` 作为 `KDF` 的密钥材料。
+
 ```typescript
 const ec = FpECC(secp256r1)
 const u_k1 = ec.gen()
 const u_k2 = ec.gen()
 const v_k1 = ec.gen()
 const v_k2 = ec.gen()
-const secretA = ec.ecmqv(u_k1, u_k2, v_k1, v_k2).x
-const secretB = ec.ecmqv(v_k1, v_k2, u_k1, u_k2).x
+const secretA = ec.mqv(u_k1, u_k2, v_k1, v_k2).x
+const secretB = ec.mqv(v_k1, v_k2, u_k1, u_k2).x
 // secretA === secretB
 ```
 
@@ -1218,20 +1230,21 @@ const ec = FpECC(secp256r1)
 const key = ec.gen()
 const p = UTF8('mima-kit')
 // using SHA-256 by default
-const cipher = ec.ecdsa()
+const signer = ec.dsa()
 // using SHA-1
-const cipher = ec.ecdsa(sha1)
+const signer = ec.dsa(sha1)
+// sign: ECDSASignature<U8>
 const s = cipher.sign(key, p)
 const v = cipher.verify(key, p, s)
 // v === true
 ```
 
 ```typescript
-interface ECDSASignature {
+interface ECDSASignature<T = bigint | Uint8Array> {
   /** Temporary Public Key's x */
-  r: bigint
+  r: T
   /** Signature Value */
-  s: bigint
+  s: T
 }
 ```
 
@@ -1239,10 +1252,12 @@ interface ECDSASignature {
 
 `ECIES` 是 `ECC` 算法的一种集成加密方案。`ECIES` 的配置内容比较多，请参考 `ECIESConfig` 接口。
 
+> `ECIES` 的结果是一个 `ECIESCiphertext` 类型，它包含了 `临时公钥`、`密文` 和 `校验值`。
+
 ```typescript
 const ec = FpECC(secp256r1)
 const key = ec.gen()
-const cipher = ec.ecies()
+const cipher = ec.ies()
 const p = UTF8('mima-kit')
 const c = cipher.encrypt(key, p)
 const m = cipher.decrypt(key, c)
@@ -1263,6 +1278,14 @@ interface ECIESConfig {
   S2?: Uint8Array
   /** Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
   iv?: Uint8Array
+}
+interface ECIESCiphertext {
+  /** Temporary Public Key */
+  R: ECPublicKey
+  /** Ciphertext */
+  C: Uint8Array
+  /** Check Value */
+  D: Uint8Array
 }
 ```
 
@@ -1377,9 +1400,9 @@ signer.verify(ZA, KA, M, signature) // true
 ```
 
 ```typescript
-interface SM2DSASignature {
-  r: bigint
-  s: bigint
+interface SM2DSASignature<T = bigint | Uint8Array> {
+  r: T
+  s: T
 }
 interface SM2DSA {
   /**
@@ -1391,7 +1414,7 @@ interface SM2DSA {
      * @param {ECPrivateKey} key - Signer Private Key
      * @param {Uint8Array} M - Message
      */
-    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature
+    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature<U8>
     /**
      * @param {Uint8Array} Z - Identity Derived Value
      * @param {ECPublicKey} key - Signer Public Key
@@ -1443,6 +1466,51 @@ interface SM2EncryptionScheme {
     decrypt: SM2Decrypt
   }
 }
+```
+
+## x25519
+
+Specification: [RFC 7748](https://www.rfc-editor.org/rfc/rfc7748.html)
+
+`x25519` 和 `x448` 是基于 `Montgomery` 曲线的 `ECC` 算法。他们不是 `FpECC` 的实例，而是单独的算法。
+
+> 需要注意 `mima-kit` 提供的 `x25519` 和 `x448` 可能无法与其他实现完全兼容。因为 `RFC 7748` 规定以 `小端序` 作为编码方式，而 `mima-kit` 使用 `大端序` 作为编码方式。通过转换 `端序` 应该可以与其他实现兼容。
+
+> 虽然 `FpECC` 也可以进行 `Montgomery` 曲线的计算，但是 `x25519` 和 `x448` 算法只需要 `x` 坐标，且他们的算法实施都会对私钥进行 `clamp` 处理，所以他们的底层是更高效的独立算法。
+
+```typescript
+// Generate key pair: X25519KeyPair<U8>
+const key = x25519.gen()
+const key = x25519.gen('key_pair')
+// Generate private key: X25519PrivateKey<U8>
+const s_key = x25519.gen('private_key')
+// Generate public key: X25519KeyPair<U8>
+const p_key = x25519.gen('public_key', s_key)
+```
+
+```typescript
+interface X25519PrivateKey<T = bigint | Uint8Array> {
+  /** Private Key */
+  d: T
+}
+interface X25519PublicKey<T = bigint | Uint8Array> {
+  /** Public Key */
+  Q: T
+}
+interface X25519KeyPair<T = bigint | Uint8Array> extends X25519PrivateKey<T>, X25519PublicKey<T> {
+}
+```
+
+### X25519-DH
+
+`x25519` 和 `x448` 算法的密钥协商协议。与标准不同，他们直接返回 `共享密钥`。你需要另外使用 `KDF` 从 `共享密钥` 中派生密钥。
+
+```typescript
+const keyA = x25519.gen()
+const keyB = x25519.gen()
+const secretA = x25519.dh(keyA, keyB)
+const secretB = x25519.dh(keyB, keyA)
+// secretA === secretB
 ```
 
 # 其他组件

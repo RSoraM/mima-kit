@@ -130,6 +130,10 @@ npm install mima-kit
     <li><a href="#sm2-dsa">SM2-DSA</a></li>
     <li><a href="#sm2-es">SM2-ES</a></li>
   </ul>
+  <li><a href="#x25519">x25519</a></li>
+  <ul>
+    <li><a href="#x25519-dh">x25519-DH</a></li>
+  </ul>
 </ul>
 </details>
 <!-- 非对称密钥算法 -->
@@ -1113,7 +1117,7 @@ const v = cipher.verify(p, s)
 
 Specification: [SEC 1](https://www.secg.org/sec1-v2.pdf)
 
-`Elliptic-Curve Cryptography` is an asymmetric encryption algorithm based on elliptic curves. `mima-kit` currently only supports the `ECC` algorithm based on the prime field `Weierstrass` elliptic curve.
+`Elliptic-Curve Cryptography` is an asymmetric encryption algorithm based on elliptic curves. `mima-kit` currently only supports the `ECC` algorithm based on the prime field `Weierstrass` and `Montgomery` elliptic curve.
 
 You need to select an `Elliptic Curve` before using the `ECC` algorithm. See [Elliptic Curve List](#elliptic-curve-list).
 
@@ -1121,30 +1125,31 @@ You need to select an `Elliptic Curve` before using the `ECC` algorithm. See [El
 
 ```typescript
 const ec = FpECC(secp256r1)
-// Generate ECC key pair
+// Generate ECC key pair: ECKeyPair<U8>
 const key = ec.gen()
 const key = ec.gen('key_pair')
-// Generate ECC private key
+// Generate ECC private key: ECPrivateKey<U8>
 const s_key = ec.gen('private_key')
-// Generate ECC public key
+// Generate ECC public key: ECKeypair<U8>
 const p_key = ec.gen('public_key', s_key)
 ```
 
 ```typescript
-interface FpECPoint {
-  isInfinity?: boolean
-  x: bigint
-  y: bigint
+interface FpECPoint<T = bigint | Uint8Array> {
+  isInfinity: boolean
+  x: T
+  y: T
 }
-interface ECPublicKey {
-  /** Elliptic Curve Public Key */
-  readonly Q: Readonly<FpECPoint>
+interface ECPublicKey<T = bigint | Uint8Array> {
+  /** Prime Field Elliptic Curve Public Key */
+  readonly Q: Readonly<FpECPoint<T>>
 }
-interface ECPrivateKey {
-  /** Elliptic Curve Private Key */
-  readonly d: bigint
+interface ECPrivateKey<T = bigint | Uint8Array> {
+  /** Prime Field Elliptic Curve Private Key */
+  readonly d: T
 }
-interface ECKeyPair extends ECPrivateKey, ECPublicKey {
+/** Elliptic Curve Key Pair */
+interface ECKeyPair<T = bigint | Uint8Array> extends ECPrivateKey<T>, ECPublicKey<T> {
 }
 ```
 
@@ -1154,25 +1159,28 @@ interface ECKeyPair extends ECPrivateKey, ECPublicKey {
 
 ```typescript
 const ec = FpECC(secp256r1)
+const { PointToU8, U8ToPoint } = ec.utils
 const P = ec.gen().Q
 // will not compress by default
-const U = ec.pointToU8(P)
+const U = pointToU8(P)
 // compress
-const U = ec.pointToU8(P, true)
-// decompress
-const P = ec.U8ToPoint(U)
+const U = pointToU8(P, true)
+// decompress: FpECPoint<U8>
+const P = U8ToPoint(U)
 ```
 
 ### ECDH
 
 `Elliptic Curve Diffie-Hellman` is a key agreement protocol for the `ECC` algorithm. After the shared key is calculated, a `KDF` is usually used to derive one or more keys from the shared key.
 
+> The result of `ECDH` is an `FpECPoint<U8>`, which is typically used with `x` as key material for a `KDF`.
+
 ```typescript
 const ec = FpECC(secp256r1)
 const keyA = ec.gen()
 const keyB = ec.gen()
-const secretA = ec.ecdh(keyA, keyB).x
-const secretB = ec.ecdh(keyB, keyA).x
+const secretA = ec.dh(keyA, keyB).x
+const secretB = ec.dh(keyB, keyA).x
 // secretA === secretB
 ```
 
@@ -1180,12 +1188,14 @@ const secretB = ec.ecdh(keyB, keyA).x
 
 `Elliptic Curve Co-factor Diffie-Hellman` is a key agreement protocol based on `ECDH`. For curves with `co-factor` equal to `1`, the results of `ECDH` and `ECCDH` are the same.
 
+> The result of `ECDH` is an `FpECPoint<U8>`, which is typically used with `x` as key material for a `KDF`.
+
 ```typescript
 const ec = FpECC(w25519)
 const keyA = ec.gen()
 const keyB = ec.gen()
-const secretAc = ec.eccdh(keyA, keyB).x
-const secretBc = ec.eccdh(keyB, keyA).x
+const secretAc = ec.cdh(keyA, keyB).x
+const secretBc = ec.cdh(keyB, keyA).x
 // secretAc === secretBc
 ```
 
@@ -1193,14 +1203,16 @@ const secretBc = ec.eccdh(keyB, keyA).x
 
 `Elliptic Curve Menezes-Qu-Vanstone` is a key agreement protocol based on `ECDH`.
 
+> The result of `ECDH` is an `FpECPoint<U8>`, which is typically used with `x` as key material for a `KDF`.
+
 ```typescript
 const ec = FpECC(secp256r1)
 const u_k1 = ec.gen()
 const u_k2 = ec.gen()
 const v_k1 = ec.gen()
 const v_k2 = ec.gen()
-const secretA = ec.ecmqv(u_k1, u_k2, v_k1, v_k2).x
-const secretB = ec.ecmqv(v_k1, v_k2, u_k1, u_k2).x
+const secretA = ec.mqv(u_k1, u_k2, v_k1, v_k2).x
+const secretB = ec.mqv(v_k1, v_k2, u_k1, u_k2).x
 // secretA === secretB
 ```
 
@@ -1215,20 +1227,21 @@ const ec = FpECC(secp256r1)
 const key = ec.gen()
 const p = UTF8('mima-kit')
 // using SHA-256 by default
-const cipher = ec.ecdsa()
+const signer = ec.dsa()
 // using SHA-1
-const cipher = ec.ecdsa(sha1)
+const signer = ec.dsa(sha1)
+// sign: ECDSASignature<U8>
 const s = cipher.sign(key, p)
 const v = cipher.verify(key, p, s)
 // v === true
 ```
 
 ```typescript
-interface ECDSASignature {
+interface ECDSASignature<T = bigint | Uint8Array> {
   /** Temporary Public Key's x */
-  r: bigint
+  r: T
   /** Signature Value */
-  s: bigint
+  s: T
 }
 ```
 
@@ -1236,10 +1249,12 @@ interface ECDSASignature {
 
 `ECIES` is an integrated encryption scheme for the `ECC` algorithm. `ECIES` has a lot of configuration content, please refer to the `ECIESConfig` interface.
 
+> The result of `ECIES` is an `ECIESCiphertext` type, which contains the `temporary public key`, the `ciphertext` and the `check value`.
+
 ```typescript
 const ec = FpECC(secp256r1)
 const key = ec.gen()
-const cipher = ec.ecies()
+const cipher = ec.ies()
 const p = UTF8('mima-kit')
 const c = cipher.encrypt(key, p)
 const m = cipher.decrypt(key, c)
@@ -1260,6 +1275,14 @@ interface ECIESConfig {
   S2?: Uint8Array
   /** Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
   iv?: Uint8Array
+}
+interface ECIESCiphertext {
+  /** Temporary Public Key */
+  R: ECPublicKey
+  /** Ciphertext */
+  C: Uint8Array
+  /** Check Value */
+  D: Uint8Array
 }
 ```
 
@@ -1378,14 +1401,12 @@ signer.verify(ZA, KA, M, signature) // true
 ```
 
 ```typescript
-interface SM2DSASignature {
-  r: bigint
-  s: bigint
+interface SM2DSASignature<T = bigint | Uint8Array> {
+  r: T
+  s: T
 }
 interface SM2DSA {
   /**
-   * SM2 Elliptic Curve Digital Signature Algorithm
-   *
    * @param {Hash} hash - Hash Algorithm (default: SM3)
    */
   (hash?: Hash): {
@@ -1394,7 +1415,7 @@ interface SM2DSA {
      * @param {ECPrivateKey} key - Signer Private Key
      * @param {Uint8Array} M - Message
      */
-    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature
+    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature<U8>
     /**
      * @param {Uint8Array} Z - Identity Derived Value
      * @param {ECPublicKey} key - Signer Public Key
@@ -1446,6 +1467,51 @@ interface SM2EncryptionScheme {
     decrypt: SM2Decrypt
   }
 }
+```
+
+## x25519
+
+Specification: [RFC 7748](https://www.rfc-editor.org/rfc/rfc7748.html)
+
+`x25519` and `x448` are `ECC` algorithms based on the `Montgomery` curve. They are not instances of `FpECC`, but separate algorithms.
+
+> Note that `x25519` and `x448` provided by `mima-kit` may not be fully compatible with other implementations. This is because `RFC 7748` specifies `little-endian` as the encoding method, while `mima-kit` uses `big-endian` as the encoding method. By converting the `endian`, it should be compatible with other implementations.
+
+> Although `FpECC` can also perform calculations on the `Montgomery` curve, the `x25519` and `x448` algorithms only require the `x` coordinate, and their algorithm implementations will `clamp` the private key, so their underlying algorithms are more efficient independent algorithms.
+
+```typescript
+// Generate key pair: X25519KeyPair<U8>
+const key = x25519.gen()
+const key = x25519.gen('key_pair')
+// Generate private key: X25519PrivateKey<U8>
+const s_key = x25519.gen('private_key')
+// Generate public key: X25519KeyPair<U8>
+const p_key = x25519.gen('public_key', s_key)
+```
+
+```typescript
+interface X25519PrivateKey<T = bigint | Uint8Array> {
+  /** Private Key */
+  d: T
+}
+interface X25519PublicKey<T = bigint | Uint8Array> {
+  /** Public Key */
+  Q: T
+}
+interface X25519KeyPair<T = bigint | Uint8Array> extends X25519PrivateKey<T>, X25519PublicKey<T> {
+}
+```
+
+### X25519-DH
+
+Key agreement protocol for the `x25519` and `x448` algorithms. Unlike the standard, they return a `shared secret` directly. You need to derive keys from the `shared secret` separately using a `KDF`.
+
+```typescript
+const keyA = x25519.gen()
+const keyB = x25519.gen()
+const secretA = x25519.dh(keyA, keyB)
+const secretB = x25519.dh(keyB, keyA)
+// secretA === secretB
 ```
 
 # Other Components
