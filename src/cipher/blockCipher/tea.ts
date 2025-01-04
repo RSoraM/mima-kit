@@ -12,12 +12,13 @@ function _tea(K: Uint8Array, round: number) {
     throw new KitError('TEA key must be 16 byte')
   }
   const K32 = new Uint32Array(K.buffer)
+  const sum_delta = (DELTA * round) & 0xFFFFFFFF
 
   const encrypt = (M: Uint8Array) => {
     if (M.byteLength !== 8) {
       throw new KitError('TEA block must be 8 byte')
     }
-    const C = M.slice(0)
+    const C = U8.from(M.slice(0))
     const C32 = new Uint32Array(C.buffer)
     let sum = 0
     for (let i = 0; i < round; i++) {
@@ -25,21 +26,21 @@ function _tea(K: Uint8Array, round: number) {
       C32[0] += ((C32[1] << 4) + K32[0]) ^ (C32[1] + sum) ^ ((C32[1] >>> 5) + K32[1])
       C32[1] += ((C32[0] << 4) + K32[2]) ^ (C32[0] + sum) ^ ((C32[0] >>> 5) + K32[3])
     }
-    return new U8(C)
+    return C
   }
   const decrypt = (C: Uint8Array) => {
     if (C.byteLength !== 8) {
       throw new KitError('TEA block must be 8 byte')
     }
-    const M = C.slice(0)
+    const M = U8.from(C.slice(0))
     const M32 = new Uint32Array(M.buffer)
-    let sum = 0xC6EF3720
+    let sum = sum_delta
     for (let i = 0; i < round; i++) {
       M32[1] -= ((M32[0] << 4) + K32[2]) ^ (M32[0] + sum) ^ ((M32[0] >>> 5) + K32[3])
       M32[0] -= ((M32[1] << 4) + K32[0]) ^ (M32[1] + sum) ^ ((M32[1] >>> 5) + K32[1])
       sum -= DELTA
     }
-    return new U8(M)
+    return M
   }
   return { encrypt, decrypt }
 }
@@ -49,12 +50,13 @@ function _xtea(K: Uint8Array, round: number) {
     throw new KitError('XTEA key must be 16 byte')
   }
   const K32 = new Uint32Array(K.buffer)
+  const sum_delta = (DELTA * round) & 0xFFFFFFFF
 
   const encrypt = (M: Uint8Array) => {
     if (M.byteLength !== 8) {
       throw new KitError('XTEA block must be 8 byte')
     }
-    const C = M.slice(0)
+    const C = U8.from(M.slice(0))
     const C32 = new Uint32Array(C.buffer)
     let sum = 0
     for (let i = 0; i < round; i++) {
@@ -62,21 +64,21 @@ function _xtea(K: Uint8Array, round: number) {
       sum += DELTA
       C32[1] += (C32[0] << 4 ^ C32[0] >>> 5) + C32[0] ^ sum + K32[(sum >>> 11) & 3]
     }
-    return new U8(C)
+    return C
   }
   const decrypt = (C: Uint8Array) => {
     if (C.byteLength !== 8) {
       throw new KitError('XTEA block must be 8 byte')
     }
-    const M = C.slice(0)
+    const M = U8.from(C.slice(0))
     const M32 = new Uint32Array(M.buffer)
-    let sum = DELTA << 5
+    let sum = sum_delta
     for (let i = 0; i < round; i++) {
       M32[1] -= ((M32[0] << 4 ^ M32[0] >>> 5) + M32[0]) ^ (sum + K32[(sum >>> 11) & 3])
       sum -= DELTA
       M32[0] -= ((M32[1] << 4 ^ M32[1] >>> 5) + M32[1]) ^ (sum + K32[sum & 3])
     }
-    return new U8(M)
+    return M
   }
   return { encrypt, decrypt }
 }
