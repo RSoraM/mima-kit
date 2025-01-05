@@ -1,4 +1,4 @@
-import { U8, modPow } from './utils'
+import { U8, isBrowser, isNode, modPow } from './utils'
 
 // * Constants
 
@@ -79,28 +79,43 @@ export function isProbablePrime(n: bigint, t: number = T): boolean {
  */
 export function genPrime(b: number): bigint {
   // using Node.js crypto module
-  // eslint-disable-next-line node/prefer-global/process
-  if (typeof process !== 'undefined' && process.versions != null && process.versions.node != null) {
+  if (isNode()) {
     // eslint-disable-next-line ts/no-require-imports
     const crypto = require('node:crypto')
     return crypto.generatePrimeSync(b, { bigint: true })
   }
-
-  // using Web Crypto API
-  const buffer = new U8(b >> 3)
-  while (buffer[0] < 0x80) {
-    crypto.getRandomValues(buffer)
+  // eslint-disable-next-line ts/ban-ts-comment
+  // @ts-ignore
+  else if (isBrowser()) {
+    // using Web Crypto API
+    const buffer = new U8(b >> 3)
+    while (buffer[0] < 0x80) {
+      crypto.getRandomValues(buffer)
+    }
+    const prime = buffer.toBI() | 1n
+    if (isProbablePrime(prime))
+      return prime
+    else
+      return nextPrime(prime)
   }
-  const prime = buffer.toBI() | 1n
-  if (isProbablePrime(prime))
-    return prime
-  else
-    return nextPrime(prime)
+  else {
+    const buffer = new U8(b >> 3)
+    do {
+      for (let i = 0; i < buffer.length; i++) {
+        buffer[i] = Math.floor(Math.random() * 256)
+      }
+    } while (buffer[0] < 0x80)
+    const prime = buffer.toBI() | 1n
+    if (isProbablePrime(prime))
+      return prime
+    else
+      return nextPrime(prime)
+  }
 }
 
 export function nextPrime(n: bigint): bigint {
   do {
     n += 2n
-  } while (isProbablePrime(n) === false)
+  } while (!isProbablePrime(n))
   return n
 }

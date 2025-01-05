@@ -67,6 +67,17 @@ export function rotateR(
   return x & mask
 }
 
+export function isNode() {
+  // eslint-disable-next-line node/prefer-global/process
+  return typeof process !== 'undefined' && process.versions != null && process.versions.node != null
+}
+
+export function isBrowser() {
+  // eslint-disable-next-line ts/ban-ts-comment
+  // @ts-ignore
+  return typeof window !== 'undefined' && typeof document !== 'undefined'
+}
+
 /** 生成随机大整数 / Generate Random BigInt */
 export function genRandomBI(max: bigint, byte: number) {
   let result = 0n
@@ -74,7 +85,14 @@ export function genRandomBI(max: bigint, byte: number) {
   // 生成随机数
   const buffer = new U8(byte)
   do {
-    crypto.getRandomValues(buffer)
+    if (isNode() || isBrowser()) {
+      crypto.getRandomValues(buffer)
+    }
+    else {
+      for (let i = 0; i < buffer.length; i++) {
+        buffer[i] = Math.floor(Math.random() * 256)
+      }
+    }
     result = buffer.toBI()
   } while (result >= max)
 

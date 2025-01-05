@@ -1,5 +1,5 @@
 import * as asn from 'asn1js'
-import { Counter, KitError, U8, getBIBits, joinBuffer } from '../../core/utils'
+import { Counter, KitError, U8, getBIBits, isBrowser, isNode, joinBuffer } from '../../core/utils'
 import type { Hash } from '../../core/hash'
 import { sha256 } from '../../hash/sha256'
 import type { RSAPrivateKey, RSAPublicKey } from './rsa'
@@ -63,7 +63,14 @@ export function pkcs1_es_oaep(
     const DB = joinBuffer(lHash, PS, new U8([0x01]), M)
     // EM = 0x00 || maskedSeed || maskedDB
     const seed = new U8(hLen)
-    crypto.getRandomValues(seed)
+    if (isNode() || isBrowser()) {
+      crypto.getRandomValues(seed)
+    }
+    else {
+      for (let i = 0; i < seed.length; i++) {
+        seed[i] = Math.floor(Math.random() * 256)
+      }
+    }
     const dbMask = mgf(seed, DB.length)
     const maskedDB = DB.map((v, i) => v ^ dbMask[i])
     const seedMask = mgf(maskedDB, hLen)
@@ -125,7 +132,14 @@ export function pkcs1_es_1_5(
     }
     const PS = new Uint8Array(k - M.length - 3)
     do {
-      crypto.getRandomValues(PS)
+      if (isNode() || isBrowser()) {
+        crypto.getRandomValues(PS)
+      }
+      else {
+        for (let i = 0; i < PS.length; i++) {
+          PS[i] = Math.floor(Math.random() * 256)
+        }
+      }
     } while (PS.includes(0x00))
     const EM = joinBuffer(new U8([0x00, 0x02]), PS, new U8([0x00]), M)
     return U8.fromBI(_rsa.encrypt(EM), k)
@@ -232,7 +246,14 @@ function emsa_pss(
       throw new KitError('Encoding error')
     }
     const salt = new U8(sLen)
-    crypto.getRandomValues(salt)
+    if (isNode() || isBrowser()) {
+      crypto.getRandomValues(salt)
+    }
+    else {
+      for (let i = 0; i < salt.length; i++) {
+        salt[i] = Math.floor(Math.random() * 256)
+      }
+    }
     const M2 = joinBuffer(new U8(8), mHash, salt)
     const H = hash(M2)
     const PS = new U8(emLen - sLen - hLen - 2)
