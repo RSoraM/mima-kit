@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import { U8, modPow } from './utils'
 
 // * Constants
@@ -81,8 +82,6 @@ export function genPrime(b: number): bigint {
   // using Node.js crypto module
   // eslint-disable-next-line node/prefer-global/process
   if (typeof process !== 'undefined' && process.versions != null && process.versions.node != null) {
-    // eslint-disable-next-line ts/no-require-imports
-    const crypto = require('node:crypto')
     return crypto.generatePrimeSync(b, { bigint: true })
   }
 
