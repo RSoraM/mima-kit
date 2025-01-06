@@ -39,10 +39,59 @@ function createCodec(
 }
 
 function UTF8ToU8(input: string) {
-  return new U8(new TextEncoder().encode(input))
+  const utf8 = []
+  for (let i = 0; i < input.length; i++) {
+    const charCode = input.codePointAt(i) as number
+    if (charCode < 0x80) {
+      utf8.push(charCode)
+    }
+    else if (charCode < 0x800) {
+      utf8.push(0xC0 | (charCode >> 6))
+      utf8.push(0x80 | (charCode & 0x3F))
+    }
+    else if (charCode < 0x10000) {
+      utf8.push(0xE0 | (charCode >> 12))
+      utf8.push(0x80 | ((charCode >> 6) & 0x3F))
+      utf8.push(0x80 | (charCode & 0x3F))
+    }
+    else if (charCode < 0x110000) {
+      utf8.push(0xF0 | (charCode >> 18))
+      utf8.push(0x80 | ((charCode >> 12) & 0x3F))
+      utf8.push(0x80 | ((charCode >> 6) & 0x3F))
+      utf8.push(0x80 | (charCode & 0x3F))
+      i++
+    }
+  }
+  return new U8(utf8)
 }
 function U8ToUTF8(input: Uint8Array) {
-  return new TextDecoder('utf-8').decode(input)
+  const str = []
+  let i = 0
+  while (i < input.length) {
+    const byte1 = input[i++]
+    if (byte1 < 0x80) {
+      str.push(String.fromCharCode(byte1))
+    }
+    else if (byte1 >= 0xC0 && byte1 < 0xE0) {
+      const byte2 = input[i++]
+      const codePoint = ((byte1 & 0x1F) << 6) | (byte2 & 0x3F)
+      str.push(String.fromCharCode(codePoint))
+    }
+    else if (byte1 >= 0xE0 && byte1 < 0xF0) {
+      const byte2 = input[i++]
+      const byte3 = input[i++]
+      const codePoint = ((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F)
+      str.push(String.fromCharCode(codePoint))
+    }
+    else if (byte1 >= 0xF0 && byte1 < 0xF8) {
+      const byte2 = input[i++]
+      const byte3 = input[i++]
+      const byte4 = input[i++]
+      const codePoint = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F)
+      str.push(String.fromCodePoint(codePoint))
+    }
+  }
+  return str.join('')
 }
 /**
  * utf-8 codec
@@ -113,14 +162,27 @@ function B64CommonParse(input: string, url: boolean) {
       input += '='
     }
   }
-  const binary = atob(input)
-  const view = new Uint8Array(binary.length)
+  const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  input = input.replace(/[^A-Z0-9+/]/gi, '')
 
-  for (let i = 0; i < binary.length; i++) {
-    view[i] = binary.charCodeAt(i)
+  const length = input.length * 0.75
+  const uint8Array = new Uint8Array(length)
+
+  let i = 0
+  let j = 0
+  while (i < input.length) {
+    const a = base64Chars.indexOf(input.charAt(i++))
+    const b = base64Chars.indexOf(input.charAt(i++))
+    const c = base64Chars.indexOf(input.charAt(i++))
+    const d = base64Chars.indexOf(input.charAt(i++))
+
+    const combined = (a << 18) | (b << 12) | (c << 6) | d
+
+    uint8Array[j++] = (combined >> 16) & 0xFF
+    uint8Array[j++] = (combined >> 8) & 0xFF
+    uint8Array[j++] = combined & 0xFF
   }
-
-  return view
+  return uint8Array
 }
 
 /**
@@ -135,7 +197,7 @@ function B64CommonStringify(input: Uint8Array, url: boolean) {
   let map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   map += url ? '-_' : '+/'
   let result = ''
-  let i = 0
+  let i: number
   for (i = 0; i < input.length - 2; i += 3) {
     result += map[input[i] >> 2]
     result += map[((input[i] & 3) << 4) | (input[i + 1] >> 4)]
