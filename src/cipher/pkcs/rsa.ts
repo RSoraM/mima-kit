@@ -1,3 +1,4 @@
+import type { RandomPrimeGenerator } from '../../core/prime'
 import { genPrime } from '../../core/prime'
 import { KitError, U8, gcd, lcm, mod, modInverse, modPow } from '../../core/utils'
 
@@ -127,11 +128,12 @@ function verificationPrimitive(key: Partial<RSAPublicKey>, S: bigint | Uint8Arra
  *
  * RSA key generation
  *
- * @param b 密钥长度 / Key length (bits)
+ * @param {number} b - RSA 私钥长度 / RSA private key length (bit)
+ * @param {RandomPrimeGenerator} rpg - 随机素数生成器 / Random prime generator
  */
-function genKey(b: number): RSAPrivateKey {
-  const p = genPrime(b >> 1)
-  const q = genPrime(b >> 1)
+function genKey(b: number, rpg = genPrime): RSAPrivateKey {
+  const p = rpg(b >> 1)
+  const q = rpg(b >> 1)
   const n = p * q
   const λ = lcm(p - 1n, q - 1n)
 
@@ -173,8 +175,9 @@ function fromKey(key: Partial<RSAPrivateKey>): RSACipherable & RSAVerifiable {
  * Generate RSA key pair according to RSA private key length, and return RSA encryption primitive and signature primitive
  *
  * @param {number} b - RSA 私钥长度 / RSA private key length
+ * @param {RandomPrimeGenerator} rpg - 随机素数生成器 / Random prime generator
  */
-export function rsa(b: number): RSACipherable & RSAVerifiable & RSAPrivateKey
+export function rsa(b: number, rpg?: RandomPrimeGenerator): RSACipherable & RSAVerifiable & RSAPrivateKey
 /**
  * 根据 RSA 公钥或私钥生成 RSA 加密原语和验证原语
  *
@@ -183,9 +186,9 @@ export function rsa(b: number): RSACipherable & RSAVerifiable & RSAPrivateKey
  * @param {RSAPrivateKey | RSAPublicKey} key - RSA 公钥或私钥 / RSA public or private key
  */
 export function rsa<T extends RSAPrivateKey | RSAPublicKey>(key: T): RSACipherable & RSAVerifiable & T
-export function rsa(b: number | RSAPrivateKey | RSAPublicKey) {
+export function rsa(b: number | RSAPrivateKey | RSAPublicKey, rpg = genPrime) {
   if (typeof b === 'number') {
-    return fromKey(genKey(b))
+    return fromKey(genKey(b, rpg))
   }
   return fromKey(b)
 }

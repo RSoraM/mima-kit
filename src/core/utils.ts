@@ -87,12 +87,12 @@ export function genRandomBI(max: bigint, byte: number) {
  * Get the bit length of a BigInt
  */
 export function getBIBits(n: bigint) {
-  let bytes = 0
+  let bit = 0
   while (n > 0) {
-    bytes++
+    bit++
     n >>= 1n
   }
-  return bytes
+  return bit
 }
 
 /**
@@ -256,7 +256,7 @@ export function modPow(x: bigint, y: bigint, n: bigint): bigint {
   x %= n
   let r = 1n
   while (y > 0n) {
-    if ((y & 1n) === 1n)
+    if (y & 1n)
       r = r * x % n
     x = x * x % n
     y >>= 1n

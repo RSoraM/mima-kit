@@ -1,6 +1,7 @@
 // * Utils
 export { U8, joinBuffer } from './core/utils'
-export { genPrime } from './core/prime'
+export type { RandomPrimeGenerator } from './core/prime'
+export { genPrime, isProbablePrime } from './core/prime'
 
 // * Codec
 export type { Codec } from './core/codec'
