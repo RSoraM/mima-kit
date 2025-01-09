@@ -1,7 +1,7 @@
 import type { BlockCipher, BlockCipherInfo } from '../../core/cipher'
 import { cbc, createCipher } from '../../core/cipher'
 import type { FpECUtils } from '../../core/ec'
-import { Fp, FpEC, U8Point } from '../../core/ec'
+import { BIPoint, Fp, FpEC, U8Point } from '../../core/ec'
 import type { FpECPoint, FpMECParams, FpWECParams } from '../../core/ecParams'
 import type { Digest, KeyHash } from '../../core/hash'
 import { KitError, U8, genBitMask, genRandomBI, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
@@ -285,63 +285,71 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       return false
     }
     // P(x, y) ∈ E
-    const x = typeof Q.x === 'bigint' ? Q.x : U8.from(Q.x).toBI()
-    const y = typeof Q.y === 'bigint' ? Q.y : U8.from(Q.y).toBI()
+    const P = BIPoint(Q)
+    const { x, y } = P
     if (x < 0n || x >= p || y < 0n || y >= p) {
       return false
     }
-    // y^2 = x^3 + ax + b
-    const l = multiply(y, y)
-    const r = plus(multiply(x, x, x), multiply(a, x), b)
-    if (l !== r) {
+
+    if (curve.type === 'Weierstrass') {
+      // y^2 = x^3 + ax + b
+      const l = multiply(y, y)
+      const r = plus(multiply(x, x, x), multiply(a, x), b)
+      if (l !== r) {
+        return false
+      }
+      // nP = O
+      const nP = mulPoint(P, n)
+      return nP.isInfinity
+    }
+    if (curve.type === 'Montgomery') {
+      // By^2 = x^3 + Ax^2 + x
+      const l = multiply(b, y, y)
+      const r = plus(multiply(x, x, x), multiply(a, x, x), x)
+      if (l !== r) {
+        return false
+      }
+      // nP = O
+      const nP = mulPoint(P, n)
+      return nP.isInfinity
+    }
+    // unknown curve type
+    else {
       return false
     }
-    // nP = O
-    const P = { isInfinity: false, x, y }
-    const nP = mulPoint(P, n)
-    if (!nP.isInfinity) {
-      return false
-    }
-    return true
   }
   const isLegalSK: FpECCrypto['utils']['isLegalSK'] = (s_key: ECPrivateKey): boolean => {
     const d = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
     if (d < 0n || d >= p) {
       return false
     }
-    if (mulPoint(G, d).isInfinity) {
-      return false
-    }
-    return true
+    return !mulPoint(G, d).isInfinity
   }
   const PointToU8: FpECCrypto['utils']['PointToU8'] = (point: FpECPoint, compress = false): U8 => {
     if (point.isInfinity) {
       return new U8([0x00])
     }
-    const y_buffer = typeof point.y === 'bigint' ? U8.fromBI(point.y) : point.y
-    const x_buffer = typeof point.x === 'bigint' ? U8.fromBI(point.x) : point.x
-    const sign_y = y_buffer[y_buffer.length - 1] & 1
+    const { x, y } = U8Point(point, p_byte)
+    const sign_y = y[y.length - 1] & 1
     const PC = new U8([compress ? 0x02 | sign_y : 0x04])
-    const X1 = new U8(p_byte)
-    X1.set(x_buffer)
-    const Y1 = compress ? new U8() : new U8(p_byte)
-    if (!compress) { Y1.set(y_buffer) }
+    const X1 = x
+    const Y1 = compress ? new U8() : y
     return joinBuffer(PC, X1, Y1)
   }
   const U8ToPoint: FpECCrypto['utils']['U8ToPoint'] = (buffer: Uint8Array): FpECPoint<U8> => {
     const point_buffer = U8.from(buffer)
-    const PC = BigInt(point_buffer[0])
-    if (PC === 0x00n) {
+    const PC = point_buffer[0]
+    if (PC === 0x00) {
       if (point_buffer.length !== 1) {
         throw new KitError('Invalid Point')
       }
       return U8Point()
     }
-    if (PC !== 0x02n && PC !== 0x03n && PC !== 0x04n) {
+    if (PC !== 0x02 && PC !== 0x03 && PC !== 0x04) {
       throw new KitError('Invalid Point')
     }
     // 无压缩
-    if (PC === 0x04n) {
+    if (PC === 0x04) {
       if (point_buffer.length !== (p_byte << 1) + 1) {
         throw new KitError('Invalid Point')
       }
@@ -356,10 +364,11 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       }
       const x_buffer = point_buffer.slice(1)
       const x = x_buffer.toBI()
+      const sign_y = BigInt(PC & 1)
       let y = 0n
       y = plus(multiply(x, x, x), multiply(a, x), b)
       y = root(y)
-      y = (y & 1n) === (PC & 1n) ? y : p - y
+      y = (y & 1n) === sign_y ? y : p - y
       return U8Point({ isInfinity: false, x: x_buffer, y }, p_byte)
     }
   }
@@ -402,13 +411,12 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       throw new KitError('Invalid private key')
     }
     const Q = p_key.Q
-    const d = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
-    const _ = mulPoint(Q, d)
-    if (_.isInfinity) {
+    const d = s_key.d
+    const S = mulPoint(Q, d)
+    if (S.isInfinity) {
       throw new KitError('the result of ECDH is the point at infinity')
     }
-    const S = U8Point(_, p_byte)
-    return S
+    return U8Point(S, p_byte)
   }
   const eccdh: ECDH = (s_key: ECPrivateKey, p_key: ECPublicKey) => {
     if (!isLegalPK(p_key)) {
@@ -419,12 +427,11 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
     }
     const Q = p_key.Q
     const d = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
-    const _ = mulPoint(Q, d * h)
-    if (_.isInfinity) {
+    const S = mulPoint(Q, d * h)
+    if (S.isInfinity) {
       throw new KitError('the result of ECCDH is the point at infinity')
     }
-    const S = U8Point(_, p_byte)
-    return S
+    return U8Point(S, p_byte)
   }
   const ecmqv: ECMQV = (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey) => {
     if (!isLegalPK(v1) || !isLegalPK(v2)) {
@@ -439,12 +446,11 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
     const Q2u = mod(u2Qx, L) + L
     const Q2v = mod(v2Qx, L) + L
     const s = mod(u2d + Q2u * u1d, n)
-    const _ = mulPoint(addPoint(v2.Q, mulPoint(v1.Q, Q2v)), s * h)
-    if (_.isInfinity) {
+    const P = mulPoint(addPoint(v2.Q, mulPoint(v1.Q, Q2v)), s * h)
+    if (P.isInfinity) {
       throw new KitError('Public key not available')
     }
-    const P = U8Point(_, p_byte)
-    return P
+    return U8Point(P, p_byte)
   }
   // Digital signature
   const ecdsa: ECDSA = (hash: Digest = sha256) => {
