@@ -365,11 +365,23 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       const x_buffer = point_buffer.slice(1)
       const x = x_buffer.toBI()
       const sign_y = BigInt(PC & 1)
-      let y = 0n
-      y = plus(multiply(x, x, x), multiply(a, x), b)
-      y = root(y)
-      y = (y & 1n) === sign_y ? y : p - y
-      return U8Point({ isInfinity: false, x: x_buffer, y }, p_byte)
+      if (curve.type === 'Weierstrass') {
+        let y = 0n
+        y = plus(multiply(x, x, x), multiply(a, x), b)
+        y = root(y)
+        y = (y & 1n) === sign_y ? y : p - y
+        return U8Point({ isInfinity: false, x: x_buffer, y }, p_byte)
+      }
+      else if (curve.type === 'Montgomery') {
+        let y = 0n
+        y = plus(multiply(x, x, x), multiply(a, x, x), x)
+        y = root(y / b)
+        y = (y & 1n) === sign_y ? y : p - y
+        return U8Point({ isInfinity: false, x: x_buffer, y }, p_byte)
+      }
+      else {
+        throw new KitError('Unknown curve type')
+      }
     }
   }
   // Key generation
