@@ -225,8 +225,8 @@ export const ZERO_PAD = createPadding(
  * 无填充 / No Padding
  */
 export const NO_PAD = createPadding(
-  (M: Uint8Array) => new U8(M),
-  (P: Uint8Array) => new U8(P),
+  (M: Uint8Array) => new U8(M.slice(0)),
+  (P: Uint8Array) => new U8(P.slice(0)),
   { ALGORITHM: 'No Padding' },
 )
 

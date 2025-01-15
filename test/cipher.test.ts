@@ -7,7 +7,7 @@ import { aria } from '../src/cipher/blockCipher/aria'
 import { des, t_des } from '../src/cipher/blockCipher/des'
 import { blowfish } from '../src/cipher/blockCipher/blowfish'
 import { twofish } from '../src/cipher/blockCipher/twofish'
-import { tea, xtea } from '../src/cipher/blockCipher/tea'
+import { tea, xtea, xxtea } from '../src/cipher/blockCipher/tea'
 import { arc4 } from '../src/cipher/streamCipher/arc4'
 import { arc5 } from '../src/cipher/blockCipher/arc5'
 import { salsa20 } from '../src/cipher/streamCipher/salsa20'
@@ -339,6 +339,15 @@ describe('block cipher', () => {
     const m = new U8(8)
     const c = new U8([0xD8, 0xD4, 0xE9, 0xDE, 0xD9, 0x1E, 0x13, 0xF7])
     const cipher = xtea(32)(k)
+    expect(cipher.encrypt(m)).toMatchObject(c)
+    expect(cipher.decrypt(c)).toMatchObject(m)
+  })
+  it('xxtea', () => {
+    // source: https://github.com/ifduyue/xxtea/blob/master/tests/test.py
+    const k = UTF8('Fine. And you?  ')
+    const m = UTF8('How do you do?')
+    const c = HEX('78f465eb1b4985887d11842ede853621')
+    const cipher = xxtea()(k)
     expect(cipher.encrypt(m)).toMatchObject(c)
     expect(cipher.decrypt(c)).toMatchObject(m)
   })

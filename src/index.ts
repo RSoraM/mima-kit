@@ -76,7 +76,8 @@ export { des, t_des } from './cipher/blockCipher/des'
 export { arc5 } from './cipher/blockCipher/arc5'
 export { blowfish } from './cipher/blockCipher/blowfish'
 export { twofish } from './cipher/blockCipher/twofish'
-export { tea, xtea } from './cipher/blockCipher/tea'
+export type { XXTEAConfig } from './cipher/blockCipher/tea'
+export { tea, xtea, xxtea } from './cipher/blockCipher/tea'
 
 // * Block Cipher Modes
 export { ecb, cbc, pcbc, cfb, ofb, ctr, gcm } from './core/cipher'
