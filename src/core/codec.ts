@@ -1,21 +1,17 @@
 import { KitError, U8, wrap } from './utils'
 
-/**
- * String Codec
- *
- * 字符编解码器
- */
+/** 字符编解码器 / String Codec */
 export interface Codec {
   /**
-   * Parse encoded string to Uint8Array
-   *
    * 将编码字符串解析为 Uint8Array
+   *
+   * Parse encoded string to Uint8Array
    */
   (input: string): U8
   /**
-   * Stringify Uint8Array to encoded string
-   *
    * 将 Uint8Array 编码为字符串
+   *
+   * Stringify Uint8Array to encoded string
    */
   (input: Uint8Array): string
   FORMAT: string
@@ -98,11 +94,7 @@ function U8ToUTF8(input: Uint8Array) {
   }
   return str.join('')
 }
-/**
- * utf-8 codec
- *
- * utf-8 编解码器
- */
+/** UTF-8 编解码器 / Codec */
 export const UTF8 = createCodec(UTF8ToU8, U8ToUTF8, 'utf-8')
 
 function HEXToU8(input: string) {
@@ -119,11 +111,7 @@ function U8ToHEX(input: Uint8Array) {
   }
   return result
 }
-/**
- * hex codec
- *
- * hex 编解码器
- */
+/** hex 编解码器 / Codec */
 export const HEX = createCodec(HEXToU8, U8ToHEX, 'hex')
 
 function B64ToU8(input: string) {
@@ -132,11 +120,7 @@ function B64ToU8(input: string) {
 function U8ToB64(input: Uint8Array) {
   return B64CommonStringify(input, false)
 }
-/**
- * base64 codec
- *
- * base64 编解码器
- */
+/** base64 编解码器 / Codec */
 export const B64 = createCodec(B64ToU8, U8ToB64, 'base64')
 
 function B64URLToU8(input: string) {
@@ -145,11 +129,7 @@ function B64URLToU8(input: string) {
 function U8ToB64URL(input: Uint8Array) {
   return B64(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
-/**
- * base64url codec
- *
- * base64url 编解码器
- */
+/** base64url 编解码器 / Codec */
 export const B64URL = createCodec(B64URLToU8, U8ToB64URL, 'base64url')
 
 /**
@@ -316,9 +296,5 @@ function U8ToCSV(input: Uint8Array) {
 
   return result
 }
-/**
- * Core Socialist Values codec
- *
- * 社会主义核心价值观编解码器
- */
+/** 社会主义核心价值观编解码器 / Core Socialist Values Codec */
 export const CSV = createCodec(CSVToU8, U8ToCSV, 'core-socialist-values')

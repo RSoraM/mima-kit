@@ -10,17 +10,11 @@ export interface Digest {
   (M: Uint8Array): U8
 }
 export interface HashDescription {
-  /**
-   * 算法名称 / Algorithm name
-   */
+  /** 算法名称 / Algorithm name */
   ALGORITHM: string
-  /**
-   * 分块大小 / Block size (byte)
-   */
+  /** 分块大小 / Block size (byte) */
   BLOCK_SIZE: number
-  /**
-   * 摘要大小 / Digest size (byte)
-   */
+  /** 摘要大小 / Digest size (byte) */
   DIGEST_SIZE: number
   OID?: string
 }
@@ -82,14 +76,10 @@ export interface KeyDigest {
   (K: Uint8Array, M: Uint8Array): U8
 }
 export interface KeyHashDescription extends HashDescription {
-  /**
-   * 推荐的密钥大小 / Recommended key size (byte)
-   */
+  /** 推荐的密钥大小 / Recommended key size (byte) */
   KEY_SIZE: number
 }
-/**
- * 密钥散列函数 / Keyed hash function
- */
+/** 密钥散列函数 / Keyed hash function */
 export interface KeyHash extends KeyDigest, KeyHashDescription {
 }
 export const createKeyHash = (digest: KeyDigest, description: KeyHashDescription): KeyHash => wrap(digest, description)

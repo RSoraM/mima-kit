@@ -83,6 +83,7 @@ npm install mima-kit
     <li><a href="#twofish">Twofish</a></li>
     <li><a href="#tea">TEA</a></li>
     <li><a href="#xtea">XTEA</a></li>
+    <li><a href="#xxtea">XXTEA</a></li>
   </ul>
   <li><a href="#填充模式">填充模式</a></li>
   <li><a href="#工作模式">工作模式</a></li>
@@ -179,9 +180,17 @@ console.log(d) // 'mima-kit'
 
 ```typescript
 interface Codec {
-  /** Parse encoded string to Uint8Array */
+  /**
+   * Parse encoded string to Uint8Array
+   *
+   * 将编码字符串解析为 Uint8Array
+   */
   (input: string): U8
-  /** Stringify Uint8Array to encoded string */
+  /**
+   * Stringify Uint8Array to encoded string
+   *
+   * 将 Uint8Array 编码为字符串
+   */
   (input: Uint8Array): string
   FORMAT: string
 }
@@ -397,11 +406,11 @@ interface Digest {
   (M: Uint8Array): U8
 }
 interface HashDescription {
-  /** Algorithm name */
+  /** 算法名称 / Algorithm name */
   ALGORITHM: string
-  /** Block size (byte) */
+  /** 分块大小 / Block size (byte) */
   BLOCK_SIZE: number
-  /** Digest size (byte) */
+  /** 摘要大小 / Digest size (byte) */
   DIGEST_SIZE: number
   OID?: string
 }
@@ -626,6 +635,112 @@ xtea(32)(k).encrypt(m) // c
 xtea(32)(k).decrypt(c) // m
 ```
 
+### XXTEA
+
+Specification: [XXTEA](https://www.cix.co.uk/~klockstone/xxtea.pdf)
+
+`XXTEA` 本身设计用于加密任意数量的数据块，其中每个数据块是 `4` 字节。
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+// using default config
+xxtea()(k).encrypt(m) // c
+xxtea()(k).decrypt(c) // m
+```
+
+默认情况下，`XXTEA` 对数据进行 `6 + 52 / n` 轮加密，其中 `n` 是数据块的数量。您可以通过 `round` 参数设置一个固定的轮数。
+
+```typescript
+const config: XXTEAConfig = {
+  round: 64,
+}
+xxtea(config)(k).encrypt(m) // c
+xxtea(config)(k).decrypt(c) // m
+```
+
+在实际使用中，数据通常需要填充，以保证数据的字节长度是 `4` 的倍数。您可以通过 `padding` 参数设置填充模式。默认情况下，`XXTEA` 使用 `PKCS7` 填充模式。如果您确定数据的字节长度是 `4` 的倍数，您可以通过将 `padding` 设置为 `NO_PAD` 来跳过填充。
+
+```typescript
+// using X923_PAD
+const config: XXTEAConfig = {
+  padding: X923_PAD,
+}
+// skip padding
+const config: XXTEAConfig = {
+  padding: NO_PAD,
+}
+xxtea(config)(k).encrypt(m) // c
+xxtea(config)(k).decrypt(c) // m
+```
+
+如果您希望像其他分组密码一样使用 `XXTEA`，例如使用 `GCM` 模式
+
+1. 将 `padding` 设置为 `NO_PAD`，让 `工作模式` 处理填充
+2. 设置 `BLOCK_SIZE` 告知 `工作模式` 每次处理数据块的大小
+3. 因为 `XXTEA` 的数据块大小是 `4` 字节，所以请确保 `BLOCK_SIZE` 是 `4` 的倍数且大于 `8`
+
+> 注意: 这不是 `XXTEA` 的标准用法，缺乏相关的安全分析。
+
+```typescript
+const config: XXTEAConfig = {
+  padding: NO_PAD,
+  BLOCK_SIZE: 16,
+}
+const cipher = xxtea(config)
+
+const k = HEX('')
+const iv = HEX('')
+const m = HEX('')
+const c = HEX('')
+
+const CIPHER = gcm(cipher)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface XXTEAConfig {
+  /**
+   * 分组大小 / Block size (default: 16)
+   *
+   * `XXTEA` 本身设计用于加密任意数量的数据块。单独使用 `XXTEA` 时，该选项不起作用。
+   * 但是，如果需要将 `XXTEA` 用作分组密码和 `工作模式` 一起使用，则可以通过此选项设置分组大小。
+   *
+   * 注意: 这不是 `XXTEA` 的标准用法且缺乏相关的安全分析。
+   *
+   * `XXTEA` itself is designed to encrypt arbitrary amounts of data blocks.
+   * When used alone, this option does not take effect.
+   * However, if you need to use `XXTEA` as a block cipher and use it with `Operation Mode`,
+   * you can set the `BLOCK_SIZE` through this option.
+   *
+   * Note: This is not the standard usage of `XXTEA` and lacks relevant security analysis.
+   */
+  BLOCK_SIZE?: number
+  /**
+   * 填充方式 / Padding method (default: PKCS7)
+   *
+   * 如果要像其他分组密码一样使用 `XXTEA`，例如使用 `CBC` 模式，
+   * 应该将 `padding` 设置为 `NO_PAD` 并让 `工作模式` 处理填充。
+   *
+   * If you want to use `XXTEA` like other block ciphers, such as with `CBC` mode,
+   * you should set the `padding` to `NO_PAD` and let the `Operation Mode` handle the padding.
+   */
+  padding?: Padding
+  /**
+   * 轮数 / Rounds (default: undefined)
+   *
+   * `XXTEA` 的轮数可以通过这个选项设置，如果不设置则使用默认的轮数计算方式。
+   *
+   * The rounds of `XXTEA` can be set through this option,
+   * if not set, the default round calculation method will be used.
+   */
+  round?: number
+}
+```
+
 ## 填充模式
 
 - `PKCS7_PAD` PKCS#7 填充模式
@@ -649,13 +764,13 @@ m = PKCS7_PAD(p)
 ```typescript
 interface Padding {
   /**
-   * add padding
+   * 添加填充 / Add padding
    * @param {Uint8Array} M - Message
    * @param {number} BLOCK_SIZE - Block size
    */
   (M: Uint8Array, BLOCK_SIZE: number): U8
   /**
-   * remove padding
+   * 移除填充 / remove padding
    * @param {Uint8Array} P - Padded message
    */
   (P: Uint8Array): U8
@@ -961,21 +1076,21 @@ const gcm_gc = gcm(greatCipher)
 
 ```typescript
 interface Cipher {
-  (k: Uint8Array): Cipherable
+  (key: Uint8Array): Cipherable
 }
 interface Cipherable {
-  encrypt: (M: Uint8Array) => U8
-  decrypt: (C: Uint8Array) => U8
+  encrypt: (plaintext: Uint8Array) => U8
+  decrypt: (ciphertext: Uint8Array) => U8
 }
 interface BlockCipherInfo {
   ALGORITHM: string
-  /** Block size (byte) */
+  /** 分组大小 / Block size (byte) */
   BLOCK_SIZE: number
-  /** Recommended key size (byte) */
+  /** 推荐的密钥大小 / Recommended key size (byte) */
   KEY_SIZE: number
-  /** Minimum key size (byte) */
+  /** 最小密钥大小 / Minimum key size (byte) */
   MIN_KEY_SIZE: number
-  /** Maximum key size (byte) */
+  /** 最大密钥大小 / Maximum key size (byte) */
   MAX_KEY_SIZE: number
 }
 ```
@@ -1138,20 +1253,25 @@ const p_key = ec.gen('public_key', s_key)
 ```
 
 ```typescript
+/**
+ * 伪射坐标表示的椭圆曲线的点
+ *
+ * Affine Coordinates of Elliptic Curve Point
+ */
 interface FpECPoint<T = bigint | Uint8Array> {
   isInfinity: boolean
   x: T
   y: T
 }
 interface ECPublicKey<T = bigint | Uint8Array> {
-  /** Prime Field Elliptic Curve Public Key */
+  /** 椭圆曲线公钥 / Elliptic Curve Public Key */
   readonly Q: Readonly<FpECPoint<T>>
 }
 interface ECPrivateKey<T = bigint | Uint8Array> {
-  /** Prime Field Elliptic Curve Private Key */
+  /** 椭圆曲线私钥 / Elliptic Curve Private Key */
   readonly d: T
 }
-/** Elliptic Curve Key Pair */
+/** 椭圆曲线密钥对 / Elliptic Curve Key Pair */
 interface ECKeyPair<T = bigint | Uint8Array> extends ECPrivateKey<T>, ECPublicKey<T> {
 }
 ```
@@ -1241,9 +1361,9 @@ const v = cipher.verify(key, p, s)
 
 ```typescript
 interface ECDSASignature<T = bigint | Uint8Array> {
-  /** Temporary Public Key's x */
+  /** 临时公钥 / Temporary Public Key */
   r: T
-  /** Signature Value */
+  /** 签名值 / Signature Value */
   s: T
 }
 ```
@@ -1266,25 +1386,25 @@ const m = cipher.decrypt(key, c)
 
 ```typescript
 interface ECIESConfig {
-  /** Block Cipher Algorithm (default: AES-256-GCM) */
+  /** 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM) */
   cipher?: IVBlockCipher
-  /** Key Hash Function (default: HMAC-SHA-256) */
+  /** 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256) */
   mac?: KeyHash
-  /** Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256) */
+  /** 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256) */
   kdf?: KDF
-  /** Additional Data 1 (default: empty) */
+  /** 附加数据1 / Additional Data 1 (default: empty) */
   S1?: Uint8Array
-  /** Additional Data 2 (default: empty) */
+  /** 附加数据2 / Additional Data 2 (default: empty) */
   S2?: Uint8Array
-  /** Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
+  /** 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
   iv?: Uint8Array
 }
 interface ECIESCiphertext {
-  /** Temporary Public Key */
+  /** 临时公钥 / Temporary Public Key */
   R: ECPublicKey
-  /** Ciphertext */
+  /** 密文 / Ciphertext */
   C: Uint8Array
-  /** Check Value */
+  /** 校验值 / Check Value */
   D: Uint8Array
 }
 ```
@@ -1320,9 +1440,9 @@ const ZA = sm2ec.di(ID, KA)
 ```typescript
 interface SM2DI {
   /**
-   * @param {Uint8Array} id - User Identity
-   * @param {ECPublicKey} key - Public Key
-   * @param {Hash} hash - Hash Algorithm (default: SM3)
+   * @param {Uint8Array} id - 用户标识 / User Identity
+   * @param {ECPublicKey} key - 公钥 / Public Key
+   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
    */
   (id: Uint8Array, key: ECPublicKey, hash?: Hash): U8
 }
@@ -1369,13 +1489,13 @@ DKA === DKB
 ```typescript
 interface SM2DH {
   /**
-   * @param {ECKeyPair} KA - Self Key Pair
-   * @param {ECPublicKey} KX - Self Temporary Key Pair
-   * @param {ECPublicKey} KB - Opposite Public Key
-   * @param {ECPublicKey} KY - Opposite Temporary Public Key
-   * @param [Uint8Array] ZA - Initiator Identity Derived Value
-   * @param [Uint8Array] ZB - Receiver Identity Derived Value
-   * @returns {U8} - Keying Material
+   * @param {ECKeyPair} KA - 己方密钥对 / Self Key Pair
+   * @param {ECPublicKey} KX - 己方临时密钥对 / Self Temporary Key Pair
+   * @param {ECPublicKey} KB - 对方公钥 / Opposite Public Key
+   * @param {ECPublicKey} KY - 对方临时公钥 / Opposite Temporary Public Key
+   * @param [Uint8Array] ZA - 发起方标识派生值 / Initiator Identity Derived Value
+   * @param [Uint8Array] ZB - 接收方标识派生值 / Receiver Identity Derived Value
+   * @returns {U8} - 密钥材料 / Keying Material
    */
   (KA: ECKeyPair, KX: ECKeyPair, KB: ECPublicKey, KY: ECPublicKey, ZA?: Uint8Array, ZB?: Uint8Array): U8
 }
@@ -1406,20 +1526,20 @@ interface SM2DSASignature<T = bigint | Uint8Array> {
 }
 interface SM2DSA {
   /**
-   * @param {Hash} hash - Hash Algorithm (default: SM3)
+   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
    */
   (hash?: Hash): {
     /**
-     * @param {Uint8Array} Z - Identity Derived Value
-     * @param {ECPrivateKey} key - Signer Private Key
-     * @param {Uint8Array} M - Message
+     * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
+     * @param {ECPrivateKey} key - 签名方私钥 / Signer Private Key
+     * @param {Uint8Array} M - 消息 / Message
      */
     sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature<U8>
     /**
-     * @param {Uint8Array} Z - Identity Derived Value
-     * @param {ECPublicKey} key - Signer Public Key
-     * @param {Uint8Array} M - Message
-     * @param {SM2DSASignature} S - Signature
+     * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
+     * @param {ECPublicKey} key - 签名方公钥 / Signer Public Key
+     * @param {Uint8Array} M - 消息 / Message
+     * @param {SM2DSASignature} S - 签名 / Signature
      */
     verify: (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => boolean
   }
@@ -1443,23 +1563,23 @@ cipher.decrypt(key, C) // M
 ```typescript
 interface SM2Encrypt {
   /**
-   * @param {ECPublicKey} p_key - Receiver Public Key
-   * @param {Uint8Array} M - Plaintext
+   * @param {ECPublicKey} p_key - 接收方公钥 / Receiver Public Key
+   * @param {Uint8Array} M - 明文 / Plaintext
    */
   (p_key: ECPublicKey, M: Uint8Array): U8
 }
 interface SM2Decrypt {
   /**
-   * @param {ECPrivateKey} s_key - Decryptor Private Key
-   * @param {Uint8Array} C - Ciphertext
+   * @param {ECPrivateKey} s_key - 解密方私钥 / Decryptor Private Key
+   * @param {Uint8Array} C - 密文 / Ciphertext
    */
   (s_key: ECPrivateKey, C: Uint8Array): U8
 }
 interface SM2EncryptionScheme {
   /**
-   * @param {Hash} hash - Hash Algorithm (default: SM3)
-   * @param {KDF} kdf - Key Derivation Function (default: X9.63 KDF with SM3)
-   * @param {'c1c2c3' | 'c1c3c2'} order - Ciphertext Segment Order (default: 'c1c3c2')
+   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
+   * @param {KDF} kdf - 密钥派生函数 / Key Derivation Function (default: X9.63 KDF with SM3)
+   * @param {'c1c2c3' | 'c1c3c2'} order - 密文分段顺序 / Ciphertext Segment Order (default: 'c1c3c2')
    */
   (hash?: Hash, kdf?: KDF, order?: 'c1c2c3' | 'c1c3c2'): {
     encrypt: SM2Encrypt
@@ -1490,11 +1610,11 @@ const p_key = x25519.gen('public_key', s_key)
 
 ```typescript
 interface X25519PrivateKey<T = bigint | Uint8Array> {
-  /** Private Key */
+  /** 私钥 / Private Key */
   d: T
 }
 interface X25519PublicKey<T = bigint | Uint8Array> {
-  /** Public Key */
+  /** 公钥 / Public Key */
   Q: T
 }
 interface X25519KeyPair<T = bigint | Uint8Array> extends X25519PrivateKey<T>, X25519PublicKey<T> {

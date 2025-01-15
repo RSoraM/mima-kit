@@ -4,42 +4,30 @@ import { Counter, KitError, U8, joinBuffer, wrap } from './utils'
 
 export interface Cipherable {
   /**
-   * @param {Uint8Array} plainText - 明文 / plaintext
+   * @param {Uint8Array} plaintext - 明文 / plaintext
    */
-  encrypt: (plainText: Uint8Array) => U8
+  encrypt: (plaintext: Uint8Array) => U8
   /**
-   * @param {Uint8Array} cipherText - 密文 / ciphertext
+   * @param {Uint8Array} ciphertext - 密文 / ciphertext
    */
-  decrypt: (cipherText: Uint8Array) => U8
+  decrypt: (ciphertext: Uint8Array) => U8
 }
 
 export interface CipherInfo {
   ALGORITHM: string
-  /**
-   * 推荐的密钥大小 / Recommended key size (byte)
-   */
+  /** 推荐的密钥大小 / Recommended key size (byte) */
   KEY_SIZE: number
-  /**
-   * 最小密钥大小 / Minimum key size (byte)
-   */
+  /** 最小密钥大小 / Minimum key size (byte) */
   MIN_KEY_SIZE: number
-  /**
-   * 最大密钥大小 / Maximum key size (byte)
-   */
+  /** 最大密钥大小 / Maximum key size (byte) */
   MAX_KEY_SIZE: number
 }
 export interface IVCipherInfo extends CipherInfo {
-  /**
-   * 推荐的 IV 大小 / Recommended IV size (byte)
-   */
+  /** 推荐的 IV 大小 / Recommended IV size (byte) */
   IV_SIZE: number
-  /**
-   * 最小 IV 大小 / Minimum IV size (byte)
-   */
+  /** 最小 IV 大小 / Minimum IV size (byte) */
   MIN_IV_SIZE: number
-  /**
-   * 最大 IV 大小 / Maximum IV size (byte)
-   */
+  /** 最大 IV 大小 / Maximum IV size (byte) */
   MAX_IV_SIZE: number
 }
 export interface Cipher {
@@ -59,9 +47,7 @@ export interface IVCipher {
 // * 对称密钥算法包装器
 
 export interface BlockCipherInfo extends CipherInfo {
-  /**
-   * 分组大小 / Block size (byte)
-   */
+  /** 分组大小 / Block size (byte) */
   BLOCK_SIZE: number
 }
 export interface BlockCipher extends BlockCipherInfo {
@@ -105,8 +91,7 @@ export function createCipher(
 
 export interface DoPad {
   /**
-   * 添加填充 / Add padding
-   *
+   * 添加填充 / add padding
    * @param {Uint8Array} M - 消息 / Message
    * @param {number} BLOCK_SIZE - 分组大小 / Block size
    */
@@ -115,7 +100,6 @@ export interface DoPad {
 export interface UnPad {
   /**
    * 移除填充 / remove padding
-   *
    * @param {Uint8Array} P - 填充消息 / Padded message
    */
   (P: Uint8Array): U8
@@ -142,9 +126,7 @@ export function createPadding(
 
 // * 填充方案
 
-/**
- * PKCS7 填充方案 / Padding scheme
- */
+/** PKCS7 填充方案 / Padding Scheme */
 export const PKCS7_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
     const pad = BLOCK_SIZE - M.length % BLOCK_SIZE
@@ -157,9 +139,7 @@ export const PKCS7_PAD = createPadding(
   { ALGORITHM: 'PKCS#7' },
 )
 
-/**
- * ISO/IEC 7816 填充方案 / Padding scheme
- */
+/** ISO/IEC 7816 填充方案 / Padding Scheme */
 export const ISO7816_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
     const BLOCK_TOTAL = Math.ceil((M.length + 1) / BLOCK_SIZE)
@@ -182,9 +162,7 @@ export const ISO7816_PAD = createPadding(
   { ALGORITHM: 'ISO/IEC 7816-4' },
 )
 
-/**
- * ANSI X9.23 填充方案 / Padding scheme
- */
+/** ANSI X9.23 填充方案 / Padding Scheme */
 export const X923_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
     const BLOCK_TOTAL = Math.ceil((M.length + 1) / BLOCK_SIZE)
@@ -200,9 +178,7 @@ export const X923_PAD = createPadding(
   { ALGORITHM: 'ANSI X9.23' },
 )
 
-/**
- * Zero 零填充方案 / Padding scheme
- */
+/** Zero 零填充方案 / Padding Scheme */
 export const ZERO_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
     const pad = BLOCK_SIZE - M.length % BLOCK_SIZE
@@ -221,9 +197,7 @@ export const ZERO_PAD = createPadding(
   { ALGORITHM: 'Zero Padding' },
 )
 
-/**
- * 无填充 / No Padding
- */
+/** 无填充 / No Padding */
 export const NO_PAD = createPadding(
   (M: Uint8Array) => new U8(M.slice(0)),
   (P: Uint8Array) => new U8(P.slice(0)),
@@ -236,27 +210,19 @@ export interface ModeBaseInfo {
   ALGORITHM: string
 }
 export interface ModeInfo extends BlockCipherInfo {
-  /**
-   * 填充方案 / Padding scheme
-   */
+  /** 填充方案 / Padding Scheme */
   PADDING: Padding
-  /**
-   * 推荐的 IV 大小 / Recommended IV size (byte)
-   */
+  /** 推荐的 IV 大小 / Recommended IV size (byte) */
   IV_SIZE: number
-  /**
-   * 最小 IV 大小 / Minimum IV size (byte)
-   */
+  /** 最小 IV 大小 / Minimum IV size (byte) */
   MIN_IV_SIZE: number
-  /**
-   * 最大 IV 大小 / Maximum IV size (byte)
-   */
+  /** 最大 IV 大小 / Maximum IV size (byte) */
   MAX_IV_SIZE: number
 }
 export interface Mode extends ModeBaseInfo {
   /**
    * @param {BlockCipher} cipher - 分组加密算法 / Block cipher
-   * @param {Padding} padding - 填充方案 / Padding scheme (default: PKCS7)
+   * @param {Padding} padding - 填充方案 / Padding Scheme (default: PKCS7)
    */
   (cipher: BlockCipher, padding?: Padding): {
     /**
@@ -270,13 +236,13 @@ export interface Mode extends ModeBaseInfo {
 export interface ECBMode extends ModeBaseInfo {
   /**
    * @param {BlockCipher} cipher - 分组加密算法 / Block cipher
-   * @param {Padding} padding - 填充方案 / Padding scheme (default: PKCS7)
+   * @param {Padding} padding - 填充方案 / Padding Scheme (default: PKCS7)
    */
   (cipher: BlockCipher, padding?: Padding): {
     /**
      * ECB 不使用 IV, 如果提供 IV, 将被忽略. 仅为与其他模式兼容
      *
-     * ECB do not use IV, if you provide IV, it will be ignored. It is only for compatibility with other modes
+     * ECB do not use IV, if you provide IV, it will be ignored. It is only for compatibility with other Modes
      *
      * @param {Uint8Array} key - 密钥 / Key
      * @param {Uint8Array} [iv] - 初始化向量 / Initialization Vector
@@ -284,11 +250,7 @@ export interface ECBMode extends ModeBaseInfo {
     (key: Uint8Array, iv?: Uint8Array): Cipherable & ModeInfo
   } & ModeInfo
 }
-/**
- * Electronic Codebook mode
- *
- * 电子密码本模式
- */
+/** 电子密码本模式 / Electronic Code Book Mode */
 export const ecb = wrap<ECBMode>(
   (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: ModeInfo = {
@@ -336,11 +298,7 @@ export const ecb = wrap<ECBMode>(
 
 export interface CBCMode extends Mode {
 }
-/**
- * Cipher Block Chaining mode
- *
- * 密码块链接模式
- */
+/** 密码块链接模式 / Cipher Block Chaining Mode */
 export const cbc = wrap<CBCMode>(
   (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: ModeInfo = {
@@ -399,11 +357,7 @@ export const cbc = wrap<CBCMode>(
 
 export interface PCBCMode extends Mode {
 }
-/**
- * Propagating Cipher Block Chaining mode
- *
- * 传播密码块链接模式
- */
+/** 传播密码块链接模式 / Propagating Cipher Block Chaining Mode */
 export const pcbc = wrap<PCBCMode>(
   (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: ModeInfo = {
@@ -463,11 +417,7 @@ export const pcbc = wrap<PCBCMode>(
 
 export interface CFBMode extends Mode {
 }
-/**
- * Cipher Feedback mode
- *
- * 密码反馈模式
- */
+/** 密码反馈模式 / Cipher Feedback Mode */
 export const cfb = wrap<CFBMode>(
   (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: ModeInfo = {
@@ -523,11 +473,7 @@ export const cfb = wrap<CFBMode>(
 
 export interface OFBMode extends Mode {
 }
-/**
- * Output Feedback mode
- *
- * 输出反馈模式
- */
+/** 输出反馈模式 / Output Feedback Mode */
 export const ofb = wrap<OFBMode>(
   (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: ModeInfo = {
@@ -582,11 +528,7 @@ export const ofb = wrap<OFBMode>(
 
 export interface CTRMode extends Mode {
 }
-/**
- * Counter mode
- *
- * 计数器模式
- */
+/** 计数器模式 / Counter Mode */
 export const ctr = wrap<CTRMode>(
   (cipher: BlockCipher, padding: Padding = PKCS7_PAD) => {
     const info: ModeInfo = {
@@ -664,7 +606,7 @@ export interface GCMModeInfo extends ModeInfo {
 export interface GCMMode extends ModeBaseInfo {
   /**
    * @param {BlockCipher} cipher - 分组加密算法 / Block cipher
-   * @param {Padding} padding - 填充方案 / Padding scheme (default: PKCS7)
+   * @param {Padding} padding - 填充方案 / Padding Scheme (default: PKCS7)
    * @param {number} tag_size - 标签大小 / Authentication tag size (default: 16)
    */
   (cipher: BlockCipher, padding?: Padding, tag_size?: number): {
@@ -725,11 +667,7 @@ function GHASH(H: Uint8Array, A: Uint8Array, C: Uint8Array) {
   }
   return X
 }
-/**
- * Galois/Counter Mode
- *
- * 伽罗瓦/计数器模式
- */
+/** 伽罗瓦计数器模式 / Galois Counter Mode */
 export const gcm = wrap<GCMMode>(
   (
     cipher: BlockCipher,

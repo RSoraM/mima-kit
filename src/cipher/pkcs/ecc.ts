@@ -14,26 +14,14 @@ import { hmac } from '../../hash/hmac'
 // * Interfaces
 
 export interface ECPublicKey<T = bigint | Uint8Array> {
-  /**
-   * 素域椭圆曲线公钥
-   *
-   * Prime Field Elliptic Curve Public Key
-   */
+  /** 椭圆曲线公钥 / Elliptic Curve Public Key */
   readonly Q: Readonly<FpECPoint<T>>
 }
 export interface ECPrivateKey<T = bigint | Uint8Array> {
-  /**
-   * 素域椭圆曲线私钥
-   *
-   * Prime Field Elliptic Curve Private Key
-   */
+  /** 椭圆曲线私钥 / Elliptic Curve Private Key */
   readonly d: T
 }
-/**
- * 椭圆曲线密钥对
- *
- * Elliptic Curve Key Pair
- */
+/** 椭圆曲线密钥对 / Elliptic Curve Key Pair */
 export interface ECKeyPair<T = bigint | Uint8Array> extends ECPrivateKey<T>, ECPublicKey<T> {
 }
 
@@ -56,13 +44,9 @@ export interface ECMQV {
 }
 
 export interface ECDSASignature<T = bigint | Uint8Array> {
-  /**
-   * 临时公钥 / Temporary Public Key
-   */
+  /** 临时公钥 / Temporary Public Key */
   r: T
-  /**
-   * 签名值 / Signature Value
-   */
+  /** 签名值 / Signature Value */
   s: T
 }
 export interface ECDSA {
@@ -87,43 +71,25 @@ export interface IVBlockCipher extends BlockCipherInfo {
   (K: Uint8Array, iv: Uint8Array): ReturnType<BlockCipher>
 }
 export interface ECIESConfig {
-  /**
-   * 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
-   */
+  /** 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM) */
   cipher?: IVBlockCipher
-  /**
-   * 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
-   */
+  /** 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256) */
   mac?: KeyHash
-  /**
-   * 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
-   */
+  /** 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256) */
   kdf?: KDF
-  /**
-   * 附加数据1 / Additional Data 1 (default: empty)
-   */
+  /** 附加数据1 / Additional Data 1 (default: empty) */
   S1?: Uint8Array
-  /**
-   * 附加数据2 / Additional Data 2 (default: empty)
-   */
+  /** 附加数据2 / Additional Data 2 (default: empty) */
   S2?: Uint8Array
-  /**
-   * 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE))
-   */
+  /** 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
   iv?: Uint8Array
 }
 export interface ECIESCiphertext {
-  /**
-   * 临时公钥 / Temporary Public Key
-   */
+  /** 临时公钥 / Temporary Public Key */
   R: ECPublicKey
-  /**
-   * 密文 / Ciphertext
-   */
+  /** 密文 / Ciphertext */
   C: Uint8Array
-  /**
-   * 校验值 / Check Value
-   */
+  /** 校验值 / Check Value */
   D: Uint8Array
 }
 export interface ECIESEncrypt {
