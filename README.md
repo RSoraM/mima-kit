@@ -711,7 +711,7 @@ interface XXTEAConfig {
    *
    * 注意: 这不是 `XXTEA` 的标准用法且缺乏相关的安全分析。
    *
-   * `XXTEA` itself is designed to encrypt arbitrary amounts of data blocks.
+   * `XXTEA` is natively designed to encrypt arbitrary amounts of data blocks.
    * When used alone, this option does not take effect.
    * However, if you need to use `XXTEA` as a block cipher and use it with `Operation Mode`,
    * you can set the `BLOCK_SIZE` through this option.
@@ -1702,6 +1702,13 @@ const kdf = pbkdf2(mac, 1000)
 | -           | -        | -            | `bp320r1` |
 | -           | -        | -            | `bp384r1` |
 | -           | -        | -            | `bp512r1` |
+
+### `Montgomery` 曲线
+
+| NIST       |
+|------------|
+| Curve25519 |
+| Curve448   |
 
 # License
 

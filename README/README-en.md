@@ -34,7 +34,7 @@ npm install mima-kit
 # Table of Contents
 
 <!-- 字符编码 -->
-<a href="#character-codec" style="margin-left:1em">Character Codec</a>
+<a href="#character-codec">
 <!-- 字符编码 -->
 
 <!-- 散列算法 -->
@@ -42,9 +42,9 @@ npm install mima-kit
 <summary>
 <a href="#hash-algorithm">Hash Algorithm</a>
 </summary>
-<ul style="list-style-type: none;">
+<ul>
   <li><a href="#secure-hash-algorithm">Secure Hash Algorithm</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#sm3">SM3</a></li>
     <li><a href="#md5">MD5</a></li>
     <li><a href="#sha-1">SHA-1</a></li>
@@ -57,7 +57,7 @@ npm install mima-kit
     <li><a href="#k12">K12</a></li>
   </ul>
   <li><a href="#keyed-hash-algorithm">Keyed Hash Algorithm</a></li>
-  <ul style="list-style-type: none;padding-left: 1em;">
+  <ul>
     <li><a href="#hmac">HMAC</a></li>
     <li><a href="#kmac">KMAC</a></li>
   </ul>
@@ -71,9 +71,9 @@ npm install mima-kit
 <summary>
 <a href="#asymmetric-key-algorithm">Asymmetric Key Algorithm</a>
 </summary>
-<ul style="list-style-type: none;">
+<ul>
   <li><a href="#block-cipher">Block Cipher</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#sm4">SM4</a></li>
     <li><a href="#aes">AES</a></li>
     <li><a href="#aria">ARIA</a></li>
@@ -85,11 +85,12 @@ npm install mima-kit
     <li><a href="#twofish">Twofish</a></li>
     <li><a href="#tea">TEA</a></li>
     <li><a href="#xtea">XTEA</a></li>
+    <li><a href="#xxtea">XXTEA</a></li>
   </ul>
   <li><a href="#padding-mode">Padding Mode</a></li>
   <li><a href="#operation-mode">Operation Mode</a></li>
   <li><a href="#stream-cipher">Stream Cipher</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#zuc">ZUC</a></li>
     <li><a href="#arc4">ARC4</a></li>
     <li><a href="#salsa20">Salsa20</a></li>
@@ -105,9 +106,9 @@ npm install mima-kit
 <summary>
 <a href="#asymmetric-key-algorithm">Asymmetric Key Algorithm</a>
 </summary>
-<ul style="list-style-type: none;">
+<ul>
   <li><a href="#rsa">RSA</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#pkcs1-mgf1">PKCS1-MGF1</a></li>
     <li><a href="#rsaes-pkcs1-v1_5">RSAES-PKCS-v1_5</a></li>
     <li><a href="#rsaes-oaep">RSAES-OAEP</a></li>
@@ -115,7 +116,7 @@ npm install mima-kit
     <li><a href="#rsassa-pss">RSASSA-PSS</a></li>
   </ul>
   <li><a href="#ecc">ECC</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#point-compress">Point Compress</a></li>
     <li><a href="#ecdh">ECDH</a></li>
     <li><a href="#eccdh">ECCDH</a></li>
@@ -143,9 +144,9 @@ npm install mima-kit
 <summary>
 <a href="#other-components">Other Components</a>
 </summary>
-<ul style="list-style-type: none;">
+<ul>
   <li><a href="#key-derivation-function">Key Derivation Function</a></li>
-  <ul style="list-style-type: none; padding-left: 1em;">
+  <ul>
     <li><a href="#x963kdf">X9.63KDF</a></li>
     <li><a href="#hkdf">HKDF</a></li>
     <li><a href="#pbkdf2">PBKDF2</a></li>
@@ -399,11 +400,11 @@ interface Digest {
   (M: Uint8Array): U8
 }
 interface HashDescription {
-  /** Algorithm name */
+  /** 算法名称 / Algorithm name */
   ALGORITHM: string
-  /** Block size (byte) */
+  /** 分块大小 / Block size (byte) */
   BLOCK_SIZE: number
-  /** Digest size (byte) */
+  /** 摘要大小 / Digest size (byte) */
   DIGEST_SIZE: number
   OID?: string
 }
@@ -628,6 +629,112 @@ xtea(32)(k).encrypt(m) // c
 xtea(32)(k).decrypt(c) // m
 ```
 
+### XXTEA
+
+Specification: [XXTEA](https://www.cix.co.uk/~klockstone/xxtea.pdf)
+
+`XXTEA` is natively designed to encrypt any number of data blocks, where each data block is `4` byte.
+
+```typescript
+let k: Uint8Array
+let m: Uint8Array
+let c: Uint8Array
+
+// using default config
+xxtea()(k).encrypt(m) // c
+xxtea()(k).decrypt(c) // m
+```
+
+By default, `XXTEA` performs `6 + 52/n` rounds of encryption on data, where `n` is the number of data blocks. You can set a fixed number of rounds with the `round` parameter.
+
+```typescript
+const config: XXTEAConfig = {
+  round: 64,
+}
+xxtea(config)(k).encrypt(m) // c
+xxtea(config)(k).decrypt(c) // m
+```
+
+In general use, data usually needs to be padded to ensure that the byte length of the data is a multiple of `4`. You can set the padding mode via the `padding` parameter. By default, `XXTEA` uses the `PKCS7` padding mode. If you determine that the byte length of the data is a multiple of `4`, you can skip padding by setting `padding` to `NO_PAD`.
+
+```typescript
+// using X923_PAD
+const config: XXTEAConfig = {
+  padding: X923_PAD,
+}
+// skip padding
+const config: XXTEAConfig = {
+  padding: NO_PAD,
+}
+xxtea(config)(k).encrypt(m) // c
+xxtea(config)(k).decrypt(c) // m
+```
+
+If you want to use `XXTEA` like any other block cipher, for example in `GCM` mode
+
+1. Set the `padding` to `NO_PAD` and let the `Operation Mode` handle the padding.
+2. Set `BLOCK_SIZE` for `Operation Mode`
+3. Since the data block size of `XXTEA` is `4` byte, please ensure that `BLOCK_SIZE` is a multiple of `4` and greater than `8`
+
+> Note: This is not the standard usage of `XXTEA` and lacks relevant security analysis.
+
+```typescript
+const config: XXTEAConfig = {
+  padding: NO_PAD,
+  BLOCK_SIZE: 16,
+}
+const cipher = xxtea(config)
+
+const k = HEX('')
+const iv = HEX('')
+const m = HEX('')
+const c = HEX('')
+
+const CIPHER = gcm(cipher)(k, iv)
+CIPHER.encrypt(m) // c
+CIPHER.decrypt(c) // m
+```
+
+```typescript
+interface XXTEAConfig {
+  /**
+   * 分组大小 / Block size (default: 16)
+   *
+   * `XXTEA` 本身设计用于加密任意数量的数据块。单独使用 `XXTEA` 时，该选项不起作用。
+   * 但是，如果需要将 `XXTEA` 用作分组密码和 `工作模式` 一起使用，则可以通过此选项设置分组大小。
+   *
+   * 注意: 这不是 `XXTEA` 的标准用法且缺乏相关的安全分析。
+   *
+   * `XXTEA` is natively designed to encrypt arbitrary amounts of data blocks.
+   * When used alone, this option does not take effect.
+   * However, if you need to use `XXTEA` as a block cipher and use it with `Operation Mode`,
+   * you can set the `BLOCK_SIZE` through this option.
+   *
+   * Note: This is not the standard usage of `XXTEA` and lacks relevant security analysis.
+   */
+  BLOCK_SIZE?: number
+  /**
+   * 填充方式 / Padding method (default: PKCS7)
+   *
+   * 如果要像其他分组密码一样使用 `XXTEA`，例如使用 `CBC` 模式，
+   * 应该将 `padding` 设置为 `NO_PAD` 并让 `工作模式` 处理填充。
+   *
+   * If you want to use `XXTEA` like other block ciphers, such as with `CBC` mode,
+   * you should set the `padding` to `NO_PAD` and let the `Operation Mode` handle the padding.
+   */
+  padding?: Padding
+  /**
+   * 轮数 / Rounds (default: undefined)
+   *
+   * `XXTEA` 的轮数可以通过这个选项设置，如果不设置则使用默认的轮数计算方式。
+   *
+   * The rounds of `XXTEA` can be set through this option,
+   * if not set, the default round calculation method will be used.
+   */
+  round?: number
+}
+```
+
 ## Padding Mode
 
 - `PKCS7_PAD` PKCS#7 Padding
@@ -651,13 +758,13 @@ m = PKCS7_PAD(p)
 ```typescript
 interface Padding {
   /**
-   * add padding
+   * 添加填充 / Add padding
    * @param {Uint8Array} M - Message
    * @param {number} BLOCK_SIZE - Block size
    */
   (M: Uint8Array, BLOCK_SIZE: number): U8
   /**
-   * remove padding
+   * 移除填充 / remove padding
    * @param {Uint8Array} P - Padded message
    */
   (P: Uint8Array): U8
@@ -900,7 +1007,7 @@ const m = cipher.decrypt(c)
 
 Specification: [Salsa20](https://cr.yp.to/snuffle/spec.pdf)
 
-The `Salsa20` algorithm can accept keys of length `16` or `32` bytes and an `iv` of `8` bytes.
+The `Salsa20` algorithm can accept keys of length `16` or `32` byte and an `iv` of `8` byte.
 
 ```typescript
 const k = HEX('')
@@ -914,7 +1021,7 @@ const m = cipher.decrypt(c)
 
 Specification: [Rabbit](https://www.rfc-editor.org/rfc/rfc4503.txt)
 
-The `Rabbit` algorithm can accept a key of length `16` bytes. For the `iv`, the `Rabbit` algorithm can accept an `iv` of length `0` or `8` bytes. When the `iv` length is `0` bytes, the `Rabbit` algorithm will skip the `iv Setup` step.
+The `Rabbit` algorithm can accept a key of length `16` byte. For the `iv`, the `Rabbit` algorithm can accept an `iv` of length `0` or `8` byte. When the `iv` length is `0` byte, the `Rabbit` algorithm will skip the `iv Setup` step.
 
 ```typescript
 const p = UTF8('mima-kit')
@@ -966,13 +1073,13 @@ interface Cipherable {
 }
 interface BlockCipherInfo {
   ALGORITHM: string
-  /** Block size (byte) */
+  /** 分组大小 / Block size (byte) */
   BLOCK_SIZE: number
-  /** Recommended key size (byte) */
+  /** 推荐的密钥大小 / Recommended key size (byte) */
   KEY_SIZE: number
-  /** Minimum key size (byte) */
+  /** 最小密钥大小 / Minimum key size (byte) */
   MIN_KEY_SIZE: number
-  /** Maximum key size (byte) */
+  /** 最大密钥大小 / Maximum key size (byte) */
   MAX_KEY_SIZE: number
 }
 ```
@@ -1135,20 +1242,25 @@ const p_key = ec.gen('public_key', s_key)
 ```
 
 ```typescript
+/**
+ * 伪射坐标表示的椭圆曲线的点
+ *
+ * Affine Coordinates of Elliptic Curve Point
+ */
 interface FpECPoint<T = bigint | Uint8Array> {
   isInfinity: boolean
   x: T
   y: T
 }
 interface ECPublicKey<T = bigint | Uint8Array> {
-  /** Prime Field Elliptic Curve Public Key */
+  /** 椭圆曲线公钥 / Elliptic Curve Public Key */
   readonly Q: Readonly<FpECPoint<T>>
 }
 interface ECPrivateKey<T = bigint | Uint8Array> {
-  /** Prime Field Elliptic Curve Private Key */
+  /** 椭圆曲线私钥 / Elliptic Curve Private Key */
   readonly d: T
 }
-/** Elliptic Curve Key Pair */
+/** 椭圆曲线密钥对 / Elliptic Curve Key Pair */
 interface ECKeyPair<T = bigint | Uint8Array> extends ECPrivateKey<T>, ECPublicKey<T> {
 }
 ```
@@ -1238,9 +1350,9 @@ const v = cipher.verify(key, p, s)
 
 ```typescript
 interface ECDSASignature<T = bigint | Uint8Array> {
-  /** Temporary Public Key's x */
+  /** 临时公钥 / Temporary Public Key */
   r: T
-  /** Signature Value */
+  /** 签名值 / Signature Value */
   s: T
 }
 ```
@@ -1263,25 +1375,25 @@ const m = cipher.decrypt(key, c)
 
 ```typescript
 interface ECIESConfig {
-  /** Block Cipher Algorithm (default: AES-256-GCM) */
+  /** 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM) */
   cipher?: IVBlockCipher
-  /** Key Hash Function (default: HMAC-SHA-256) */
+  /** 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256) */
   mac?: KeyHash
-  /** Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256) */
+  /** 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256) */
   kdf?: KDF
-  /** Additional Data 1 (default: empty) */
+  /** 附加数据1 / Additional Data 1 (default: empty) */
   S1?: Uint8Array
-  /** Additional Data 2 (default: empty) */
+  /** 附加数据2 / Additional Data 2 (default: empty) */
   S2?: Uint8Array
-  /** Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
+  /** 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
   iv?: Uint8Array
 }
 interface ECIESCiphertext {
-  /** Temporary Public Key */
+  /** 临时公钥 / Temporary Public Key */
   R: ECPublicKey
-  /** Ciphertext */
+  /** 密文 / Ciphertext */
   C: Uint8Array
-  /** Check Value */
+  /** 校验值 / Check Value */
   D: Uint8Array
 }
 ```
@@ -1317,11 +1429,9 @@ const ZA = sm2ec.di(ID, KA)
 ```typescript
 interface SM2DI {
   /**
-   * Distinguishable Identity Hash
-   *
-   * @param {Uint8Array} id - User Identity
-   * @param {ECPublicKey} key - Public Key
-   * @param {Hash} hash - Hash Algorithm (default: SM3)
+   * @param {Uint8Array} id - 用户标识 / User Identity
+   * @param {ECPublicKey} key - 公钥 / Public Key
+   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
    */
   (id: Uint8Array, key: ECPublicKey, hash?: Hash): U8
 }
@@ -1368,15 +1478,13 @@ DKA === DKB
 ```typescript
 interface SM2DH {
   /**
-   * SM2 Elliptic Curve Diffie-Hellman Key Agreement Algorithm
-   *
-   * @param {ECKeyPair} KA - Self Key Pair
-   * @param {ECPublicKey} KX - Self Temporary Key Pair
-   * @param {ECPublicKey} KB - Opposite Public Key
-   * @param {ECPublicKey} KY - Opposite Temporary Public Key
-   * @param [Uint8Array] ZA - Initiator Identity Derived Value
-   * @param [Uint8Array] ZB - Receiver Identity Derived Value
-   * @returns {U8} - Keying Material
+   * @param {ECKeyPair} KA - 己方密钥对 / Self Key Pair
+   * @param {ECPublicKey} KX - 己方临时密钥对 / Self Temporary Key Pair
+   * @param {ECPublicKey} KB - 对方公钥 / Opposite Public Key
+   * @param {ECPublicKey} KY - 对方临时公钥 / Opposite Temporary Public Key
+   * @param [Uint8Array] ZA - 发起方标识派生值 / Initiator Identity Derived Value
+   * @param [Uint8Array] ZB - 接收方标识派生值 / Receiver Identity Derived Value
+   * @returns {U8} - 密钥材料 / Keying Material
    */
   (KA: ECKeyPair, KX: ECKeyPair, KB: ECPublicKey, KY: ECPublicKey, ZA?: Uint8Array, ZB?: Uint8Array): U8
 }
@@ -1407,20 +1515,20 @@ interface SM2DSASignature<T = bigint | Uint8Array> {
 }
 interface SM2DSA {
   /**
-   * @param {Hash} hash - Hash Algorithm (default: SM3)
+   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
    */
   (hash?: Hash): {
     /**
-     * @param {Uint8Array} Z - Identity Derived Value
-     * @param {ECPrivateKey} key - Signer Private Key
-     * @param {Uint8Array} M - Message
+     * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
+     * @param {ECPrivateKey} key - 签名方私钥 / Signer Private Key
+     * @param {Uint8Array} M - 消息 / Message
      */
     sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature<U8>
     /**
-     * @param {Uint8Array} Z - Identity Derived Value
-     * @param {ECPublicKey} key - Signer Public Key
-     * @param {Uint8Array} M - Message
-     * @param {SM2DSASignature} S - Signature
+     * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
+     * @param {ECPublicKey} key - 签名方公钥 / Signer Public Key
+     * @param {Uint8Array} M - 消息 / Message
+     * @param {SM2DSASignature} S - 签名 / Signature
      */
     verify: (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => boolean
   }
@@ -1444,23 +1552,23 @@ cipher.decrypt(key, C) // M
 ```typescript
 interface SM2Encrypt {
   /**
-   * @param {ECPublicKey} p_key - Receiver Public Key
-   * @param {Uint8Array} M - Plaintext
+   * @param {ECPublicKey} p_key - 接收方公钥 / Receiver Public Key
+   * @param {Uint8Array} M - 明文 / Plaintext
    */
   (p_key: ECPublicKey, M: Uint8Array): U8
 }
 interface SM2Decrypt {
   /**
-   * @param {ECPrivateKey} s_key - Decryptor Private Key
-   * @param {Uint8Array} C - Ciphertext
+   * @param {ECPrivateKey} s_key - 解密方私钥 / Decryptor Private Key
+   * @param {Uint8Array} C - 密文 / Ciphertext
    */
   (s_key: ECPrivateKey, C: Uint8Array): U8
 }
 interface SM2EncryptionScheme {
   /**
-   * @param {Hash} hash - Hash Algorithm (default: SM3)
-   * @param {KDF} kdf - Key Derivation Function (default: X9.63 KDF with SM3)
-   * @param {'c1c2c3' | 'c1c3c2'} order - Ciphertext Segment Order (default: 'c1c3c2')
+   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
+   * @param {KDF} kdf - 密钥派生函数 / Key Derivation Function (default: X9.63 KDF with SM3)
+   * @param {'c1c2c3' | 'c1c3c2'} order - 密文分段顺序 / Ciphertext Segment Order (default: 'c1c3c2')
    */
   (hash?: Hash, kdf?: KDF, order?: 'c1c2c3' | 'c1c3c2'): {
     encrypt: SM2Encrypt
@@ -1491,11 +1599,11 @@ const p_key = x25519.gen('public_key', s_key)
 
 ```typescript
 interface X25519PrivateKey<T = bigint | Uint8Array> {
-  /** Private Key */
+  /** 私钥 / Private Key */
   d: T
 }
 interface X25519PublicKey<T = bigint | Uint8Array> {
-  /** Public Key */
+  /** 公钥 / Public Key */
   Q: T
 }
 interface X25519KeyPair<T = bigint | Uint8Array> extends X25519PrivateKey<T>, X25519PublicKey<T> {
@@ -1523,9 +1631,9 @@ A key derivation function (KDF) is an algorithm that derives one or more keys fr
 ```typescript
 interface KDF {
   /**
-   * @param {number} k_bit - output keying material length
-   * @param {Uint8Array} ikm - input keying material
-   * @param {Uint8Array} info - optional context and application specific information
+   * @param {number} k_bit - 期望的密钥长度 / output keying material length
+   * @param {Uint8Array} ikm - 输入密钥材料 / input keying material
+   * @param {Uint8Array} info - 附加信息 / optional context and application specific information
    */
   (k_bit: number, ikm: Uint8Array, info?: Uint8Array): U8
 }
@@ -1583,6 +1691,13 @@ const kdf = pbkdf2(mac, 1000)
 | -           | -        | -            | `bp320r1` |
 | -           | -        | -            | `bp384r1` |
 | -           | -        | -            | `bp512r1` |
+
+### `Montgomery` Curves
+
+| NIST       |
+|------------|
+| Curve25519 |
+| Curve448   |
 
 # License
 
