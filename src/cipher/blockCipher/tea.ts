@@ -97,7 +97,7 @@ function _xxtea(K: Uint8Array, padding: Padding, round?: number) {
     }
     const C32 = new Uint32Array(C.buffer)
     const n = C32.length
-    let _round = round || (6 + 52 / n)
+    let _round = round || (6 + 52 / n) >>> 0
     let sum = 0
     let y: number
     let z = C32[n - 1]
@@ -122,7 +122,7 @@ function _xxtea(K: Uint8Array, padding: Padding, round?: number) {
     const M = U8.from(C.slice(0))
     const M32 = new Uint32Array(M.buffer)
     const n = M32.length
-    let _round = round || (6 + 52 / n)
+    let _round = round || (6 + 52 / n) >>> 0
     let sum = (DELTA * _round) & 0xFFFFFFFF
     let y = M32[0]
     let z: number
