@@ -1,4 +1,4 @@
-import * as asn from 'asn1js'
+import { ASN1 } from '../../core/asn1'
 import { Counter, KitError, U8, getBIBits, joinBuffer } from '../../core/utils'
 import type { Hash } from '../../core/hash'
 import { sha256 } from '../../hash/sha256'
@@ -283,20 +283,16 @@ function emsa_1_5(
   hash: Hash = sha256,
 ) {
   const H = hash(M)
-  const digestAlgorithm = new asn.Sequence({
-    value: [
-      new asn.ObjectIdentifier({ value: hash.OID }),
-      new asn.Null(),
-    ],
-  })
-  const digest = new asn.OctetString({ valueHex: H })
-  const DigestInfo = new asn.Sequence({
-    value: [
-      digestAlgorithm,
-      digest,
-    ],
-  })
-  const T = new U8(DigestInfo.toBER(false))
+  const digestAlgorithm = ASN1.SEQUENCE([
+    ASN1.OBJECT_IDENTIFIER(hash.OID),
+    ASN1.NULL(),
+  ])
+  const digest = ASN1.OCTET_STRING(H)
+  const DigestInfo = ASN1.SEQUENCE([
+    digestAlgorithm,
+    digest,
+  ])
+  const T = DigestInfo
   const psLen = emLen - T.length - 3
   if (psLen < 8) {
     throw new KitError('intended encoded message length too short')

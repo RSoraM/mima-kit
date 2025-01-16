@@ -39,6 +39,7 @@
     "twofish",
     "tea",
     "xtea",
+    "xxtea",
     "streamCipher",
     "zuc",
     "rc4",
@@ -88,9 +89,6 @@
     "typecheck": "tsc --noEmit",
     "prepare": "simple-git-hooks",
     "test:browser": "vitest"
-  },
-  "dependencies": {
-    "asn1js": "^3.0.5"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.27.3",
