@@ -69,7 +69,7 @@ npm install mima-kit
 <!-- 对称密钥算法 -->
 <details>
 <summary>
-<a href="#asymmetric-key-algorithm">Asymmetric Key Algorithm</a>
+<a href="#symmetric-key-algorithm">Symmetric Key Algorithm</a>
 </summary>
 <ul>
   <li><a href="#block-cipher">Block Cipher</a></li>
