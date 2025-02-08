@@ -1,6 +1,6 @@
-import { Fp } from '../../core/ec'
-import { curve25519, curve448 } from '../../core/ecParams'
-import { KitError, U8, genRandomBI, getBIBits } from '../../core/utils'
+import { Fp } from '../../core/ec.js'
+import { curve25519, curve448 } from '../../core/ecParams.js'
+import { KitError, U8, genRandomBI, getBIBits } from '../../core/utils.js'
 
 // * Interfaces
 

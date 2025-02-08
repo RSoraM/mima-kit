@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { B64, B64URL, CSV, HEX, UTF8 } from '../src/core/codec'
+import { B64, B64URL, CSV, HEX, UTF8 } from '../src/core/utils.js'
 
 describe('codec', () => {
   it('utf8', () => {

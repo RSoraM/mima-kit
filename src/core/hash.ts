@@ -1,5 +1,5 @@
-import type { U8 } from './utils'
-import { wrap } from './utils'
+import type { U8 } from './utils.js'
+import { wrap } from './utils.js'
 
 // * 散列函数包装器
 

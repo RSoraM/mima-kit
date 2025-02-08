@@ -1,5 +1,5 @@
-import { createCipher } from '../../core/cipher'
-import { KitError, U8, rotateL32, rotateR32 } from '../../core/utils'
+import { createCipher } from '../../core/cipher.js'
+import { KitError, U8, rotateL32, rotateR32 } from '../../core/utils.js'
 
 // * Constants
 
@@ -60,24 +60,24 @@ const Mx_Y = (x: number) => x ^ LFSR1(x) ^ LFSR2(x);
 
     MDS[0][i]
       = (m1[P_00] << 0)
-      | (mX[P_00] << 8)
-      | (mY[P_00] << 16)
-      | (mY[P_00] << 24)
+        | (mX[P_00] << 8)
+        | (mY[P_00] << 16)
+        | (mY[P_00] << 24)
     MDS[1][i]
       = (mY[P_10] << 0)
-      | (mY[P_10] << 8)
-      | (mX[P_10] << 16)
-      | (m1[P_10] << 24)
+        | (mY[P_10] << 8)
+        | (mX[P_10] << 16)
+        | (m1[P_10] << 24)
     MDS[2][i]
       = (mX[P_20] << 0)
-      | (mY[P_20] << 8)
-      | (m1[P_20] << 16)
-      | (mY[P_20] << 24)
+        | (mY[P_20] << 8)
+        | (m1[P_20] << 16)
+        | (mY[P_20] << 24)
     MDS[3][i]
       = (mX[P_30] << 0)
-      | (m1[P_30] << 8)
-      | (mY[P_30] << 16)
-      | (mX[P_30] << 24)
+        | (m1[P_30] << 8)
+        | (mY[P_30] << 16)
+        | (mX[P_30] << 24)
   }
 })()
 
@@ -125,9 +125,9 @@ function F32(K64SigByte: number, x: number, k32: Uint32Array) {
   if (K64LSB === 1) {
     result
       = MDS[0][P[P_01][lB0] & 0xFF ^ b0(k0)]
-      ^ MDS[1][P[P_11][lB1] & 0xFF ^ b1(k0)]
-      ^ MDS[2][P[P_21][lB2] & 0xFF ^ b2(k0)]
-      ^ MDS[3][P[P_31][lB3] & 0xFF ^ b3(k0)]
+        ^ MDS[1][P[P_11][lB1] & 0xFF ^ b1(k0)]
+        ^ MDS[2][P[P_21][lB2] & 0xFF ^ b2(k0)]
+        ^ MDS[3][P[P_31][lB3] & 0xFF ^ b3(k0)]
     return result
   }
 
@@ -150,9 +150,9 @@ function F32(K64SigByte: number, x: number, k32: Uint32Array) {
   if (K64LSB === 2) {
     result
       = MDS[0][P[P_01][P[P_02][lB0] & 0xFF ^ b0(k1)] & 0xFF ^ b0(k0)]
-      ^ MDS[1][P[P_11][P[P_12][lB1] & 0xFF ^ b1(k1)] & 0xFF ^ b1(k0)]
-      ^ MDS[2][P[P_21][P[P_22][lB2] & 0xFF ^ b2(k1)] & 0xFF ^ b2(k0)]
-      ^ MDS[3][P[P_31][P[P_32][lB3] & 0xFF ^ b3(k1)] & 0xFF ^ b3(k0)]
+        ^ MDS[1][P[P_11][P[P_12][lB1] & 0xFF ^ b1(k1)] & 0xFF ^ b1(k0)]
+        ^ MDS[2][P[P_21][P[P_22][lB2] & 0xFF ^ b2(k1)] & 0xFF ^ b2(k0)]
+        ^ MDS[3][P[P_31][P[P_32][lB3] & 0xFF ^ b3(k1)] & 0xFF ^ b3(k0)]
     return result
   }
 
@@ -161,9 +161,9 @@ function F32(K64SigByte: number, x: number, k32: Uint32Array) {
 function Fe32(SBox: Uint32Array, x: number, R: number) {
   const result
     = SBox[0x000 + 2 * chooseB(x, R + 0) + 0]
-    ^ SBox[0x000 + 2 * chooseB(x, R + 1) + 1]
-    ^ SBox[0x200 + 2 * chooseB(x, R + 2) + 0]
-    ^ SBox[0x200 + 2 * chooseB(x, R + 3) + 1]
+      ^ SBox[0x000 + 2 * chooseB(x, R + 1) + 1]
+      ^ SBox[0x200 + 2 * chooseB(x, R + 2) + 0]
+      ^ SBox[0x200 + 2 * chooseB(x, R + 3) + 1]
   return result
 }
 

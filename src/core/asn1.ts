@@ -1,4 +1,4 @@
-import { U8 } from './utils'
+import { U8 } from './utils.js'
 
 export const ASN1 = {
   // 0x04

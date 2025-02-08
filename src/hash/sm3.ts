@@ -1,5 +1,5 @@
-import { createHash } from '../core/hash'
-import { U8, rotateL32 } from '../core/utils'
+import { createHash } from '../core/hash.js'
+import { U8, rotateL32 } from '../core/utils.js'
 
 // * Function
 

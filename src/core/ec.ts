@@ -1,5 +1,5 @@
-import type { FpECPoint, FpMECParams, FpTECParams, FpWECParams } from './ecParams'
-import { U8, mod, modInverse, modPow, modPrimeSquare } from './utils'
+import type { FpECPoint, FpMECParams, FpTECParams, FpWECParams } from './ecParams.js'
+import { U8, mod, modInverse, modPow, modPrimeSquare } from './utils.js'
 
 // * Interfaces
 

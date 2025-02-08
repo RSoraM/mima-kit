@@ -1,6 +1,6 @@
-import type { Hash, KeyHash } from './hash'
-import type { U8 } from './utils'
-import { Counter, joinBuffer } from './utils'
+import type { Hash, KeyHash } from './hash.js'
+import type { U8 } from './utils.js'
+import { Counter, joinBuffer } from './utils.js'
 
 export interface KDF {
   /**

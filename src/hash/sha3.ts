@@ -1,5 +1,5 @@
-import { createHash } from '../core/hash'
-import { sponge_1600 } from './keccak1600'
+import { createHash } from '../core/hash.js'
+import { sponge_1600 } from './keccak1600.js'
 
 // * SHA3 Padding Function
 

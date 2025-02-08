@@ -1,9 +1,9 @@
-import { ASN1 } from '../../core/asn1'
-import { Counter, KitError, U8, getBIBits, joinBuffer } from '../../core/utils'
-import type { Hash } from '../../core/hash'
-import { sha256 } from '../../hash/sha256'
-import type { RSAPrivateKey, RSAPublicKey } from './rsa'
-import { rsa } from './rsa'
+import { ASN1 } from '../../core/asn1.js'
+import { Counter, KitError, U8, getBIBits, joinBuffer } from '../../core/utils.js'
+import type { Hash } from '../../core/hash.js'
+import { sha256 } from '../../hash/sha256.js'
+import type { RSAPrivateKey, RSAPublicKey } from './rsa.js'
+import { rsa } from './rsa.js'
 
 // * MGF1
 

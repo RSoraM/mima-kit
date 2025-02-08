@@ -1,9 +1,8 @@
-import { UTF8 } from '../core/codec'
-import { KitError, joinBuffer } from '../core/utils'
-import type { Hash, KeyHash } from '../core/hash'
-import { createHash, createKeyHash, createTupleHash } from '../core/hash'
-import type { Sha3Padding } from './sha3'
-import { Keccak_c, shake128, shake256 } from './sha3'
+import { KitError, UTF8, joinBuffer } from '../core/utils.js'
+import type { Hash, KeyHash } from '../core/hash.js'
+import { createHash, createKeyHash, createTupleHash } from '../core/hash.js'
+import type { Sha3Padding } from './sha3.js'
+import { Keccak_c, shake128, shake256 } from './sha3.js'
 
 // * Encode and Padding Function
 

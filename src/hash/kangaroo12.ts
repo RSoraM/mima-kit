@@ -1,6 +1,6 @@
-import { createHash } from '../core/hash'
-import { joinBuffer } from '../core/utils'
-import { turboshake128, turboshake256 } from './turboSHAKE'
+import { createHash } from '../core/hash.js'
+import { joinBuffer } from '../core/utils.js'
+import { turboshake128, turboshake256 } from './turboSHAKE.js'
 
 function lengthEncode(x: number): Uint8Array {
   const S: number[] = []

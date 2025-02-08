@@ -1,4 +1,4 @@
-import { KitError, U8, rotateL32, wrap } from '../../core/utils'
+import { KitError, U8, rotateL32, wrap } from '../../core/utils.js'
 
 // * Constants
 

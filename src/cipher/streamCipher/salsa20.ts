@@ -1,5 +1,5 @@
-import { createCipher } from '../../core/cipher'
-import { Counter, KitError, U8, resizeBuffer, rotateL32 } from '../../core/utils'
+import { createCipher } from '../../core/cipher.js'
+import { Counter, KitError, U8, resizeBuffer, rotateL32 } from '../../core/utils.js'
 
 // * Functions
 

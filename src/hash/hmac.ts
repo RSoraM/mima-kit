@@ -1,6 +1,6 @@
-import type { Hash, KeyHash, KeyHashDescription } from '../core/hash'
-import { createKeyHash } from '../core/hash'
-import { joinBuffer } from '../core/utils'
+import type { Hash, KeyHash, KeyHashDescription } from '../core/hash.js'
+import { createKeyHash } from '../core/hash.js'
+import { joinBuffer } from '../core/utils.js'
 
 function _hmac(hash: Hash, K: Uint8Array, M: Uint8Array) {
   const { BLOCK_SIZE } = hash

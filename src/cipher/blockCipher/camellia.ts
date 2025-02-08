@@ -1,5 +1,5 @@
-import { createCipher } from '../../core/cipher'
-import { KitError, U8, rotateL32, rotateR32 } from '../../core/utils'
+import { createCipher } from '../../core/cipher.js'
+import { KitError, U8, rotateL32, rotateR32 } from '../../core/utils.js'
 
 // * Constants
 
@@ -26,15 +26,15 @@ function Camellia_Feistel(sh: Uint32Array, sl: Uint32Array, kh: number, kl: numb
   const t1 = sh[1] ^ kl
   const t3
     = SBox1_1110[0xFF & (t0 >> 24)]
-    ^ SBox2_0222[0xFF & (t0 >> 16)]
-    ^ SBox3_3033[0xFF & (t0 >> 8)]
-    ^ SBox4_4404[0xFF & (t0)]
+      ^ SBox2_0222[0xFF & (t0 >> 16)]
+      ^ SBox3_3033[0xFF & (t0 >> 8)]
+      ^ SBox4_4404[0xFF & (t0)]
   const t2
     = t3
-    ^ SBox1_1110[0xFF & (t1)]
-    ^ SBox4_4404[0xFF & (t1 >> 8)]
-    ^ SBox3_3033[0xFF & (t1 >> 16)]
-    ^ SBox2_0222[0xFF & (t1 >> 24)]
+      ^ SBox1_1110[0xFF & (t1)]
+      ^ SBox4_4404[0xFF & (t1 >> 8)]
+      ^ SBox3_3033[0xFF & (t1 >> 16)]
+      ^ SBox2_0222[0xFF & (t1 >> 24)]
   sl[0] ^= t2
   sl[1] ^= t2 ^ rotateR32(t3, 8)
 }

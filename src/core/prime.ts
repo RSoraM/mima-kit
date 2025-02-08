@@ -1,4 +1,4 @@
-import { U8, modPow } from './utils'
+import { U8, modPow } from './utils.js'
 
 // * Interfaces
 

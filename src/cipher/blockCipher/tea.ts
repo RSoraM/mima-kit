@@ -1,6 +1,6 @@
-import type { Padding } from '../../core/cipher'
-import { PKCS7_PAD, createCipher } from '../../core/cipher'
-import { KitError, U8 } from '../../core/utils'
+import type { Padding } from '../../core/cipher.js'
+import { PKCS7_PAD, createCipher } from '../../core/cipher.js'
+import { KitError, U8 } from '../../core/utils.js'
 
 // * Constants
 

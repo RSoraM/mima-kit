@@ -1,5 +1,5 @@
-import { KitError, U8, rotateL32 } from '../../core/utils'
-import { createCipher } from '../../core/cipher'
+import { KitError, U8, rotateL32 } from '../../core/utils.js'
+import { createCipher } from '../../core/cipher.js'
 
 // * Constants
 

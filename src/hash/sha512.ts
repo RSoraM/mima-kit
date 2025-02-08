@@ -1,6 +1,5 @@
-import { UTF8 } from '../core/codec'
-import { createHash } from '../core/hash'
-import { KitError, U8, genBitMask, rotateR } from '../core/utils'
+import { createHash } from '../core/hash.js'
+import { KitError, U8, UTF8, genBitMask, rotateR } from '../core/utils.js'
 
 // * Constants
 

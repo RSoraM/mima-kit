@@ -1,11 +1,11 @@
-import { sm2p256v1 } from '../../core/ecParams'
-import type { Hash } from '../../core/hash'
-import type { KDF } from '../../core/kdf'
-import { x963kdf } from '../../core/kdf'
-import { sm3 } from '../../hash/sm3'
-import { KitError, U8, genBitMask, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
-import type { ECKeyPair, ECPrivateKey, ECPublicKey, FpECCrypto } from './ecc'
-import { FpECC } from './ecc'
+import { sm2p256v1 } from '../../core/ecParams.js'
+import type { Hash } from '../../core/hash.js'
+import type { KDF } from '../../core/kdf.js'
+import { x963kdf } from '../../core/kdf.js'
+import { sm3 } from '../../hash/sm3.js'
+import { KitError, U8, genBitMask, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils.js'
+import type { ECKeyPair, ECPrivateKey, ECPublicKey, FpECCrypto } from './ecc.js'
+import { FpECC } from './ecc.js'
 
 export interface SM2DI {
   /**
@@ -30,8 +30,8 @@ export interface SM2DH {
    * @param {ECPublicKey} KX - 己方临时密钥对 / Self Temporary Key Pair
    * @param {ECPublicKey} KB - 对方公钥 / Opposite Public Key
    * @param {ECPublicKey} KY - 对方临时公钥 / Opposite Temporary Public Key
-   * @param [Uint8Array] ZA - 发起方标识派生值 / Initiator Identity Derived Value
-   * @param [Uint8Array] ZB - 接收方标识派生值 / Receiver Identity Derived Value
+   * @param {Uint8Array} ZA - 发起方标识派生值 / Initiator Identity Derived Value
+   * @param {Uint8Array} ZB - 接收方标识派生值 / Receiver Identity Derived Value
    * @returns {U8} - 密钥材料 / Keying Material
    */
   (KA: ECKeyPair, KX: ECKeyPair, KB: ECPublicKey, KY: ECPublicKey, ZA?: Uint8Array, ZB?: Uint8Array): U8

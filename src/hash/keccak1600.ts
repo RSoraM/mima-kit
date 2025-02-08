@@ -1,4 +1,4 @@
-import { KitError, U8, genBitMask, joinBuffer, rotateL } from '../core/utils'
+import { KitError, U8, genBitMask, joinBuffer, rotateL } from '../core/utils.js'
 
 // * Constants
 
