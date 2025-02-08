@@ -2,18 +2,16 @@
   "compilerOptions": {
     "target": "ESNext",
     "lib": ["ESNext"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "types": [
       "@vitest/browser/matchers"
     ],
     "strict": true,
     "strictNullChecks": true,
-    "outDir": "dist",
+    "declaration": true,
     "esModuleInterop": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
   },
-  "include": ["src/index.ts"]
+  "include": ["src"]
 }
