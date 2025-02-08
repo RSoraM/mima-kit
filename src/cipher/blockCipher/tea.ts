@@ -86,7 +86,7 @@ function _xtea(K: Uint8Array, round: number) {
 
 function _xxtea(K: Uint8Array, padding: Padding, round?: number) {
   if (K.length !== 16) {
-    throw new KitError('XTEA key must be 16 byte')
+    throw new KitError('XXTEA key must be 16 byte')
   }
   const K32 = new Uint32Array(K.buffer)
 
