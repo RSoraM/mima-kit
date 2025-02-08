@@ -1,8 +1,6 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["ESNext"],
-    "resolveJsonModule": true,
     "types": [
       "@vitest/browser/matchers"
     ],

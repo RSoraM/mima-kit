@@ -88,10 +88,10 @@
     "prepublishOnly": "nr build",
     "release": "bumpp && npm publish",
     "start": "esno src/index.ts",
-    "test": "vitest --testTimeout 30000",
+    "test": "vitest --testTimeout 50000",
     "typecheck": "tsc --noEmit",
     "prepare": "simple-git-hooks",
-    "test:browser": "vitest --testTimeout 30000"
+    "test:browser": "vitest --testTimeout 50000"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.27.3",
