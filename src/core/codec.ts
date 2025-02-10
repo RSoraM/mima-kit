@@ -34,65 +34,87 @@ function createCodec(
   return wrap(codec, { FORMAT: format })
 }
 
-/** provided by xingluo233 */
 function UTF8ToU8(input: string) {
-  const buffer: number[] = []
-  for (let i = 0; i < input.length; i++) {
-    const char_code = input.codePointAt(i)
-    if (char_code === undefined) {
-      continue
-    }
-    else if (char_code < 0x80) {
-      buffer.push(char_code)
-    }
-    else if (char_code < 0x800) {
-      buffer.push(0xC0 | (char_code >> 6))
-      buffer.push(0x80 | (char_code & 0x3F))
-    }
-    else if (char_code < 0x10000) {
-      buffer.push(0xE0 | (char_code >> 12))
-      buffer.push(0x80 | ((char_code >> 6) & 0x3F))
-      buffer.push(0x80 | (char_code & 0x3F))
-    }
-    else if (char_code < 0x110000) {
-      buffer.push(0xF0 | (char_code >> 18))
-      buffer.push(0x80 | ((char_code >> 12) & 0x3F))
-      buffer.push(0x80 | ((char_code >> 6) & 0x3F))
-      buffer.push(0x80 | (char_code & 0x3F))
-      i++
-    }
+  /**
+   * 尝试使用 TextEncoder 编码
+   * 否则使用自定义编码器
+   */
+  try {
+    const buffer = new TextEncoder().encode(input)
+    return U8.from(buffer)
   }
-  return U8.from(buffer)
+  /** provided by xingluo233 */
+  catch {
+    const buffer: number[] = []
+    for (let i = 0; i < input.length; i++) {
+      const char_code = input.codePointAt(i)
+      if (char_code === undefined) {
+        continue
+      }
+      else if (char_code < 0x80) {
+        buffer.push(char_code)
+      }
+      else if (char_code < 0x800) {
+        buffer.push(0xC0 | (char_code >> 6))
+        buffer.push(0x80 | (char_code & 0x3F))
+      }
+      else if (char_code < 0x10000) {
+        buffer.push(0xE0 | (char_code >> 12))
+        buffer.push(0x80 | ((char_code >> 6) & 0x3F))
+        buffer.push(0x80 | (char_code & 0x3F))
+      }
+      else if (char_code < 0x110000) {
+        buffer.push(0xF0 | (char_code >> 18))
+        buffer.push(0x80 | ((char_code >> 12) & 0x3F))
+        buffer.push(0x80 | ((char_code >> 6) & 0x3F))
+        buffer.push(0x80 | (char_code & 0x3F))
+        i++
+      }
+    }
+    return U8.from(buffer)
+  }
 }
-/** provided by xingluo233 */
 function U8ToUTF8(input: Uint8Array) {
-  const str = []
-  let i = 0
-  while (i < input.length) {
-    const byte1 = input[i++]
-    if (byte1 < 0x80) {
-      str.push(String.fromCharCode(byte1))
-    }
-    else if (byte1 >= 0xC0 && byte1 < 0xE0) {
-      const byte2 = input[i++]
-      const char_code = ((byte1 & 0x1F) << 6) | (byte2 & 0x3F)
-      str.push(String.fromCharCode(char_code))
-    }
-    else if (byte1 >= 0xE0 && byte1 < 0xF0) {
-      const byte2 = input[i++]
-      const byte3 = input[i++]
-      const char_code = ((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F)
-      str.push(String.fromCharCode(char_code))
-    }
-    else if (byte1 >= 0xF0 && byte1 < 0xF8) {
-      const byte2 = input[i++]
-      const byte3 = input[i++]
-      const byte4 = input[i++]
-      const char_code = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F)
-      str.push(String.fromCodePoint(char_code))
-    }
+  /**
+   * 尝试使用 TextDecoder 解码
+   * 否则使用自定义解码器
+   */
+  try {
+    return new TextDecoder().decode(input)
   }
-  return str.join('')
+  /** provided by xingluo233 */
+  catch {
+    const str = []
+    let i = 0
+    while (i < input.length) {
+      const byte1 = input[i++]
+      if (byte1 < 0x80) {
+        str.push(String.fromCharCode(byte1))
+      }
+      else if (byte1 >= 0xC0 && byte1 < 0xE0) {
+        const byte2 = input[i++]
+        const char_code = ((byte1 & 0x1F) << 6) | (byte2 & 0x3F)
+        str.push(String.fromCharCode(char_code))
+      }
+      else if (byte1 >= 0xE0 && byte1 < 0xF0) {
+        const byte2 = input[i++]
+        const byte3 = input[i++]
+        const char_code = ((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F)
+        str.push(String.fromCharCode(char_code))
+      }
+      else if (byte1 >= 0xF0 && byte1 < 0xF8) {
+        const byte2 = input[i++]
+        const byte3 = input[i++]
+        const byte4 = input[i++]
+        const char_code = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F)
+        str.push(String.fromCodePoint(char_code))
+      }
+      else {
+        console.warn('Included an invalid UTF-8 byte')
+      }
+    }
+    return str.join('')
+  }
 }
 /** UTF-8 编解码器 / Codec */
 export const UTF8 = createCodec(UTF8ToU8, U8ToUTF8, 'utf-8')
