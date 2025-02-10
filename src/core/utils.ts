@@ -1,5 +1,4 @@
 import type { Codec } from './codec'
-import { UTF8 } from './codec'
 
 // * Math utility functions
 
@@ -122,7 +121,7 @@ export function genBitMask(w: number | bigint) {
  * - a_inv: a 的模逆 / modular inverse of a
  * - b_inv: b 的模逆 / modular inverse of b
  */
-function extendedEuclidean(a: bigint, b: bigint) {
+export function extendedEuclidean(a: bigint, b: bigint) {
   let [s0, s1, t0, t1, r0, r1] = [1n, 0n, 0n, 1n, a, b]
 
   if (b === 0n) {
@@ -152,7 +151,7 @@ function extendedEuclidean(a: bigint, b: bigint) {
  *
  * Legendre Symbol
  */
-function legendreSymbol(a: bigint, p: bigint): bigint {
+export function legendreSymbol(a: bigint, p: bigint): bigint {
   return modPow(a, (p - 1n) >> 1n, p)
 }
 
@@ -161,7 +160,7 @@ function legendreSymbol(a: bigint, p: bigint): bigint {
  *
  * Tonelli-Shanks Algorithm
  */
-function tonelliShanks(a: bigint, p: bigint): bigint {
+export function tonelliShanks(a: bigint, p: bigint): bigint {
   if (legendreSymbol(a, p) !== 1n) {
     throw new KitError('There is no square root')
   }
@@ -364,12 +363,11 @@ export class U8 extends Uint8Array {
   }
 
   /**
-   * Convert string to U8 (default encoding: UTF-8)
+   * Convert string to U8
    *
-   * 将 字符串 转换为 U8 (默认编码: UTF-8)
-   *
+   * 将 字符串 转换为 U8
    */
-  static fromString(input: string, codec = UTF8): U8 {
+  static fromString(input: string, codec: Codec): U8 {
     return codec(input)
   }
 
