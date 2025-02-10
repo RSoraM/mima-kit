@@ -12,6 +12,7 @@ export default antfu(
       // overrides
       'style/indent': 'off',
       'style/max-statements-per-line': 'off',
+      'style/indent-binary-ops': 'off',
     },
   },
 )
