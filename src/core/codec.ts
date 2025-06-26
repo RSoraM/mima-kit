@@ -227,6 +227,181 @@ function B64CommonStringify(input: Uint8Array, url: boolean) {
   return result
 }
 
+interface B32Options {
+  variant?: 'rfc4648' | 'rfc4648-hex' | 'crockford'
+  padding?: boolean
+}
+interface B32Codec extends Codec {
+  /**
+   * 创建一个 base32 编解码器
+   *
+   * Create a base32 codec
+   */
+  (options: B32Options): Codec
+}
+
+function TheB32Codec(input: string): U8
+function TheB32Codec(input: Uint8Array): string
+function TheB32Codec(options: B32Options): Codec
+function TheB32Codec(input: string | Uint8Array | B32Options) {
+  const RFC4648_B32_MAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+  if (typeof input === 'string') {
+    input = input.toUpperCase().replace(/[^A-Z2-7]/g, '')
+    return B32CommonParse(input, RFC4648_B32_MAP)
+  }
+  else if (input instanceof Uint8Array) {
+    return B32CommonStringify(input, RFC4648_B32_MAP, false)
+  }
+  else {
+    const { variant = 'rfc4648', padding = false } = input
+    if (variant === 'rfc4648') {
+      function B32ToU8(input: string) {
+        input = input.toUpperCase().replace(/[^A-Z2-7]/g, '')
+        return B32CommonParse(input, RFC4648_B32_MAP)
+      }
+      function U8ToB32(input: Uint8Array) {
+        return B32CommonStringify(input, RFC4648_B32_MAP, padding)
+      }
+      return createCodec(B32ToU8, U8ToB32, 'base32')
+    }
+    else if (variant === 'rfc4648-hex') {
+      const RFC4648_B32_HEX_MAP = '0123456789ABCDEFGHIJKLMNOPQRSTUV'
+      function B32HexToU8(input: string) {
+        input = input.toUpperCase().replace(/[^0-9A-V]/g, '')
+        return B32CommonParse(input, RFC4648_B32_HEX_MAP)
+      }
+      function U8ToB32Hex(input: Uint8Array) {
+        return B32CommonStringify(input, RFC4648_B32_HEX_MAP, padding)
+      }
+      return createCodec(B32HexToU8, U8ToB32Hex, 'base32hex')
+    }
+    else if (variant === 'crockford') {
+      const RFC4648_B32_CROCKFORD_MAP = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+      function B32CrockfordToU8(input: string) {
+        input = input.toUpperCase().replace(/[IL]/g, '1').replace(/[^0-9A-HJKMNP-TV-Z]/g, '')
+        return B32CommonParse(input, RFC4648_B32_CROCKFORD_MAP)
+      }
+      function U8ToB32Crockford(input: Uint8Array) {
+        return B32CommonStringify(input, RFC4648_B32_CROCKFORD_MAP, padding)
+      }
+      return createCodec(B32CrockfordToU8, U8ToB32Crockford, 'base32-crockford')
+    }
+  }
+}
+/** base32 编解码器 / Codec */
+export const B32: B32Codec = wrap(TheB32Codec, { FORMAT: 'base32' })
+
+/**
+ * B32CommonParse can parse B32 string to Uint8Array
+ *
+ * B32CommonParse 可以将 B32 字符串解析为 Uint8Array
+ *
+ * @param {string} input - B32 或 B32url 字符串
+ * @param {string} map - 字符表
+ */
+function B32CommonParse(input: string, map: string) {
+  const length = input.length * 0.625
+  const result = new U8(length)
+
+  let i = 0
+  let j = 0
+  while (i < input.length) {
+    const a = map.indexOf(input.charAt(i++))
+    const b = map.indexOf(input.charAt(i++))
+    const c = map.indexOf(input.charAt(i++))
+    const d = map.indexOf(input.charAt(i++))
+    const e = map.indexOf(input.charAt(i++))
+    const f = map.indexOf(input.charAt(i++))
+    const g = map.indexOf(input.charAt(i++))
+    const h = map.indexOf(input.charAt(i++))
+
+    result[j++] = (a << 3) | (b >> 2)
+    result[j++] = ((b & 0b11) << 6) | (c << 1) | (d >> 4)
+    result[j++] = ((d & 0b1111) << 4) | (e >> 1)
+    result[j++] = ((e & 0b1) << 7) | (f << 2) | (g >> 3)
+    result[j++] = ((g & 0b111) << 5) | h
+  }
+
+  return result
+}
+
+/**
+ * B32CommonStringify can stringify Uint8Array to B32 string
+ *
+ * B32CommonStringify 可以将 Uint8Array 编码为 B32 字符串
+ *
+ * @param {Uint8Array} input - Uint8Array
+ * @param {string} map - 字符表
+ * @param {boolean} pad - 是否填充
+ */
+function B32CommonStringify(input: Uint8Array, map: string, pad: boolean) {
+  let result = ''
+  let i: number
+  for (i = 0; i < input.length - 4; i += 5) {
+    const E0 = input[i]
+    const E1 = input[i + 1]
+    const E2 = input[i + 2]
+    const E3 = input[i + 3]
+    const E4 = input[i + 4]
+
+    result += map[E0 >> 3]
+    result += map[((E0 & 0b111) << 2) | (E1 >> 6)]
+    result += map[(E1 >> 1) & 0b11111]
+    result += map[((E1 & 0b1) << 4) | (E2 >> 4)]
+    result += map[((E2 & 0b1111) << 1) | (E3 >> 7)]
+    result += map[(E3 >> 2) & 0b11111]
+    result += map[((E3 & 0b11) << 3) | (E4 >> 5)]
+    result += map[E4 & 0b11111]
+  }
+
+  if (i === input.length - 4) {
+    const E0 = input[i]
+    const E1 = input[i + 1]
+    const E2 = input[i + 2]
+    const E3 = input[i + 3]
+
+    result += map[E0 >> 3]
+    result += map[((E0 & 0b111) << 2) | (E1 >> 6)]
+    result += map[(E1 >> 1) & 0b11111]
+    result += map[((E1 & 0b1) << 4) | (E2 >> 4)]
+    result += map[((E2 & 0b1111) << 1) | (E3 >> 7)]
+    result += map[(E3 >> 2) & 0b11111]
+    result += map[((E3 & 0b11) << 3)]
+    result += pad ? '=' : ''
+  }
+  else if (i === input.length - 3) {
+    const E0 = input[i]
+    const E1 = input[i + 1]
+    const E2 = input[i + 2]
+
+    result += map[E0 >> 3]
+    result += map[((E0 & 0b111) << 2) | (E1 >> 6)]
+    result += map[(E1 >> 1) & 0b11111]
+    result += map[((E1 & 0b1) << 4) | (E2 >> 4)]
+    result += map[(E2 & 0b1111) << 1]
+    result += pad ? '===' : ''
+  }
+  else if (i === input.length - 2) {
+    const E0 = input[i]
+    const E1 = input[i + 1]
+
+    result += map[E0 >> 3]
+    result += map[((E0 & 0b111) << 2) | (E1 >> 6)]
+    result += map[(E1 >> 1) & 0b11111]
+    result += map[(E1 & 0b1) << 4]
+    result += pad ? '====' : ''
+  }
+  else if (i === input.length - 1) {
+    const E0 = input[i]
+
+    result += map[E0 >> 3]
+    result += map[(E0 & 0b111) << 2]
+    result += pad ? '======' : ''
+  }
+
+  return result
+}
+
 function CSVToU8(input: string) {
   const coreValueMap = new Map<string, number>()
   coreValueMap.set('富强', 0)

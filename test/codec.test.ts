@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { B64, B64URL, CSV, HEX, UTF8 } from '../src/core/codec'
+import { B32, B64, B64URL, CSV, HEX, UTF8 } from '../src/core/codec'
 
 describe('codec', () => {
   it('utf8', () => {
@@ -21,6 +21,13 @@ describe('codec', () => {
     expect(B64URL(UTF8('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"Y2F0LCDnjKssIPCfkLE"`)
     expect(UTF8(B64URL('Y2F0LCDnjKssIPCfkLE'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
     expect(UTF8(B64URL('5Zug5Li677yMQmFzZTY0IOWwhuS4ieS4quWtl-iKgui9rOWMluaIkOWbm-S4quWtl-iKgu-8jOWboOatpCBCYXNlNjQg57yW56CB5ZCO55qE5paH5pys77yM5Lya5q-U5Y6f5paH5pys5aSn5Ye65LiJ5YiG5LmL5LiA5bem5Y-z44CC'))).toMatchInlineSnapshot(`"因为，Base64 将三个字节转化成四个字节，因此 Base64 编码后的文本，会比原文本大出三分之一左右。"`)
+  })
+  it('b32', () => {
+    expect(B32(UTF8('因为，Base64 将三个字节转化成四个字节，因此 Base64 编码后的文本，会比原文本大出三分之一左右。'))).toMatchInlineSnapshot(`"4WN2BZFYXLX3ZDCCMFZWKNRUEDS3BBXEXCE6JOFK4WWZP2EKQLUL3LHFRSLONCEQ4WNZXZFYVLS23F7IRKBO7PEM4WN2BZVNUQQEEYLTMU3DIIHHXSLOPIEB4WII5Z42QTTJNB7GTSWO7PEM4S6JVZVPSTSY5H7GS2D6NHFM4WSKPZMHXLSLRCPFRCDOJOML4S4IBZNXU3SY7M7DQCBA"`)
+    expect(B32({ padding: true })(UTF8('a'))).toMatchInlineSnapshot(`"ME======"`)
+    expect(B32(UTF8('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"MNQXILBA46GKWLBA6CPZBMI"`)
+    expect(UTF8(B32('MNQXILBA46GKWLBA6CPZBMI='))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
+    expect(UTF8(B32('4WN2BZFYXLX3ZDCCMFZWKNRUEDS3BBXEXCE6JOFK4WWZP2EKQLUL3LHFRSLONCEQ4WNZXZFYVLS23F7IRKBO7PEM4WN2BZVNUQQEEYLTMU3DIIHHXSLOPIEB4WII5Z42QTTJNB7GTSWO7PEM4S6JVZVPSTSY5H7GS2D6NHFM4WSKPZMHXLSLRCPFRCDOJOML4S4IBZNXU3SY7M7DQCBA'))).toMatchInlineSnapshot(`"因为，Base64 将三个字节转化成四个字节，因此 Base64 编码后的文本，会比原文本大出三分之一左右。"`)
   })
   it('csv', () => {
     expect(CSV(UTF8('cat'))).toMatchInlineSnapshot(`"公正和谐公正民主法治自由"`)

@@ -5,7 +5,7 @@ export { genPrime, isProbablePrime } from './core/prime'
 
 // * Codec
 export type { Codec } from './core/codec'
-export { UTF8, HEX, B64, B64URL, CSV } from './core/codec'
+export { UTF8, HEX, B32, B64, B64URL, CSV } from './core/codec'
 
 // * Hash Utils
 export type { Digest, HashDescription, Hash } from './core/hash'
@@ -24,9 +24,6 @@ export { sha224, sha256 } from './hash/sha256'
 export { sha384, sha512, sha512t } from './hash/sha512'
 
 // * SHA-3
-// export { Keccak_p_200, Sponge_200 } from './hash/keccak200'
-// export { Keccak_p_400, Sponge_400 } from './hash/keccak400'
-// export { Keccak_p_800, Sponge_800 } from './hash/keccak800'
 export { keccak_p_1600, sponge_1600 } from './hash/keccak1600'
 export { sha3_224, sha3_256 } from './hash/sha3'
 export { sha3_384, sha3_512 } from './hash/sha3'
