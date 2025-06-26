@@ -160,6 +160,7 @@ npm install mima-kit
 
 - `UTF8` UTF-8 Codec
 - `HEX` Hexadecimal Codec
+- `B32` Base32 Codec `RFC 4648` `RFC 4648-HEX` `Crockford`
 - `B64` Base64 Codec
 - `B64URL` Base64url Codec
 
@@ -206,6 +207,26 @@ U8.fromBI(0x12345678n) // [0x12, 0x34, 0x56, 0x78]
 // Convert U8 to BigInt
 U8.fromBI(0x12345678n)
   .toBI() // 305419896n (0x12345678n)
+```
+
+There exist several de facto standards and variants of `B32` encoding, `mima-kit` provides three variants of `B32` codec, and `B32` is not padded by default.
+
+```typescript
+interface B32Options {
+  variant?: 'rfc4648' | 'rfc4648-hex' | 'crockford'
+  padding?: boolean
+}
+interface B32Codec extends Codec {
+  /** Create a base32 codec */
+  (options: B32Options): Codec
+}
+
+// RFC 4648 Base32 with no padding by default
+B32(UTF8('cat, 猫, 🐱')) // MNQXILBA46GKWLBA6CPZBMI
+
+// using RFC 4648 Base32-hex with padding
+const B32HEX = B32({ variant: 'rfc4648-hex', padding: true })
+B32HEX(UTF8('cat, 猫, 🐱')) // CDGN8B10SU6AMB10U2FP1C8=
 ```
 
 # Hash Algorithm
