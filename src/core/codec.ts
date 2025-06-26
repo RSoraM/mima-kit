@@ -137,7 +137,7 @@ function U8ToHEX(input: Uint8Array) {
 export const HEX = createCodec(HEXToU8, U8ToHEX, 'hex')
 
 function B64ToU8(input: string) {
-  return B64CommonParse(input, false)
+  return B64CommonParse(input)
 }
 function U8ToB64(input: Uint8Array) {
   return B64CommonStringify(input, false)
@@ -146,7 +146,7 @@ function U8ToB64(input: Uint8Array) {
 export const B64 = createCodec(B64ToU8, U8ToB64, 'base64')
 
 function B64URLToU8(input: string) {
-  return B64CommonParse(input, true)
+  return B64CommonParse(input)
 }
 function U8ToB64URL(input: Uint8Array) {
   return B64(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
@@ -164,15 +164,12 @@ export const B64URL = createCodec(B64URLToU8, U8ToB64URL, 'base64url')
  * @param {string} input - B64 或 B64url 字符串
  * @param {boolean} url - 是否是 B64url 字符串
  */
-function B64CommonParse(input: string, url: boolean) {
+function B64CommonParse(input: string) {
   const map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-  if (url) {
-    input = input.replace(/-/g, '+').replace(/_/g, '/')
-    while (input.length % 4) {
-      input += '='
-    }
-  }
-  input = input.replace(/[^A-Z0-9+/]/gi, '')
+  input = input
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .replace(/[^A-Z0-9+/]/gi, '')
   const length = input.length * 0.75
   const result = new U8(length)
 
