@@ -8,6 +8,7 @@ import * as sha3 from '../src/hash/sha3'
 import * as sha3Derived from '../src/hash/sha3Derived'
 import { sm3 } from '../src/hash/sm3'
 import { hmac } from '../src/hash/hmac'
+import { totp } from '../src/hash/totp'
 import { turboshake128, turboshake256 } from '../src/hash/turboSHAKE'
 import { kt128, kt256 } from '../src/hash/kangaroo12'
 import { joinBuffer } from '../src/core/utils'
@@ -319,4 +320,30 @@ it('kt12', async () => {
     .toMatchObject(HEX('74E47879F10A9C5D11BD2DA7E194FE57E86378BF3C3F7448EFF3C576A0F18C5CAAE0999979512090A7F348AF4260D4DE3C37F1ECAF8D2C2C96C1D16C64B12496'))
   expect(kt256(64 << 3, ptn(8190))(ptn(8192)))
     .toMatchObject(HEX('F4B5908B929FFE01E0F79EC2F21243D41A396B2E7303A6AF1D6399CD6C7A0A2DD7C4F607E8277F9C9B1CB4AB9DDC59D4B92D1FC7558441F1832C3279A4241B8B'))
+})
+// * TOTP
+it('totp', async () => {
+  const S0 = UTF8('12345678901234567890')
+  const S1 = UTF8('12345678901234567890123456789012')
+  const S2 = UTF8('1234567890123456789012345678901234567890123456789012345678901234')
+  expect(totp({ current_time: 59000, return_digits: 8 })(S0))
+    .toMatchInlineSnapshot('"94287082"')
+  expect(totp({ current_time: 59000, return_digits: 8, mac: hmac(sha256) })(S1))
+    .toMatchInlineSnapshot('"46119246"')
+  expect(totp({ current_time: 59000, return_digits: 8, mac: hmac(sha512) })(S2))
+    .toMatchInlineSnapshot('"90693936"')
+
+  expect(totp({ current_time: 1111111109000, return_digits: 8 })(S0))
+    .toMatchInlineSnapshot('"07081804"')
+  expect(totp({ current_time: 1111111109000, return_digits: 8, mac: hmac(sha256) })(S1))
+    .toMatchInlineSnapshot('"68084774"')
+  expect(totp({ current_time: 1111111109000, return_digits: 8, mac: hmac(sha512) })(S2))
+    .toMatchInlineSnapshot('"25091201"')
+
+  expect(totp({ current_time: 20000000000000, return_digits: 8 })(S0))
+    .toMatchInlineSnapshot('"65353130"')
+  expect(totp({ current_time: 20000000000000, return_digits: 8, mac: hmac(sha256) })(S1))
+    .toMatchInlineSnapshot('"77737706"')
+  expect(totp({ current_time: 20000000000000, return_digits: 8, mac: hmac(sha512) })(S2))
+    .toMatchInlineSnapshot('"47863826"')
 })
