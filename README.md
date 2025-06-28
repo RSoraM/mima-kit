@@ -57,6 +57,7 @@ npm install mima-kit
   <li><a href="#带密钥的加密散列算法">带密钥的加密散列算法</a></li>
   <ul>
     <li><a href="#hmac">HMAC</a></li>
+    <li><a href="#totp">TOTP</a></li>
     <li><a href="#kmac">KMAC</a></li>
   </ul>
   <li><a href="#包装您的加密散列算法">包装您的加密散列算法</a></li>
@@ -390,6 +391,62 @@ hmac(sm3)(key, m).to(HEX)
 hmac(sha1, 80)(key, m).to(HEX)
 // HMAC-SHA1-160 with 160-bit digest and 80-bit key
 hmac(sha1, 160, 80)(key, m).to(HEX)
+```
+
+### TOTP
+
+Specification: [RFC 6238](https://www.rfc-editor.org/rfc/rfc6238.txt)
+
+> `TOTP` 是 `HMAC` 的拓展应用，它使用当前时间戳作为计数器，通过协商密钥输出一次性密码
+
+```typescript
+const otp = totp(B32('4B7X5MEKEFIJMWWVBQMMCLY6JI3YOC7Y')) // '000000'
+
+const totp_256 = totp({
+  mac: hmac(sha256),
+  step: 60_000, // 1 minute
+  return_digits: 8, // 8 digits
+})
+const otp = totp_256(B32('4B7X5MEKEFIJMWWVBQMMCLY6JI3YOC7Y')) // '00000000'
+```
+
+```typescript
+interface TOTPParams {
+  /**
+   * 带密钥的加密散列算法 / Keyed Hashing Algorithm (default: HMAC-SHA1)
+   */
+  mac?: KeyHash
+  /**
+   * 当前时间戳 / Current timestamp (default: Date.now() milliseconds)
+   *
+   * 指定此参数时，将不再从 `Date.now()` 获取当前时间戳.
+   *
+   * When this parameter is specified, the current timestamp will not be obtained from `Date.now()`.
+   */
+  current_time?: number
+  /**
+   * 纪元时间戳 / Epoch timestamp (default: 0 milliseconds)
+   */
+  epoch_time?: number
+  /**
+   * 时间步长 / Time step (default: 30000 milliseconds)
+   */
+  step?: number
+  /**
+   * 计数器 / Counter
+   *
+   * `counter = (cuttent_time - epoch_time) / step`
+   *
+   * 指定此参数时，将不再从当前时间戳计算计数器.
+   *
+   * When this parameter is specified, the counter will not be calculated from the current timestamp.
+   */
+  counter?: number | bigint | Uint8Array
+  /**
+   * 返回的数字位数 / Number of digits in the returned OTP (default: 6)
+   */
+  return_digits?: number
+}
 ```
 
 ### KMAC

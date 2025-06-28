@@ -59,6 +59,7 @@ npm install mima-kit
   <li><a href="#keyed-hash-algorithm">Keyed Hash Algorithm</a></li>
   <ul>
     <li><a href="#hmac">HMAC</a></li>
+    <li><a href="#totp">TOTP</a></li>
     <li><a href="#kmac">KMAC</a></li>
   </ul>
   <li><a href="#wrap-your-hash-algorithm">Wrap Your Hash Algorithm</a></li>
@@ -380,6 +381,56 @@ hmac(sm3)(key, m).to(HEX)
 hmac(sha1, 80)(key, m).to(HEX)
 // HMAC-SHA1-160 with 160-bit digest and 80-bit key
 hmac(sha1, 160, 80)(key, m).to(HEX)
+```
+
+### TOTP
+
+Specification: [RFC 6238](https://www.rfc-editor.org/rfc/rfc6238.txt)
+
+> `TOTP` is an extension of `HMAC` that uses timestamps as counters to output one-time passwords with shared secret.
+
+```typescript
+const otp = totp(B32('4B7X5MEKEFIJMWWVBQMMCLY6JI3YOC7Y')) // '000000'
+
+const totp_256 = totp({
+  mac: hmac(sha256),
+  step: 60_000, // 1 minute
+  return_digits: 8, // 8 digits
+})
+const otp = totp_256(B32('4B7X5MEKEFIJMWWVBQMMCLY6JI3YOC7Y')) // '00000000'
+```
+
+```typescript
+interface TOTPParams {
+  /**
+   * Keyed Hashing Algorithm (default: HMAC-SHA1)
+   */
+  mac?: KeyHash
+  /**
+   * Current timestamp (default: Date.now() milliseconds)
+   *
+   * When this parameter is specified, the current timestamp will not be obtained from `Date.now()`.
+   */
+  current_time?: number
+  /**
+   * Epoch timestamp (default: 0 milliseconds)
+   */
+  epoch_time?: number
+  /**
+   * Time step (default: 30000 milliseconds)
+   */
+  step?: number
+  /**
+   * `counter = (cuttent_time - epoch_time) / step`
+   *
+   * When this parameter is specified, the counter will not be calculated from the current timestamp.
+   */
+  counter?: number | bigint | Uint8Array
+  /**
+   * Number of digits in the returned OTP (default: 6)
+   */
+  return_digits?: number
+}
 ```
 
 ### KMAC
