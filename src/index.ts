@@ -58,6 +58,9 @@ export { sm3 } from './hash/sm3'
 // * HMAC
 export { hmac } from './hash/hmac'
 
+// * TOTP
+export { totp } from './hash/totp'
+
 // * Cipher Utils
 export type { Cipher, IVCipher } from './core/cipher'
 export type { BlockCipherInfo, StreamCipherInfo, IVCipherInfo } from './core/cipher'
