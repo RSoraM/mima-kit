@@ -395,7 +395,7 @@ const otp = totp(B32('4B7X5MEKEFIJMWWVBQMMCLY6JI3YOC7Y')) // '000000'
 const totp_256 = totp({
   mac: hmac(sha256),
   step: 60_000, // 1 minute
-  return_digits: 8, // 8 digits
+  digits: 8, // 8 digits
 })
 const otp = totp_256(B32('4B7X5MEKEFIJMWWVBQMMCLY6JI3YOC7Y')) // '00000000'
 ```
@@ -411,11 +411,11 @@ interface TOTPParams {
    *
    * When this parameter is specified, the current timestamp will not be obtained from `Date.now()`.
    */
-  current_time?: number
+  current?: number
   /**
    * Epoch timestamp (default: 0 milliseconds)
    */
-  epoch_time?: number
+  epoch?: number
   /**
    * Time step (default: 30000 milliseconds)
    */
@@ -429,7 +429,7 @@ interface TOTPParams {
   /**
    * Number of digits in the returned OTP (default: 6)
    */
-  return_digits?: number
+  digits?: number
 }
 ```
 

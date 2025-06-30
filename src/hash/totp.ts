@@ -47,11 +47,11 @@ interface TOTPParams {
    *
    * When this parameter is specified, the current timestamp will not be obtained from `Date.now()`.
    */
-  current_time?: number
+  current?: number
   /**
    * 纪元时间戳 / Epoch timestamp (default: 0 milliseconds)
    */
-  epoch_time?: number
+  epoch?: number
   /**
    * 时间步长 / Time step (default: 30000 milliseconds)
    */
@@ -69,7 +69,7 @@ interface TOTPParams {
   /**
    * 返回的数字位数 / Number of digits in the returned OTP (default: 6)
    */
-  return_digits?: number
+  digits?: number
 }
 
 /**
@@ -84,36 +84,39 @@ export function totp(secret: Uint8Array): string
 /**
  * 创建 TOTP 函数 / Create a TOTP function
  *
- * @param {TOTPParams} options - TOTP 参数
+ * @param {TOTPParams} params - TOTP 参数
  * @returns {TOTP} - 返回的 TOTP 函数
  */
-export function totp(options: TOTPParams): TOTP
+export function totp(params: TOTPParams): TOTP
 export function totp(
-  input: Uint8Array | TOTPParams,
+  args: Uint8Array | TOTPParams,
 ) {
-  if (input instanceof Uint8Array) {
+  if (args instanceof Uint8Array) {
+    const K = args
     const C = U8.fromBI(BigInt(Math.floor(Date.now() / 30000)), 8, false)
-    const HS = hotp(input, C, hmac(sha1))
+    const HS = hotp(K, C, hmac(sha1))
     const OTP = 0
       | (HS[0] & 0x7F) << 24
       | (HS[1] & 0xFF) << 16
       | (HS[2] & 0xFF) << 8
       | (HS[3] & 0xFF)
-    return (OTP % 1_000_000).toString().padStart(6, '0')
+    return (OTP % 1_000_000)
+      .toString()
+      .padStart(6, '0')
   }
 
   return (secret: Uint8Array) => {
     let {
       mac = hmac(sha1),
-      current_time = Date.now(),
-      epoch_time = 0,
+      current = Date.now(),
+      epoch = 0,
       step = 30000,
       counter = 0,
-      return_digits = 6,
-    } = input || {}
+      digits = 6,
+    } = args || {}
 
     if (!counter) {
-      const T = BigInt(Math.floor((current_time - epoch_time) / step))
+      const T = BigInt(Math.floor((current - epoch) / step))
       counter = U8.fromBI(T, 8, false)
     }
     if (!(counter instanceof Uint8Array)) {
@@ -126,7 +129,8 @@ export function totp(
       | (BIN[1] & 0xFF) << 16
       | (BIN[2] & 0xFF) << 8
       | (BIN[3] & 0xFF)
-    const digits = 10 ** return_digits
-    return (OTP % digits).toString().padStart(return_digits, '0')
+    return (OTP % (10 ** digits))
+      .toString()
+      .padStart(digits, '0')
   }
 }
