@@ -23,11 +23,38 @@ describe('codec', () => {
     expect(UTF8(B64URL('5Zug5Li677yMQmFzZTY0IOWwhuS4ieS4quWtl-iKgui9rOWMluaIkOWbm-S4quWtl-iKgu-8jOWboOatpCBCYXNlNjQg57yW56CB5ZCO55qE5paH5pys77yM5Lya5q-U5Y6f5paH5pys5aSn5Ye65LiJ5YiG5LmL5LiA5bem5Y-z44CC'))).toMatchInlineSnapshot(`"因为，Base64 将三个字节转化成四个字节，因此 Base64 编码后的文本，会比原文本大出三分之一左右。"`)
   })
   it('b32', () => {
-    expect(B32(UTF8('因为，Base64 将三个字节转化成四个字节，因此 Base64 编码后的文本，会比原文本大出三分之一左右。'))).toMatchInlineSnapshot(`"4WN2BZFYXLX3ZDCCMFZWKNRUEDS3BBXEXCE6JOFK4WWZP2EKQLUL3LHFRSLONCEQ4WNZXZFYVLS23F7IRKBO7PEM4WN2BZVNUQQEEYLTMU3DIIHHXSLOPIEB4WII5Z42QTTJNB7GTSWO7PEM4S6JVZVPSTSY5H7GS2D6NHFM4WSKPZMHXLSLRCPFRCDOJOML4S4IBZNXU3SY7M7DQCBA"`)
-    expect(B32({ padding: true })(UTF8('a'))).toMatchInlineSnapshot(`"ME======"`)
+    const B32P = B32({ padding: true })
+
+    expect(B32(UTF8('foobar'))).toMatchInlineSnapshot(`"MZXW6YTBOI"`)
+    expect(B32P(UTF8('foobar'))).toMatchInlineSnapshot(`"MZXW6YTBOI======"`)
+    expect(UTF8(B32('MZXW6YTBOI'))).toMatchInlineSnapshot(`"foobar"`)
+
     expect(B32(UTF8('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"MNQXILBA46GKWLBA6CPZBMI"`)
     expect(UTF8(B32('MNQXILBA46GKWLBA6CPZBMI='))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
-    expect(UTF8(B32('4WN2BZFYXLX3ZDCCMFZWKNRUEDS3BBXEXCE6JOFK4WWZP2EKQLUL3LHFRSLONCEQ4WNZXZFYVLS23F7IRKBO7PEM4WN2BZVNUQQEEYLTMU3DIIHHXSLOPIEB4WII5Z42QTTJNB7GTSWO7PEM4S6JVZVPSTSY5H7GS2D6NHFM4WSKPZMHXLSLRCPFRCDOJOML4S4IBZNXU3SY7M7DQCBA'))).toMatchInlineSnapshot(`"因为，Base64 将三个字节转化成四个字节，因此 Base64 编码后的文本，会比原文本大出三分之一左右。"`)
+  })
+  it('b32-hex', () => {
+    const B32HP = B32({ variant: 'rfc4648-hex', padding: true })
+    const B32H = B32({ variant: 'rfc4648-hex', padding: false })
+
+    expect(B32H(UTF8('foobar'))).toMatchInlineSnapshot(`"CPNMUOJ1E8"`)
+    expect(B32HP(UTF8('foobar'))).toMatchInlineSnapshot(`"CPNMUOJ1E8======"`)
+
+    expect(B32H(UTF8('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"CDGN8B10SU6AMB10U2FP1C8"`)
+    expect(B32HP(UTF8('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"CDGN8B10SU6AMB10U2FP1C8="`)
+
+    expect(UTF8(B32H('CDGN8B10SU6AMB10U2FP1C8='))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
+    expect(UTF8(B32H('CPNMUOJ1E8'))).toMatchInlineSnapshot(`"foobar"`)
+  })
+  it('b32-crockford', () => {
+    const B32C = B32({ variant: 'crockford', padding: false })
+
+    expect(B32C(UTF8('foobar'))).toMatchInlineSnapshot(`"CSQPYRK1E8"`)
+    expect(UTF8(B32C('CSQPYRK1E8'))).toMatchInlineSnapshot(`"foobar"`)
+    expect(UTF8(B32C('CSQPYRKLE8'))).toMatchInlineSnapshot(`"foobar"`)
+    expect(B32C(UTF8('cat, 猫, 🐱'))).toMatchInlineSnapshot(`"CDGQ8B10WY6APB10Y2FS1C8"`)
+    expect(UTF8(B32C('CDGQ8B10-WY6APB10-Y2FS1C8'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
+    expect(UTF8(B32C('CDGQ8B1o-WY6APB1O-Y2FSLC8'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
+    expect(UTF8(B32C('CDGQ8BI0-WY6APB1o-Y2FSlC8'))).toMatchInlineSnapshot(`"cat, 猫, 🐱"`)
   })
   it('csv', () => {
     expect(CSV(UTF8('cat'))).toMatchInlineSnapshot(`"公正和谐公正民主法治自由"`)

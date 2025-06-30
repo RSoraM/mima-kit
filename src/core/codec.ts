@@ -224,7 +224,7 @@ function B64CommonStringify(input: Uint8Array, url: boolean) {
   return result
 }
 
-interface B32Options {
+interface B32Params {
   variant?: 'rfc4648' | 'rfc4648-hex' | 'crockford'
   padding?: boolean
 }
@@ -234,55 +234,62 @@ interface B32Codec extends Codec {
    *
    * Create a base32 codec
    */
-  (options: B32Options): Codec
+  (params: B32Params): Codec
 }
 
 function TheB32Codec(input: string): U8
 function TheB32Codec(input: Uint8Array): string
-function TheB32Codec(options: B32Options): Codec
-function TheB32Codec(input: string | Uint8Array | B32Options) {
+function TheB32Codec(params: B32Params): Codec
+function TheB32Codec(args: string | Uint8Array | B32Params) {
+  // 使用默认配置处理 B32 编解码
+
   const RFC4648_B32_MAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
-  if (typeof input === 'string') {
-    input = input.toUpperCase().replace(/[^A-Z2-7]/g, '')
+  if (typeof args === 'string') {
+    const input = args.toUpperCase().replace(/[^A-Z2-7]/g, '')
     return B32CommonParse(input, RFC4648_B32_MAP)
   }
-  else if (input instanceof Uint8Array) {
-    return B32CommonStringify(input, RFC4648_B32_MAP, false)
+  else if (args instanceof Uint8Array) {
+    return B32CommonStringify(args, RFC4648_B32_MAP, false)
   }
-  else {
-    const { variant = 'rfc4648', padding = false } = input
-    if (variant === 'rfc4648') {
-      function B32ToU8(input: string) {
-        input = input.toUpperCase().replace(/[^A-Z2-7]/g, '')
-        return B32CommonParse(input, RFC4648_B32_MAP)
-      }
-      function U8ToB32(input: Uint8Array) {
-        return B32CommonStringify(input, RFC4648_B32_MAP, padding)
-      }
-      return createCodec(B32ToU8, U8ToB32, 'base32')
+
+  // 创建 B32 变体
+
+  const { variant = 'rfc4648', padding = false } = args
+  if (variant === 'rfc4648') {
+    function B32ToU8(input: string) {
+      input = input.toUpperCase().replace(/[^A-Z2-7]/g, '')
+      return B32CommonParse(input, RFC4648_B32_MAP)
     }
-    else if (variant === 'rfc4648-hex') {
-      const RFC4648_B32_HEX_MAP = '0123456789ABCDEFGHIJKLMNOPQRSTUV'
-      function B32HexToU8(input: string) {
-        input = input.toUpperCase().replace(/[^0-9A-V]/g, '')
-        return B32CommonParse(input, RFC4648_B32_HEX_MAP)
-      }
-      function U8ToB32Hex(input: Uint8Array) {
-        return B32CommonStringify(input, RFC4648_B32_HEX_MAP, padding)
-      }
-      return createCodec(B32HexToU8, U8ToB32Hex, 'base32hex')
+    function U8ToB32(input: Uint8Array) {
+      return B32CommonStringify(input, RFC4648_B32_MAP, padding)
     }
-    else if (variant === 'crockford') {
-      const RFC4648_B32_CROCKFORD_MAP = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
-      function B32CrockfordToU8(input: string) {
-        input = input.toUpperCase().replace(/[IL]/g, '1').replace(/[^0-9A-HJKMNP-TV-Z]/g, '')
-        return B32CommonParse(input, RFC4648_B32_CROCKFORD_MAP)
-      }
-      function U8ToB32Crockford(input: Uint8Array) {
-        return B32CommonStringify(input, RFC4648_B32_CROCKFORD_MAP, padding)
-      }
-      return createCodec(B32CrockfordToU8, U8ToB32Crockford, 'base32-crockford')
+    return createCodec(B32ToU8, U8ToB32, 'base32')
+  }
+  else if (variant === 'rfc4648-hex') {
+    const RFC4648_B32_HEX_MAP = '0123456789ABCDEFGHIJKLMNOPQRSTUV'
+    function B32HexToU8(input: string) {
+      input = input.toUpperCase().replace(/[^0-9A-V]/g, '')
+      return B32CommonParse(input, RFC4648_B32_HEX_MAP)
     }
+    function U8ToB32Hex(input: Uint8Array) {
+      return B32CommonStringify(input, RFC4648_B32_HEX_MAP, padding)
+    }
+    return createCodec(B32HexToU8, U8ToB32Hex, 'base32-hex')
+  }
+  else if (variant === 'crockford') {
+    const RFC4648_B32_CROCKFORD_MAP = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+    function B32CrockfordToU8(input: string) {
+      input = input
+        .toUpperCase()
+        .replace(/O/g, '0')
+        .replace(/[IL]/g, '1')
+        .replace(/[^0-9A-HJKMNP-TV-Z]/g, '')
+      return B32CommonParse(input, RFC4648_B32_CROCKFORD_MAP)
+    }
+    function U8ToB32Crockford(input: Uint8Array) {
+      return B32CommonStringify(input, RFC4648_B32_CROCKFORD_MAP, padding)
+    }
+    return createCodec(B32CrockfordToU8, U8ToB32Crockford, 'base32-crockford')
   }
 }
 /** base32 编解码器 / Codec */
