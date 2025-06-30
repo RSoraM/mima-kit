@@ -1,7 +1,7 @@
 {
   "name": "mima-kit",
   "type": "module",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "packageManager": "pnpm@9.9.0",
   "description": "mima-kit is a cryptographic suite implemented in TypeScript. The goal is to provide an easy-to-use cryptographic library. mima-kit 是一个使用 TypeScript 实现的密码学套件。目标是提供一个简单易用的密码学库。",
   "author": "RSoraM",
