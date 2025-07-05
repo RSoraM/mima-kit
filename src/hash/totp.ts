@@ -8,10 +8,10 @@ import { sha1 } from './sha1'
  *
  * Generate HOTP (HMAC-based One-Time Password)
  *
- * @param {Uint8Array} secret - 密钥
- * @param {Uint8Array} counter - 计数器
- * @param {KeyHash} mac - 带密钥的加密散列算法
- * @returns {U8} - 返回的 HOTP 字节数组
+ * @param {Uint8Array} secret - 密钥 / Secret key
+ * @param {Uint8Array} counter - 计数器 / Counter
+ * @param {KeyHash} mac - 带密钥的加密散列算法 / Keyed Hashing Algorithm (default: HMAC-SHA1)
+ * @returns {U8} - 返回的 HOTP 字节数组 / HOTP byte array
  */
 function hotp(
   secret: Uint8Array,
@@ -29,8 +29,8 @@ interface TOTP {
    *
    * Generate TOTP (Time-based One-Time Password)
    *
-   * @param {Uint8Array} secret - 密钥
-   * @returns {string} - 返回的 TOTP 字符串
+   * @param {Uint8Array} secret - 密钥 / Secret key
+   * @returns {string} - 返回的 TOTP 字符串 / TOTP string
    */
   (secret: Uint8Array): string
 }
@@ -77,15 +77,15 @@ interface TOTPParams {
  *
  * Generate TOTP (Time-based One-Time Password)
  *
- * @param {Uint8Array} secret - 密钥
- * @returns {string} - 返回的 TOTP 字符串
+ * @param {Uint8Array} secret - 密钥 / Secret key
+ * @returns {string} - 返回的 TOTP 字符串 / TOTP string
  */
 export function totp(secret: Uint8Array): string
 /**
  * 创建 TOTP 函数 / Create a TOTP function
  *
- * @param {TOTPParams} params - TOTP 参数
- * @returns {TOTP} - 返回的 TOTP 函数
+ * @param {TOTPParams} params - TOTP 参数 / TOTP parameters
+ * @returns {TOTP} - 返回的 TOTP 函数 / TOTP function
  */
 export function totp(params: TOTPParams): TOTP
 export function totp(
