@@ -27,6 +27,7 @@
     "TurboHash",
     "KangarooTwelve",
     "hmac",
+    "totp",
     "kmac",
     "blockCipher",
     "sm4",
