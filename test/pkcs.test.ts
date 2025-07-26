@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { HEX, UTF8 } from '../src/core/codec'
 import { U8 } from '../src/core/utils'
 import { NO_PAD, ecb } from '../src/core/cipher'
-import { hkdf, pbkdf2, x963kdf } from '../src/core/kdf'
+import { hkdf, pbkdf2, scrypt, x963kdf } from '../src/core/kdf'
 import * as ecParams from '../src/core/ecParams'
 import { rsa } from '../src/cipher/pkcs/rsa'
 import { FpECC, es_xor } from '../src/cipher/pkcs/ecc'
@@ -255,6 +255,13 @@ describe('kdf', () => {
     const salt = UTF8('salt')
     const kdf = pbkdf2(hmac(sha1), salt, 5000)
     expect(kdf(20 << 3, ikm)).toMatchObject(HEX('edf738254821c55da61e6afa20efd0c657cb941c'))
+  })
+  // vector source: https://www.rfc-editor.org/rfc/rfc7914
+  it('scrypt', () => {
+    const ikm = UTF8('pleaseletmein')
+    const salt = UTF8('SodiumChloride')
+    const kdf = scrypt(salt)
+    expect(kdf(64 << 3, ikm)).toMatchObject(HEX('7023bdcb3afd7348461c06cd81fd38ebfda8fbba904f8e3ea9b543f6545da1f2d5432955613f0fcf62d49705242a9af9e61e85dc0d651e40dfcf017b45575887'))
   })
 })
 

@@ -29,12 +29,10 @@ function hash(x: Uint8Array, rounds: number = 20) {
     [W[15], W[12], W[13], W[14]] = QR(W[15], W[12], W[13], W[14])
   }
   // mix
-  const Z = new U8(64)
-  const Z32 = new Uint32Array(Z.buffer)
   for (let i = 0; i < 16; i++) {
-    Z32[i] = X[i] + W[i]
+    W[i] += X[i]
   }
-  return Z
+  return new U8(W.buffer)
 }
 
 function expand(K: Uint8Array, iv: Uint8Array) {
@@ -131,3 +129,5 @@ export const salsa20 = createCipher(
     MAX_IV_SIZE: 8,
   },
 )
+
+export const salsa20Hash = hash

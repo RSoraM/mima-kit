@@ -1,6 +1,8 @@
+import { salsa20Hash } from '../cipher/streamCipher/salsa20'
+import { hmac } from '../hash/hmac'
+import { sha256 } from '../hash/sha256'
 import type { Hash, KeyHash } from './hash'
-import type { U8 } from './utils'
-import { Counter, joinBuffer } from './utils'
+import { Counter, U8, joinBuffer } from './utils'
 
 export interface KDF {
   /**
@@ -68,7 +70,7 @@ export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE))
 export function pbkdf2(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE), iterations = 1000): KDF {
   const d_bit = k_hash.DIGEST_SIZE << 3
   return (k_bit: number, ikm: Uint8Array) => {
-    ikm = joinBuffer(ikm)
+    ikm = U8.from(ikm)
 
     /** Output Keying Material */
     const okm: Uint8Array[] = []
@@ -88,5 +90,55 @@ export function pbkdf2(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE
     }
 
     return joinBuffer(...okm).slice(0, k_bit >> 3)
+  }
+}
+
+/** Scrypt Key Derivation Function, Block Mix */
+function scrypt_bm(r: number, B: Uint8Array) {
+  const Y = new U8(B.length)
+  let X = B.subarray(B.length - 64)
+  for (let i = 0; i < 2 * r; i++) {
+    const start = i << 6
+    const Bi = B.subarray(start, start + 64)
+    const T = X.map((_, j) => Bi[j] ^ X[j])
+    X = salsa20Hash(T, 8)
+    if (i & 1)
+      Y.set(X, ((i >> 1) << 6) + (r << 6))
+    else
+      Y.set(X, (i >> 1) << 6)
+  }
+  return Y
+}
+/** Scrypt Key Derivation Function, ROM Mix */
+function scrypt_rm(r: number, B: Uint8Array, N: number) {
+  const V = new Uint8Array(N * r << 7)
+  let X = U8.from(B)
+  for (let i = 0; i < N; i++) {
+    V.set(X, i * r << 7)
+    X = scrypt_bm(r, X)
+  }
+
+  const Nn = BigInt(N)
+  const start = X.length - 64
+  for (let i = 0; i < N; i++) {
+    const j = Number(X.subarray(start).toBI(true) % Nn)
+    const Vi = V.subarray(j * r << 7, (j + 1) * r << 7)
+    X.forEach((_, k) => X[k] ^= Vi[k])
+    X = scrypt_bm(r, X)
+  }
+
+  return U8.from(X)
+}
+export function scrypt(salt: Uint8Array, N = 16384, r = 8, p = 1): KDF {
+  const kh = hmac(sha256)
+  return (k_bit: number, ikm: Uint8Array) => {
+    const B = pbkdf2(kh, salt.slice(), 1)(r * p << 10, ikm)
+    const T = []
+    for (let i = 0; i < p; i++) {
+      const Bi = B.subarray(i * r << 7, (i + 1) * r << 7)
+      T.push(scrypt_rm(r, Bi, N))
+    }
+
+    return pbkdf2(kh, joinBuffer(...T), 1)(k_bit, ikm)
   }
 }
