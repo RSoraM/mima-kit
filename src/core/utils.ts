@@ -4,18 +4,12 @@ import type { Codec } from './codec'
 
 /** 32-bit 循环左移 */
 export function rotateL32(x: number, n: number) {
-  x >>>= 0
-  n %= 32
-  x = (x << n) | (x >>> (32 - n))
-  return x >>> 0
+  return ((x << n) | (x >>> (32 - n))) >>> 0
 }
 
 /** 32-bit 循环右移 */
 export function rotateR32(x: number, n: number) {
-  x >>>= 0
-  n %= 32
-  x = (x >>> n) | (x << (32 - n))
-  return x >>> 0
+  return (x >>> n) | (x << (32 - n)) >>> 0
 }
 
 /**

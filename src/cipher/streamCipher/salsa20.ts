@@ -3,6 +3,7 @@ import { Counter, KitError, U8, resizeBuffer, rotateL32 } from '../../core/utils
 
 // * Functions
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function QR(a: number, b: number, c: number, d: number) {
   b ^= rotateL32(a + d, 7)
   c ^= rotateL32(b + a, 9)
@@ -18,15 +19,47 @@ function hash(x: Uint8Array, rounds: number = 20) {
   // main loop
   for (let i = 0; i < rounds; i += 2) {
     // ODD Rounds
-    [W[0], W[4], W[8], W[12]] = QR(W[0], W[4], W[8], W[12]);
-    [W[5], W[9], W[13], W[1]] = QR(W[5], W[9], W[13], W[1]);
-    [W[10], W[14], W[2], W[6]] = QR(W[10], W[14], W[2], W[6]);
-    [W[15], W[3], W[7], W[11]] = QR(W[15], W[3], W[7], W[11]);
+    // [W[0], W[4], W[8], W[12]] = QR(W[0], W[4], W[8], W[12]);
+    // [W[5], W[9], W[13], W[1]] = QR(W[5], W[9], W[13], W[1]);
+    // [W[10], W[14], W[2], W[6]] = QR(W[10], W[14], W[2], W[6]);
+    // [W[15], W[3], W[7], W[11]] = QR(W[15], W[3], W[7], W[11]);
     // EVEN Rounds
-    [W[0], W[1], W[2], W[3]] = QR(W[0], W[1], W[2], W[3]);
-    [W[5], W[6], W[7], W[4]] = QR(W[5], W[6], W[7], W[4]);
-    [W[10], W[11], W[8], W[9]] = QR(W[10], W[11], W[8], W[9]);
-    [W[15], W[12], W[13], W[14]] = QR(W[15], W[12], W[13], W[14])
+    // [W[0], W[1], W[2], W[3]] = QR(W[0], W[1], W[2], W[3]);
+    // [W[5], W[6], W[7], W[4]] = QR(W[5], W[6], W[7], W[4]);
+    // [W[10], W[11], W[8], W[9]] = QR(W[10], W[11], W[8], W[9]);
+    // [W[15], W[12], W[13], W[14]] = QR(W[15], W[12], W[13], W[14])
+    W[4] ^= rotateL32(W[0] + W[12], 7)
+    W[8] ^= rotateL32(W[4] + W[0], 9)
+    W[12] ^= rotateL32(W[8] + W[4], 13)
+    W[0] ^= rotateL32(W[12] + W[8], 18)
+    W[9] ^= rotateL32(W[5] + W[1], 7)
+    W[13] ^= rotateL32(W[9] + W[5], 9)
+    W[1] ^= rotateL32(W[13] + W[9], 13)
+    W[5] ^= rotateL32(W[1] + W[13], 18)
+    W[14] ^= rotateL32(W[10] + W[6], 7)
+    W[2] ^= rotateL32(W[14] + W[10], 9)
+    W[6] ^= rotateL32(W[2] + W[14], 13)
+    W[10] ^= rotateL32(W[6] + W[2], 18)
+    W[3] ^= rotateL32(W[15] + W[11], 7)
+    W[7] ^= rotateL32(W[3] + W[15], 9)
+    W[11] ^= rotateL32(W[7] + W[3], 13)
+    W[15] ^= rotateL32(W[11] + W[7], 18)
+    W[1] ^= rotateL32(W[0] + W[3], 7)
+    W[2] ^= rotateL32(W[1] + W[0], 9)
+    W[3] ^= rotateL32(W[2] + W[1], 13)
+    W[0] ^= rotateL32(W[3] + W[2], 18)
+    W[6] ^= rotateL32(W[5] + W[4], 7)
+    W[7] ^= rotateL32(W[6] + W[5], 9)
+    W[4] ^= rotateL32(W[7] + W[6], 13)
+    W[5] ^= rotateL32(W[4] + W[7], 18)
+    W[11] ^= rotateL32(W[10] + W[9], 7)
+    W[8] ^= rotateL32(W[11] + W[10], 9)
+    W[9] ^= rotateL32(W[8] + W[11], 13)
+    W[10] ^= rotateL32(W[9] + W[8], 18)
+    W[12] ^= rotateL32(W[15] + W[14], 7)
+    W[13] ^= rotateL32(W[12] + W[15], 9)
+    W[14] ^= rotateL32(W[13] + W[12], 13)
+    W[15] ^= rotateL32(W[14] + W[13], 18)
   }
   // mix
   for (let i = 0; i < 16; i++) {
