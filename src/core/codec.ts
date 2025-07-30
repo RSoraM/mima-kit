@@ -162,7 +162,6 @@ export const B64URL = createCodec(B64URLToU8, U8ToB64URL, 'base64url')
  * B64CommonParse 可以将 B64 或者 B64url 字符串解析为 Uint8Array
  *
  * @param {string} input - B64 或 B64url 字符串
- * @param {boolean} url - 是否是 B64url 字符串
  */
 function B64CommonParse(input: string) {
   const map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'

@@ -207,13 +207,6 @@ export interface FpECCrypto {
  * 定义 ECIES 配置
  *
  * Define ECIES Configuration
- *
- * @param {IVBlockCipher} [config.cipher] - 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM)
- * @param {KeyHash} [config.mac] - 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256)
- * @param {KDF} [config.kdf] - 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256)
- * @param {Uint8Array} [config.S1] - 附加数据1 / Additional Data 1 (default: empty)
- * @param {Uint8Array} [config.S2] - 附加数据2 / Additional Data 2 (default: empty)
- * @param {Uint8Array} [config.iv] - 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE))
  */
 export function defineECIES(config?: ECIESConfig) {
   config = config ?? {}

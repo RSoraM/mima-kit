@@ -230,10 +230,6 @@ export interface XXTEAConfig {
  * 纠正块 TEA (XXTEA) 分组密码算法
  *
  * Corrected Block TEA (XXTEA) block cipher algorithm
- *
- * @param {Padding} [config.padding] - 填充方式 / Padding method (default: PKCS7)
- * @param {number} [config.round] - 轮数 / Rounds (default: undefined)
- * @param {number} [config.BLOCK_SIZE] - 分组大小 / Block size (default: 16)
  */
 export function xxtea(config?: XXTEAConfig) {
   const {
