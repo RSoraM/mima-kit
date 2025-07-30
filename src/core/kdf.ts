@@ -2,15 +2,15 @@ import { salsa20Hash } from '../cipher/streamCipher/salsa20'
 import { hmac } from '../hash/hmac'
 import { sha256 } from '../hash/sha256'
 import type { Hash, KeyHash } from './hash'
-import { Counter, U8, joinBuffer } from './utils'
+import { Counter, KitError, U8, joinBuffer } from './utils'
 
 export interface KDF {
   /**
-   * @param {number} k_bit - 期望的密钥长度 / output keying material length
+   * @param {number} k_byte - 期望的密钥长度 / output keying material length
    * @param {Uint8Array} ikm - 输入密钥材料 / input keying material
-   * @param {Uint8Array} info - 附加信息 / optional context and application specific information
+   * @param {Uint8Array} salt - 盐 / salt value
    */
-  (k_bit: number, ikm: Uint8Array, info?: Uint8Array): U8
+  (k_byte: number, ikm: Uint8Array, salt?: Uint8Array): U8
 }
 
 /**
@@ -18,20 +18,20 @@ export interface KDF {
  *
  * ANSI-X9.63 密钥派生函数
  */
-export function x963kdf(hash: Hash): KDF {
-  const d_bit = hash.DIGEST_SIZE << 3
-  return (k_bit: number, ikm: Uint8Array, info = new Uint8Array(0)) => {
+export function x963kdf(hash: Hash, info = new Uint8Array(0)): KDF {
+  const d_byte = hash.DIGEST_SIZE
+  return (k_byte: number, ikm: Uint8Array) => {
     /** Output Keying Material */
     const okm: Uint8Array[] = []
 
     const counter = new Counter([0, 0, 0, 1])
-    for (let okm_bit = 0; okm_bit < k_bit; okm_bit += d_bit) {
+    for (let okm_byte = 0; okm_byte < k_byte; okm_byte += d_byte) {
       const data = joinBuffer(ikm, counter, info)
       okm.push(hash(data))
       counter.inc()
     }
 
-    return joinBuffer(...okm).slice(0, k_bit >> 3)
+    return joinBuffer(...okm).slice(0, k_byte)
   }
 }
 
@@ -40,9 +40,9 @@ export function x963kdf(hash: Hash): KDF {
  *
  * 基于 HMAC 的密钥派生函数 (HKDF), 请在外部组合 `hmac` 和 `hash` 函数, 以控制在函数内部调用 `hmac` 时的行为.
  */
-export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE)): KDF {
-  const d_bit = k_hash.DIGEST_SIZE << 3
-  return (k_bit: number, ikm: Uint8Array, info = new Uint8Array(0)) => {
+export function hkdf(k_hash: KeyHash, info = new Uint8Array(0)): KDF {
+  const d_byte = k_hash.DIGEST_SIZE
+  return (k_byte: number, ikm: Uint8Array, salt = new Uint8Array(0)) => {
     /** Pseudo-Random Key */
     const prk = k_hash(salt, ikm)
     /** Output Keying Material */
@@ -50,13 +50,13 @@ export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE))
 
     const counter = new Uint8Array([1])
     let prv = new Uint8Array(0)
-    for (let okm_bit = 0; okm_bit < k_bit; okm_bit += d_bit) {
+    for (let okm_byte = 0; okm_byte < k_byte; okm_byte += d_byte) {
       prv = k_hash(prk, joinBuffer(prv, info, counter))
       okm.push(prv)
       counter[0]++
     }
 
-    return joinBuffer(...okm).slice(0, k_bit >> 3)
+    return joinBuffer(...okm).slice(0, k_byte)
   }
 }
 
@@ -67,9 +67,9 @@ export function hkdf(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE))
  * PBKDF2 密码基础密钥派生函数 (PBKDF2), 请在外部组合 `hmac` 和 `hash` 函数, 以控制在函数内部调用 `hmac` 时的行为.
  * 同时, PBKDF2 不使用 `info` 参数, 如果提供 `info`, 将被忽略.
  */
-export function pbkdf2(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE), iterations = 1000): KDF {
-  const d_bit = k_hash.DIGEST_SIZE << 3
-  return (k_bit: number, ikm: Uint8Array) => {
+export function pbkdf2(k_hash: KeyHash, iterations = 1000): KDF {
+  const d_byte = k_hash.DIGEST_SIZE
+  return (k_byte: number, ikm: Uint8Array, salt = new Uint8Array(0)) => {
     ikm = U8.from(ikm)
 
     /** Output Keying Material */
@@ -78,7 +78,7 @@ export function pbkdf2(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE
     let T: Uint8Array
     let U: Uint8Array
     const counter = new Counter([0, 0, 0, 1])
-    for (let okm_bit = 0; okm_bit < k_bit; okm_bit += d_bit) {
+    for (let okm_byte = 0; okm_byte < k_byte; okm_byte += d_byte) {
       T = new Uint8Array(k_hash.DIGEST_SIZE)
       U = joinBuffer(salt, counter)
       for (let i = 0; i < iterations; i++) {
@@ -89,7 +89,7 @@ export function pbkdf2(k_hash: KeyHash, salt = new Uint8Array(k_hash.DIGEST_SIZE
       counter.inc()
     }
 
-    return joinBuffer(...okm).slice(0, k_bit >> 3)
+    return joinBuffer(...okm).slice(0, k_byte)
   }
 }
 
@@ -129,16 +129,25 @@ function scrypt_rm(r: number, B: Uint8Array, N: number) {
 
   return U8.from(X)
 }
-export function scrypt(salt: Uint8Array, N = 16384, r = 8, p = 1): KDF {
+export function scrypt(N = 16384, r = 8, p = 1): KDF {
+  if (N === 0 || (N & (N - 1)) !== 0)
+    throw new KitError(`N must be a power of 2`)
+  const MAX_N = (0xFFFFFF / r) >>> 0
+  const MAX_r = (0xFFFFFF / p) >>> 0
+  if (N > MAX_N)
+    throw new KitError(`N too large, N <= ${MAX_N}`)
+  if (r > MAX_r)
+    throw new KitError(`r too large, r <= ${MAX_r}`)
+
   const kh = hmac(sha256)
-  return (k_bit: number, ikm: Uint8Array) => {
-    const B = pbkdf2(kh, salt.slice(), 1)(r * p << 10, ikm)
+  return (k_byte: number, ikm: Uint8Array, salt = new Uint8Array(0)) => {
+    const B = pbkdf2(kh, 1)(r * p << 10, ikm, salt.slice())
     const T = []
     for (let i = 0; i < p; i++) {
       const Bi = B.subarray(i * r << 7, (i + 1) * r << 7)
       T.push(scrypt_rm(r, Bi, N))
     }
 
-    return pbkdf2(kh, joinBuffer(...T), 1)(k_bit, ikm)
+    return pbkdf2(kh, 1)(k_byte, ikm, joinBuffer(...T))
   }
 }

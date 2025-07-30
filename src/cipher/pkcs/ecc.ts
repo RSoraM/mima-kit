@@ -482,7 +482,7 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
         deriveShare = ecdh(s_key, p_key)
       } while (deriveShare.isInfinity)
       const Z = deriveShare.x
-      const K = kdf((cipher.KEY_SIZE + mac.KEY_SIZE) << 3, joinBuffer(Z, S1))
+      const K = kdf((cipher.KEY_SIZE + mac.KEY_SIZE), joinBuffer(Z, S1))
       const KE = K.slice(0, cipher.KEY_SIZE)
       const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + mac.KEY_SIZE)
       const _cipher = cipher(KE, iv)
@@ -499,7 +499,7 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
         throw new KitError('ECIES Decryption failed')
       }
       const Z = deriveShare.x
-      const K = kdf((cipher.KEY_SIZE + mac.KEY_SIZE) << 3, joinBuffer(Z, S1))
+      const K = kdf((cipher.KEY_SIZE + mac.KEY_SIZE), joinBuffer(Z, S1))
       const KE = K.slice(0, cipher.KEY_SIZE)
       const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + mac.KEY_SIZE)
       const _cipher = cipher(KE, iv)

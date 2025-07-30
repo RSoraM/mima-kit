@@ -268,7 +268,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
       const x2 = U8.fromBI(x)
       const y2 = U8.fromBI(y)
       const ikm = joinBuffer(x2, y2)
-      const C2 = kdf(M.length << 3, ikm)
+      const C2 = kdf(M.length, ikm)
       C2.forEach((_, i) => C2[i] ^= M[i])
       const C3 = hash(joinBuffer(x2, M, y2))
       if (order === 'c1c2c3') {
@@ -291,7 +291,7 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
       const x2 = U8.fromBI(x)
       const y2 = U8.fromBI(y)
       const ikm = joinBuffer(x2, y2)
-      const t = kdf(C2_Length << 3, ikm)
+      const t = kdf(C2_Length, ikm)
       let C2: Uint8Array
       let C3: Uint8Array
       if (order === 'c1c2c3') {
