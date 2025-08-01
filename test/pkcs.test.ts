@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { HEX, UTF8 } from '../src/core/codec'
-import { U8 } from '../src/core/utils'
-import { NO_PAD, ecb } from '../src/core/cipher'
-import { hkdf, pbkdf2, scrypt, x963kdf } from '../src/core/kdf'
-import * as ecParams from '../src/core/ecParams'
+import { es_xor, FpECC } from '../src/cipher/pkcs/ecc'
+import * as pkcs1 from '../src/cipher/pkcs/pkcs1'
 import { rsa } from '../src/cipher/pkcs/rsa'
-import { FpECC, es_xor } from '../src/cipher/pkcs/ecc'
+import { sm2 } from '../src/cipher/pkcs/sm2'
+import { x448, x25519 } from '../src/cipher/pkcs/x25519_448'
+import { ecb, NO_PAD } from '../src/core/cipher'
+import { HEX, UTF8 } from '../src/core/codec'
+import * as ecParams from '../src/core/ecParams'
+import { hkdf, pbkdf2, scrypt, x963kdf } from '../src/core/kdf'
+import { U8 } from '../src/core/utils'
 import { hmac } from '../src/hash/hmac'
 import { sha1 } from '../src/hash/sha1'
 import { sha256 } from '../src/hash/sha256'
-import * as pkcs1 from '../src/cipher/pkcs/pkcs1'
-import { sm2 } from '../src/cipher/pkcs/sm2'
 import { sm3 } from '../src/hash/sm3'
-import { x25519, x448 } from '../src/cipher/pkcs/x25519_448'
 
 const { pkcs1_es_1_5, pkcs1_es_oaep } = pkcs1
 const { pkcs1_ssa_1_5, pkcs1_ssa_pss } = pkcs1
@@ -257,7 +257,7 @@ describe('kdf', () => {
     expect(kdf(20, ikm, salt)).toMatchObject(HEX('edf738254821c55da61e6afa20efd0c657cb941c'))
   })
   // vector source: https://www.rfc-editor.org/rfc/rfc7914
-  it.skip('scrypt', () => {
+  it('scrypt', () => {
     const ikm = UTF8('pleaseletmein')
     const salt = UTF8('SodiumChloride')
     const kdf = scrypt()

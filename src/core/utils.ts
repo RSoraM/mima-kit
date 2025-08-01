@@ -560,10 +560,21 @@ export class Counter extends U8 {
 
 // * Other utility functions
 
-export function wrap<T = any>(...args: any[]): T {
-  if (args.length === 0) {
-    return {} as T
+export function trying<T>(
+  fn: () => T,
+): [Error, null] | [null, T] {
+  try {
+    const result = fn()
+    return [null, result]
   }
+  catch (error) {
+    return error instanceof Error
+    ? [error, null]
+    : [new KitError('Unknown error'), null]
+  }
+}
+
+export function wrap<T = any>(...args: any[]): T {
   // @ts-expect-error Object assign
   return Object.assign(...args)
 }

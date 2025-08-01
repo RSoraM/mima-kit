@@ -1,4 +1,4 @@
-import { KitError, U8, wrap } from './utils'
+import { KitError, trying, U8, wrap } from './utils'
 
 /** 字符编解码器 / String Codec */
 export interface Codec {
@@ -24,12 +24,9 @@ function createCodec(
   function codec(input: string): U8
   function codec(input: Uint8Array): string
   function codec(input: string | Uint8Array) {
-    if (typeof input === 'string') {
-      return parse(input)
-    }
-    else {
-      return stringify(input)
-    }
+    return typeof input === 'string'
+      ? parse(input)
+      : stringify(input)
   }
   return wrap(codec, { FORMAT: format })
 }
@@ -39,94 +36,98 @@ function UTF8ToU8(input: string) {
    * 尝试使用 TextEncoder 编码
    * 否则使用自定义编码器
    */
-  try {
-    const buffer = new TextEncoder().encode(input)
-    return U8.from(buffer)
-  }
+  const [error, result] = trying(() => new TextEncoder().encode(input))
+  if (!error) { return U8.from(result) }
+
   /** provided by xingluo233 */
-  catch {
-    const buffer: number[] = []
-    for (let i = 0; i < input.length; i++) {
-      const char_code = input.codePointAt(i)
-      if (char_code === undefined) {
-        continue
-      }
-      else if (char_code < 0x80) {
-        buffer.push(char_code)
-      }
-      else if (char_code < 0x800) {
-        buffer.push(0xC0 | (char_code >> 6))
-        buffer.push(0x80 | (char_code & 0x3F))
-      }
-      else if (char_code < 0x10000) {
-        buffer.push(0xE0 | (char_code >> 12))
-        buffer.push(0x80 | ((char_code >> 6) & 0x3F))
-        buffer.push(0x80 | (char_code & 0x3F))
-      }
-      else if (char_code < 0x110000) {
-        buffer.push(0xF0 | (char_code >> 18))
-        buffer.push(0x80 | ((char_code >> 12) & 0x3F))
-        buffer.push(0x80 | ((char_code >> 6) & 0x3F))
-        buffer.push(0x80 | (char_code & 0x3F))
-        i++
-      }
+  const buffer: number[] = []
+  for (let i = 0; i < input.length; i++) {
+    const char_code = input.codePointAt(i)
+    if (char_code === undefined) {
+      continue
     }
-    return U8.from(buffer)
+    else if (char_code < 0x80) {
+      buffer.push(char_code)
+    }
+    else if (char_code < 0x800) {
+      buffer.push(0xC0 | (char_code >> 6))
+      buffer.push(0x80 | (char_code & 0x3F))
+    }
+    else if (char_code < 0x10000) {
+      buffer.push(0xE0 | (char_code >> 12))
+      buffer.push(0x80 | ((char_code >> 6) & 0x3F))
+      buffer.push(0x80 | (char_code & 0x3F))
+    }
+    else if (char_code < 0x110000) {
+      buffer.push(0xF0 | (char_code >> 18))
+      buffer.push(0x80 | ((char_code >> 12) & 0x3F))
+      buffer.push(0x80 | ((char_code >> 6) & 0x3F))
+      buffer.push(0x80 | (char_code & 0x3F))
+      i++
+    }
   }
+  return U8.from(buffer)
 }
 function U8ToUTF8(input: Uint8Array) {
   /**
    * 尝试使用 TextDecoder 解码
    * 否则使用自定义解码器
    */
-  try {
-    return new TextDecoder().decode(input)
-  }
+  const [error, result] = trying(() => new TextDecoder().decode(input))
+  if (!error) { return result }
+
   /** provided by xingluo233 */
-  catch {
-    const str = []
-    let i = 0
-    while (i < input.length) {
-      const byte1 = input[i++]
-      if (byte1 < 0x80) {
-        str.push(String.fromCharCode(byte1))
-      }
-      else if (byte1 >= 0xC0 && byte1 < 0xE0) {
-        const byte2 = input[i++]
-        const char_code = ((byte1 & 0x1F) << 6) | (byte2 & 0x3F)
-        str.push(String.fromCharCode(char_code))
-      }
-      else if (byte1 >= 0xE0 && byte1 < 0xF0) {
-        const byte2 = input[i++]
-        const byte3 = input[i++]
-        const char_code = ((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F)
-        str.push(String.fromCharCode(char_code))
-      }
-      else if (byte1 >= 0xF0 && byte1 < 0xF8) {
-        const byte2 = input[i++]
-        const byte3 = input[i++]
-        const byte4 = input[i++]
-        const char_code = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F)
-        str.push(String.fromCodePoint(char_code))
-      }
-      else {
-        console.warn('Included an invalid UTF-8 byte')
-      }
+  const str = []
+  let i = 0
+  while (i < input.length) {
+    const byte1 = input[i++]
+    if (byte1 < 0x80) {
+      str.push(String.fromCharCode(byte1))
     }
-    return str.join('')
+    else if (byte1 >= 0xC0 && byte1 < 0xE0) {
+      const byte2 = input[i++]
+      const char_code = ((byte1 & 0x1F) << 6) | (byte2 & 0x3F)
+      str.push(String.fromCharCode(char_code))
+    }
+    else if (byte1 >= 0xE0 && byte1 < 0xF0) {
+      const byte2 = input[i++]
+      const byte3 = input[i++]
+      const char_code = ((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F)
+      str.push(String.fromCharCode(char_code))
+    }
+    else if (byte1 >= 0xF0 && byte1 < 0xF8) {
+      const byte2 = input[i++]
+      const byte3 = input[i++]
+      const byte4 = input[i++]
+      const char_code = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F)
+      str.push(String.fromCodePoint(char_code))
+    }
+    else {
+      console.warn('Included an invalid UTF-8 byte')
+    }
   }
+  return str.join('')
 }
 /** UTF-8 编解码器 / Codec */
 export const UTF8 = createCodec(UTF8ToU8, U8ToUTF8, 'utf-8')
 
 function HEXToU8(input: string) {
+  // eslint-disable-next-line node/prefer-global/buffer
+  const [error, result] = trying(() => Buffer.from(
+    input.replace(/[^0-9a-f]/gi, ''),
+    'hex',
+  ))
+  if (!error) { return U8.from(result) }
+
   const arr = input.match(/[\da-f]{2}/gi)
-  if (arr == null) {
-    return new U8()
-  }
+  if (arr == null) { return new U8() }
   return new U8(arr.map(h => Number.parseInt(h, 16)))
 }
 function U8ToHEX(input: Uint8Array) {
+  // eslint-disable-next-line node/prefer-global/buffer
+  const [error, str] = trying(() => Buffer.from(input).toString('hex'))
+  if (!error) { return str }
+
   let result = ''
   for (let i = 0; i < input.length; i++) {
     result += input[i].toString(16).padStart(2, '0')
@@ -137,18 +138,40 @@ function U8ToHEX(input: Uint8Array) {
 export const HEX = createCodec(HEXToU8, U8ToHEX, 'hex')
 
 function B64ToU8(input: string) {
+  // eslint-disable-next-line node/prefer-global/buffer
+  const [error, result] = trying(() => Buffer.from(
+    input.replace(/[^A-Z0-9+/]/gi, ''),
+    'base64',
+  ))
+  if (!error) { return U8.from(result) }
+
   return B64CommonParse(input)
 }
 function U8ToB64(input: Uint8Array) {
+  // eslint-disable-next-line node/prefer-global/buffer
+  const [error, str] = trying(() => Buffer.from(input).toString('base64'))
+  if (!error) { return str }
+
   return B64CommonStringify(input, false)
 }
 /** base64 编解码器 / Codec */
 export const B64 = createCodec(B64ToU8, U8ToB64, 'base64')
 
 function B64URLToU8(input: string) {
+  // eslint-disable-next-line node/prefer-global/buffer
+  const [error, result] = trying(() => Buffer.from(
+    input.replace(/[^\w\-]/g, ''),
+    'base64url',
+  ))
+  if (!error) { return U8.from(result) }
+
   return B64CommonParse(input)
 }
 function U8ToB64URL(input: Uint8Array) {
+  // eslint-disable-next-line node/prefer-global/buffer
+  const [error, str] = trying(() => Buffer.from(input).toString('base64url'))
+  if (!error) { return str }
+
   return B64(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 /** base64url 编解码器 / Codec */
@@ -429,9 +452,7 @@ function CSVToU8(input: string) {
   }
 
   const coreValues = input.match(/(\S){2}/g)
-  if (coreValues == null) {
-    return new U8()
-  }
+  if (coreValues == null) { return new U8() }
 
   let h = 0
   let l = 0
@@ -450,16 +471,10 @@ function CSVToU8(input: string) {
         ? 10 + from(coreValues[i])
         : 6 + from(coreValues[i])
     }
-    if (isHigh) {
-      h = nibble
-    }
-    else {
-      l = nibble
-    }
+    if (isHigh) { h = nibble }
+    else { l = nibble }
 
-    if (!isHigh) {
-      result.push(((h << 4) | l) & 0xFF)
-    }
+    if (!isHigh) { result.push(((h << 4) | l) & 0xFF) }
     count++
   }
 
@@ -473,25 +488,13 @@ function U8ToCSV(input: Uint8Array) {
   input.forEach((byte) => {
     const h = (byte >> 4) & 0xF
     const l = byte & 0xF
-    if (h < 10) {
-      result += map[h]
-    }
-    else if (rand()) {
-      result += map[11] + map[h - 6]
-    }
-    else {
-      result += map[11] + map[h - 6]
-    }
+    if (h < 10) { result += map[h] }
+    else if (rand()) { result += map[11] + map[h - 6] }
+    else { result += map[11] + map[h - 6] }
 
-    if (l < 10) {
-      result += map[l]
-    }
-    else if (rand()) {
-      result += map[10] + map[l - 10]
-    }
-    else {
-      result += map[11] + map[l - 6]
-    }
+    if (l < 10) { result += map[l] }
+    else if (rand()) { result += map[10] + map[l - 10] }
+    else { result += map[11] + map[l - 6] }
   })
 
   return result
