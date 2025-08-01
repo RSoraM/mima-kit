@@ -12,6 +12,7 @@ export default antfu(
   {
     rules: {
       // overrides
+      'style/no-multi-spaces': 'off',
       'ts/explicit-function-return-type': 'off',
       'style/indent': 'off',
       'style/max-statements-per-line': 'off',
