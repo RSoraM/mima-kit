@@ -433,6 +433,50 @@ export class U8 extends Uint8Array {
   }
 }
 
+type TypedArray
+  = Uint8Array  | Int8Array | Uint8ClampedArray
+  | Uint16Array | Int16Array
+  | Uint32Array | Int32Array
+
+/**
+ * Convert TypedArray to Uint8Array
+ *
+ * 将 TypedArray 转换为 Uint8Array
+ */
+export function u8(source: TypedArray): Uint8Array {
+  return new Uint8Array(
+    source.buffer,
+    source.byteOffset,
+    source.byteLength,
+  )
+}
+
+/**
+ * Convert TypedArray to Uint16Array
+ *
+ * 将 TypedArray 转换为 Uint16Array
+ */
+export function u16(source: TypedArray): Uint16Array {
+  return new Uint16Array(
+    source.buffer,
+    source.byteOffset,
+    source.byteLength >> 1,
+  )
+}
+
+/**
+ * Convert TypedArray to Uint32Array
+ *
+ * 将 TypedArray 转换为 Uint32Array
+ */
+export function u32(source: TypedArray): Uint32Array {
+  return new Uint32Array(
+    source.buffer,
+    source.byteOffset,
+    source.byteLength >> 2,
+  )
+}
+
 /**
  * Merging multiple ArrayBuffers
  *
