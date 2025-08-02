@@ -1,4 +1,4 @@
-import { Counter, KitError, U8, joinBuffer, wrap } from './utils'
+import { Counter, joinBuffer, KitError, U8, wrap } from './utils'
 
 // * 公共接口
 

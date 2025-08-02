@@ -1,5 +1,5 @@
 import type { Padding } from '../../core/cipher'
-import { PKCS7_PAD, createCipher } from '../../core/cipher'
+import { createCipher, PKCS7_PAD } from '../../core/cipher'
 import { KitError, U8 } from '../../core/utils'
 
 // * Constants

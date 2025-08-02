@@ -1,6 +1,6 @@
 import { Fp } from '../../core/ec'
-import { curve25519, curve448 } from '../../core/ecParams'
-import { KitError, U8, genRandomBI, getBIBits } from '../../core/utils'
+import { curve448, curve25519 } from '../../core/ecParams'
+import { genRandomBI, getBIBits, KitError, U8 } from '../../core/utils'
 
 // * Interfaces
 

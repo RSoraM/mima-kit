@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { Counter, KitError, U8, resizeBuffer, rotateL32, u32 } from '../../core/utils'
+import { Counter, KitError, resizeBuffer, rotateL32, U8, u32 } from '../../core/utils'
 
 // * Functions
 

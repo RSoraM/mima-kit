@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { HEX, UTF8 } from '../src/core/codec'
+import { joinBuffer } from '../src/core/utils'
+import { hmac } from '../src/hash/hmac'
+import { kt128, kt256 } from '../src/hash/kangaroo12'
 import { md5 } from '../src/hash/md5'
 import { sha1 } from '../src/hash/sha1'
-import { sha224, sha256 } from '../src/hash/sha256'
-import { sha384, sha512, sha512t } from '../src/hash/sha512'
 import * as sha3 from '../src/hash/sha3'
 import * as sha3Derived from '../src/hash/sha3Derived'
+import { sha224, sha256 } from '../src/hash/sha256'
+import { sha384, sha512, sha512t } from '../src/hash/sha512'
 import { sm3 } from '../src/hash/sm3'
-import { hmac } from '../src/hash/hmac'
 import { totp } from '../src/hash/totp'
 import { turboshake128, turboshake256 } from '../src/hash/turboSHAKE'
-import { kt128, kt256 } from '../src/hash/kangaroo12'
-import { joinBuffer } from '../src/core/utils'
 
 const { sha3_224, sha3_256 } = sha3
 const { sha3_384, sha3_512 } = sha3

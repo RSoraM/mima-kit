@@ -1,6 +1,6 @@
 import type { RandomPrimeGenerator } from '../../core/prime'
 import { genPrime } from '../../core/prime'
-import { KitError, U8, gcd, lcm, mod, modInverse, modPow } from '../../core/utils'
+import { gcd, KitError, lcm, mod, modInverse, modPow, U8 } from '../../core/utils'
 
 // * Interfaces
 

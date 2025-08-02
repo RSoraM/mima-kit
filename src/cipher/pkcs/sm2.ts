@@ -1,10 +1,10 @@
-import { sm2p256v1 } from '../../core/ecParams'
 import type { Hash } from '../../core/hash'
 import type { KDF } from '../../core/kdf'
-import { x963kdf } from '../../core/kdf'
-import { sm3 } from '../../hash/sm3'
-import { KitError, U8, genBitMask, getBIBits, joinBuffer, mod, modInverse } from '../../core/utils'
 import type { ECKeyPair, ECPrivateKey, ECPublicKey, FpECCrypto } from './ecc'
+import { sm2p256v1 } from '../../core/ecParams'
+import { x963kdf } from '../../core/kdf'
+import { genBitMask, getBIBits, joinBuffer, KitError, mod, modInverse, U8 } from '../../core/utils'
+import { sm3 } from '../../hash/sm3'
 import { FpECC } from './ecc'
 
 export interface SM2DI {

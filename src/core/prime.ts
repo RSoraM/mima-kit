@@ -1,4 +1,4 @@
-import { U8, modPow } from './utils'
+import { modPow, U8 } from './utils'
 
 // * Interfaces
 

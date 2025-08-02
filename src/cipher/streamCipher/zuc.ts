@@ -1,4 +1,4 @@
-import { KitError, U8, rotateL32, wrap } from '../../core/utils'
+import { KitError, rotateL32, U8, wrap } from '../../core/utils'
 
 // * Constants
 
