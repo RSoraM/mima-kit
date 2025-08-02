@@ -1,4 +1,4 @@
-import { KitError, U8, genBitMask, joinBuffer, rotateL } from '../core/utils'
+import { genBitMask, joinBuffer, KitError, rotateL, U8 } from '../core/utils'
 
 // * Constants
 

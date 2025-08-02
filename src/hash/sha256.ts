@@ -1,5 +1,5 @@
 import { createHash } from '../core/hash'
-import { U8, rotateR32 } from '../core/utils'
+import { rotateR32, U8 } from '../core/utils'
 
 // * Constants
 

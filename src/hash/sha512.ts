@@ -1,6 +1,6 @@
 import { UTF8 } from '../core/codec'
 import { createHash } from '../core/hash'
-import { KitError, U8, genBitMask, rotateR } from '../core/utils'
+import { genBitMask, KitError, rotateR, U8 } from '../core/utils'
 
 // * Constants
 

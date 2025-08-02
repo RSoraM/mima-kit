@@ -1,6 +1,6 @@
+import type { SpongePadding } from './keccak1600'
 import { createHash } from '../core/hash'
 import { KitError } from '../core/utils'
-import type { SpongePadding } from './keccak1600'
 import { keccak_p_1600, sponge_1600 } from './keccak1600'
 
 /**
