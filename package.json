@@ -54,7 +54,8 @@
     "ecies",
     "X9.63 KDF",
     "HKDF",
-    "PBKDF2"
+    "PBKDF2",
+    "scrypt"
   ],
   "sideEffects": false,
   "exports": {

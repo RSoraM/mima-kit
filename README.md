@@ -149,6 +149,7 @@ npm install mima-kit
     <li><a href="#x963kdf">X9.63KDF</a></li>
     <li><a href="#hkdf">HKDF</a></li>
     <li><a href="#pbkdf2">PBKDF2</a></li>
+    <li><a href="#scrypt">Scrypt</a></li>
   </ul>
   <li><a href="#椭圆曲线列表">椭圆曲线列表</a></li>
 </ul>
@@ -1724,38 +1725,108 @@ const secretB = x25519.dh(keyB, keyA)
 ```typescript
 interface KDF {
   /**
-   * @param {number} k_bit - 期望的密钥长度 / output keying material length
+   * @param {number} k_byte - 期望的密钥长度 / output keying material length
    * @param {Uint8Array} ikm - 输入密钥材料 / input keying material
-   * @param {Uint8Array} info - 附加信息 / optional context and application specific information
+   * @param {Uint8Array} salt - 盐 / salt value
    */
-  (k_bit: number, ikm: Uint8Array, info?: Uint8Array): U8
+  (k_byte: number, ikm: Uint8Array, salt?: Uint8Array): U8
 }
 ```
 
 ### X9.63KDF
 
-`X9.63KDF` 是 `ANSI-X9.63` 标准中的一个密钥派生函数。`X9.63KDF` 需要组合 `Hash` 函数。
+`X9.63KDF` 是 `ANSI-X9.63` 标准中的一个密钥派生函数。
+`X9.63KDF` 需要组合 `Hash` 函数和一个可选的 `info`。
+
+对 `X9.63KDF` 输入的 `salt` 将被忽略。
 
 ```typescript
-const kdf = x963kdf(sha256)
+const info = new U8(0)
+const kdf = x963kdf(sha256, info)
+
+const k_byte = 64
+const ikm = new U8(32)
+const salt = new U8(32) // ignore
+
+const k0 = kdf(k_byte, ikm, salt)
+const k1 = kdf(k_byte, ikm)
+k0 === k1 // true
 ```
 
 ### HKDF
 
-`HKDF` 是 `RFC 5869` 标准中的一个密钥派生函数。`HKDF` 需要组合 `KeyHash` 函数和一个可选的 `salt`
+`HKDF` 是 `RFC 5869` 标准中的一个密钥派生函数。`HKDF` 需要组合 `KeyHash` 函数和一个可选的 `info`。
 
 ```typescript
 const mac = hmac(sha256)
-const kdf = hkdf(mac)
+const info = new U8(0)
+const kdf = hkdf(mac, info)
 ```
 
 ### PBKDF2
 
-`PBKDF2` 是 `PKCS#5` 标准中的一个密钥派生函数。`PBKDF2` 需要组合 `KeyHash` 函数，指定 `iteration` 次数和一个可选的 `salt`。
+`PBKDF2` 是 `PKCS#5` 标准中的一个密钥派生函数。`PBKDF2` 需要组合 `KeyHash` 函数。
+
+默认情况下 `iteration` 为 `1000`。
 
 ```typescript
 const mac = hmac(sha256)
 const kdf = pbkdf2(mac, 1000)
+```
+
+### Scrypt
+
+`scrypt` 是 `RFC 7914` 标准中的一个密钥派生函数。
+`scrypt` 可以指定开销因子、块数、并行因子、最大内存使用量，甚至是内部使用的 `kdf`。
+`mima-kit` 提供的 `scrypt` 基于 [`noble-hashes`](https://github.com/paulmillr/noble-hashes) 的实现。
+
+```typescript
+const kdf = scrypt()
+
+const config: ScryptConfig = {
+  N: 16384, // 开销因子
+  r: 8,     // 块数
+  p: 1,     // 并行因子
+}
+const kdf = scrypt(config)
+```
+
+```typescript
+interface ScryptConfig {
+  /**
+   * 开销因子 / Cost factor (default: 16384)
+   *
+   * 必须是 2 的幂
+   */
+  N?: number
+  /**
+   * 块数 / Block count (default: 8)
+   */
+  r?: number
+  /**
+   * 并行因子 / Parallelization factor (default: 1)
+   */
+  p?: number
+  /**
+   * 最大内存使用量 / Maximum memory usage
+   *
+   * 如果设置为 0，则不限制内存使用量
+   *
+   * (default: 0x40000400 bytes, 1GB + 1KB)
+   */
+  maxmem?: number
+  /**
+   * 密钥派生函数 / Key Derivation Function
+   *
+   * scrypt 标准使用了 `PBKDF2-HMAC-SHA256` 作为 KDF。
+   * 该参数允许用户指定其他 KDF，改变 scrypt 的内部行为。
+   *
+   * 注意: 这不是 `scrypt` 的标准用法且缺乏相关的安全分析。
+   *
+   * (default: pbkdf2(hmac(sha256), 1))
+   */
+  kdf?: KDF
+}
 ```
 
 ## 椭圆曲线列表

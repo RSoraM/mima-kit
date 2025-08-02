@@ -151,6 +151,7 @@ npm install mima-kit
     <li><a href="#x963kdf">X9.63KDF</a></li>
     <li><a href="#hkdf">HKDF</a></li>
     <li><a href="#pbkdf2">PBKDF2</a></li>
+    <li><a href="#scrypt">Scrypt</a></li>
   </ul>
   <li><a href="#elliptic-curve-list">Elliptic Curve List</a></li>
 </ul>
@@ -472,11 +473,11 @@ interface Digest {
   (M: Uint8Array): U8
 }
 interface HashDescription {
-  /** 算法名称 / Algorithm name */
+  /** Algorithm name */
   ALGORITHM: string
-  /** 分块大小 / Block size (byte) */
+  /** Block size (byte) */
   BLOCK_SIZE: number
-  /** 摘要大小 / Digest size (byte) */
+  /** Digest size (byte) */
   DIGEST_SIZE: number
   OID?: string
 }
@@ -770,12 +771,7 @@ CIPHER.decrypt(c) // m
 ```typescript
 interface XXTEAConfig {
   /**
-   * 分组大小 / Block size (default: 16)
-   *
-   * `XXTEA` 本身设计用于加密任意数量的数据块。单独使用 `XXTEA` 时，该选项不起作用。
-   * 但是，如果需要将 `XXTEA` 用作分组密码和 `工作模式` 一起使用，则可以通过此选项设置分组大小。
-   *
-   * 注意: 这不是 `XXTEA` 的标准用法且缺乏相关的安全分析。
+   * Block size (default: 16)
    *
    * `XXTEA` is natively designed to encrypt arbitrary amounts of data blocks.
    * When used alone, this option does not take effect.
@@ -786,19 +782,14 @@ interface XXTEAConfig {
    */
   BLOCK_SIZE?: number
   /**
-   * 填充方式 / Padding method (default: PKCS7)
-   *
-   * 如果要像其他分组密码一样使用 `XXTEA`，例如使用 `CBC` 模式，
-   * 应该将 `padding` 设置为 `NO_PAD` 并让 `工作模式` 处理填充。
+   * Padding method (default: PKCS7)
    *
    * If you want to use `XXTEA` like other block ciphers, such as with `CBC` mode,
    * you should set the `padding` to `NO_PAD` and let the `Operation Mode` handle the padding.
    */
   padding?: Padding
   /**
-   * 轮数 / Rounds (default: undefined)
-   *
-   * `XXTEA` 的轮数可以通过这个选项设置，如果不设置则使用默认的轮数计算方式。
+   * Rounds (default: undefined)
    *
    * The rounds of `XXTEA` can be set through this option,
    * if not set, the default round calculation method will be used.
@@ -830,13 +821,13 @@ m = PKCS7_PAD(p)
 ```typescript
 interface Padding {
   /**
-   * 添加填充 / Add padding
+   * Add padding
    * @param {Uint8Array} M - Message
    * @param {number} BLOCK_SIZE - Block size
    */
   (M: Uint8Array, BLOCK_SIZE: number): U8
   /**
-   * 移除填充 / remove padding
+   * remove padding
    * @param {Uint8Array} P - Padded message
    */
   (P: Uint8Array): U8
@@ -1145,13 +1136,13 @@ interface Cipherable {
 }
 interface BlockCipherInfo {
   ALGORITHM: string
-  /** 分组大小 / Block size (byte) */
+  /** Block size (byte) */
   BLOCK_SIZE: number
-  /** 推荐的密钥大小 / Recommended key size (byte) */
+  /** Recommended key size (byte) */
   KEY_SIZE: number
-  /** 最小密钥大小 / Minimum key size (byte) */
+  /** Minimum key size (byte) */
   MIN_KEY_SIZE: number
-  /** 最大密钥大小 / Maximum key size (byte) */
+  /** Maximum key size (byte) */
   MAX_KEY_SIZE: number
 }
 ```
@@ -1314,25 +1305,21 @@ const p_key = ec.gen('public_key', s_key)
 ```
 
 ```typescript
-/**
- * 伪射坐标表示的椭圆曲线的点
- *
- * Affine Coordinates of Elliptic Curve Point
- */
+/** Affine Coordinates of Elliptic Curve Point */
 interface FpECPoint<T = bigint | Uint8Array> {
   isInfinity: boolean
   x: T
   y: T
 }
 interface ECPublicKey<T = bigint | Uint8Array> {
-  /** 椭圆曲线公钥 / Elliptic Curve Public Key */
+  /** Elliptic Curve Public Key */
   readonly Q: Readonly<FpECPoint<T>>
 }
 interface ECPrivateKey<T = bigint | Uint8Array> {
-  /** 椭圆曲线私钥 / Elliptic Curve Private Key */
+  /** Elliptic Curve Private Key */
   readonly d: T
 }
-/** 椭圆曲线密钥对 / Elliptic Curve Key Pair */
+/** Elliptic Curve Key Pair */
 interface ECKeyPair<T = bigint | Uint8Array> extends ECPrivateKey<T>, ECPublicKey<T> {
 }
 ```
@@ -1422,9 +1409,9 @@ const v = cipher.verify(key, p, s)
 
 ```typescript
 interface ECDSASignature<T = bigint | Uint8Array> {
-  /** 临时公钥 / Temporary Public Key */
+  /** Temporary Public Key */
   r: T
-  /** 签名值 / Signature Value */
+  /** Signature Value */
   s: T
 }
 ```
@@ -1447,25 +1434,25 @@ const m = cipher.decrypt(key, c)
 
 ```typescript
 interface ECIESConfig {
-  /** 分组密码算法 / Block Cipher Algorithm (default: AES-256-GCM) */
+  /** Block Cipher Algorithm (default: AES-256-GCM) */
   cipher?: IVBlockCipher
-  /** 密钥哈希函数 / Key Hash Function (default: HMAC-SHA-256) */
+  /** Key Hash Function (default: HMAC-SHA-256) */
   mac?: KeyHash
-  /** 密钥派生函数 / Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256) */
+  /** Key Derivation Function (default: ANSI-X9.63-KDF with SHA-256) */
   kdf?: KDF
-  /** 附加数据1 / Additional Data 1 (default: empty) */
+  /** Additional Data 1 (default: empty) */
   S1?: Uint8Array
-  /** 附加数据2 / Additional Data 2 (default: empty) */
+  /** Additional Data 2 (default: empty) */
   S2?: Uint8Array
-  /** 初始化向量 / Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
+  /** Initialization Vector (default: Uint8Array(cipher.BLOCK_SIZE)) */
   iv?: Uint8Array
 }
 interface ECIESCiphertext {
-  /** 临时公钥 / Temporary Public Key */
+  /** Temporary Public Key */
   R: ECPublicKey
-  /** 密文 / Ciphertext */
+  /** Ciphertext */
   C: Uint8Array
-  /** 校验值 / Check Value */
+  /** Check Value */
   D: Uint8Array
 }
 ```
@@ -1501,9 +1488,9 @@ const ZA = sm2ec.di(ID, KA)
 ```typescript
 interface SM2DI {
   /**
-   * @param {Uint8Array} id - 用户标识 / User Identity
-   * @param {ECPublicKey} key - 公钥 / Public Key
-   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
+   * @param {Uint8Array} id - User Identity
+   * @param {ECPublicKey} key - Public Key
+   * @param {Hash} hash - Hash Algorithm (default: SM3)
    */
   (id: Uint8Array, key: ECPublicKey, hash?: Hash): U8
 }
@@ -1550,13 +1537,13 @@ DKA === DKB
 ```typescript
 interface SM2DH {
   /**
-   * @param {ECKeyPair} KA - 己方密钥对 / Self Key Pair
-   * @param {ECPublicKey} KX - 己方临时密钥对 / Self Temporary Key Pair
-   * @param {ECPublicKey} KB - 对方公钥 / Opposite Public Key
-   * @param {ECPublicKey} KY - 对方临时公钥 / Opposite Temporary Public Key
-   * @param [Uint8Array] ZA - 发起方标识派生值 / Initiator Identity Derived Value
-   * @param [Uint8Array] ZB - 接收方标识派生值 / Receiver Identity Derived Value
-   * @returns {U8} - 密钥材料 / Keying Material
+   * @param {ECKeyPair} KA - Self Key Pair
+   * @param {ECPublicKey} KX - Self Temporary Key Pair
+   * @param {ECPublicKey} KB - Opposite Public Key
+   * @param {ECPublicKey} KY - Opposite Temporary Public Key
+   * @param [Uint8Array] ZA - Initiator Identity Derived Value
+   * @param [Uint8Array] ZB - Receiver Identity Derived Value
+   * @returns {U8} - Keying Material
    */
   (KA: ECKeyPair, KX: ECKeyPair, KB: ECPublicKey, KY: ECPublicKey, ZA?: Uint8Array, ZB?: Uint8Array): U8
 }
@@ -1587,20 +1574,20 @@ interface SM2DSASignature<T = bigint | Uint8Array> {
 }
 interface SM2DSA {
   /**
-   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
+   * @param {Hash} hash - Hash Algorithm (default: SM3)
    */
   (hash?: Hash): {
     /**
-     * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
-     * @param {ECPrivateKey} key - 签名方私钥 / Signer Private Key
-     * @param {Uint8Array} M - 消息 / Message
+     * @param {Uint8Array} Z - Identity Derived Value
+     * @param {ECPrivateKey} key - Signer Private Key
+     * @param {Uint8Array} M - Message
      */
     sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature<U8>
     /**
-     * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
-     * @param {ECPublicKey} key - 签名方公钥 / Signer Public Key
-     * @param {Uint8Array} M - 消息 / Message
-     * @param {SM2DSASignature} S - 签名 / Signature
+     * @param {Uint8Array} Z - Identity Derived Value
+     * @param {ECPublicKey} key - Signer Public Key
+     * @param {Uint8Array} M - Message
+     * @param {SM2DSASignature} S - Signature
      */
     verify: (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => boolean
   }
@@ -1624,23 +1611,23 @@ cipher.decrypt(key, C) // M
 ```typescript
 interface SM2Encrypt {
   /**
-   * @param {ECPublicKey} p_key - 接收方公钥 / Receiver Public Key
-   * @param {Uint8Array} M - 明文 / Plaintext
+   * @param {ECPublicKey} p_key - Receiver Public Key
+   * @param {Uint8Array} M - Plaintext
    */
   (p_key: ECPublicKey, M: Uint8Array): U8
 }
 interface SM2Decrypt {
   /**
-   * @param {ECPrivateKey} s_key - 解密方私钥 / Decryptor Private Key
-   * @param {Uint8Array} C - 密文 / Ciphertext
+   * @param {ECPrivateKey} s_key - Decryptor Private Key
+   * @param {Uint8Array} C - Ciphertext
    */
   (s_key: ECPrivateKey, C: Uint8Array): U8
 }
 interface SM2EncryptionScheme {
   /**
-   * @param {Hash} hash - 哈希算法 / Hash Algorithm (default: SM3)
-   * @param {KDF} kdf - 密钥派生函数 / Key Derivation Function (default: X9.63 KDF with SM3)
-   * @param {'c1c2c3' | 'c1c3c2'} order - 密文分段顺序 / Ciphertext Segment Order (default: 'c1c3c2')
+   * @param {Hash} hash - Hash Algorithm (default: SM3)
+   * @param {KDF} kdf - Key Derivation Function (default: X9.63 KDF with SM3)
+   * @param {'c1c2c3' | 'c1c3c2'} order - Ciphertext Segment Order (default: 'c1c3c2')
    */
   (hash?: Hash, kdf?: KDF, order?: 'c1c2c3' | 'c1c3c2'): {
     encrypt: SM2Encrypt
@@ -1671,11 +1658,11 @@ const p_key = x25519.gen('public_key', s_key)
 
 ```typescript
 interface X25519PrivateKey<T = bigint | Uint8Array> {
-  /** 私钥 / Private Key */
+  /** Private Key */
   d: T
 }
 interface X25519PublicKey<T = bigint | Uint8Array> {
-  /** 公钥 / Public Key */
+  /** Public Key */
   Q: T
 }
 interface X25519KeyPair<T = bigint | Uint8Array> extends X25519PrivateKey<T>, X25519PublicKey<T> {
@@ -1703,38 +1690,108 @@ A key derivation function (KDF) is an algorithm that derives one or more keys fr
 ```typescript
 interface KDF {
   /**
-   * @param {number} k_bit - 期望的密钥长度 / output keying material length
-   * @param {Uint8Array} ikm - 输入密钥材料 / input keying material
-   * @param {Uint8Array} info - 附加信息 / optional context and application specific information
+   * @param {number} k_byte - output keying material length
+   * @param {Uint8Array} ikm - input keying material
+   * @param {Uint8Array} salt - salt value
    */
-  (k_bit: number, ikm: Uint8Array, info?: Uint8Array): U8
+  (k_byte: number, ikm: Uint8Array, salt?: Uint8Array): U8
 }
 ```
 
 ### X9.63KDF
 
-`X9.63KDF` is a key derivation function in the `ANSI-X9.63`. `X9.63KDF` needs to be combined with a `Hash` function.
+`X9.63KDF` is a key derivation function in the `ANSI-X9.63` standard.
+`X9.63KDF` requires a combination of a `Hash` function and an optional `info`.
+
+The `salt` input to `X9.63KDF` will be ignored.
 
 ```typescript
-const kdf = x963kdf(sha256)
+const info = new U8(0)
+const kdf = x963kdf(sha256, info)
+
+const k_byte = 64
+const ikm = new U8(32)
+const salt = new U8(32) // ignore
+
+const k0 = kdf(k_byte, ikm, salt)
+const k1 = kdf(k_byte, ikm)
+k0 === k1 // true
 ```
 
 ### HKDF
 
-`HKDF` is a key derivation function in the `RFC 5869`. `HKDF` needs to be combined with the `KeyHash` function and an optional `salt`
+`HKDF` is a key derivation function in the `RFC 5869`. `HKDF` needs to be combined with the `KeyHash` function and an optional `info`
 
 ```typescript
 const mac = hmac(sha256)
-const kdf = hkdf(mac)
+const info = new U8(0)
+const kdf = hkdf(mac, info)
 ```
 
 ### PBKDF2
 
-`PBKDF2` is a key derivation function in the `PKCS#5`. `PBKDF2` needs to be combined with the `KeyHash` function, a `iteration` number and an optional `salt`.
+`PBKDF2` is a key derivation function in the `PKCS#5` standard. `PBKDF2` requires a combination of `KeyHash` functions.
+
+By default, `iteration` is set to `1000`.
 
 ```typescript
 const mac = hmac(sha256)
 const kdf = pbkdf2(mac, 1000)
+```
+
+### Scrypt
+
+`scrypt` is a key derivation function defined in the `RFC 7914` standard.
+`scrypt` allows specifying overhead factors, block size, parallelism factors, maximum memory usage, and even the internal `kdf` used.
+The `scrypt` provided by `mima-kit` is based on the implementation from [`noble-hashes`](https://github.com/paulmillr/noble-hashes).
+
+```typescript
+const kdf = scrypt()
+
+const config: ScryptConfig = {
+  N: 16384, // cost factor
+  r: 8,     // block size
+  p: 1,     // parallelization factor
+}
+const kdf = scrypt(config)
+```
+
+```typescript
+interface ScryptConfig {
+  /**
+   * Cost factor (default: 16384)
+   *
+   * Must be a power of 2
+   */
+  N?: number
+  /**
+   * Block count (default: 8)
+   */
+  r?: number
+  /**
+   * Parallelization factor (default: 1)
+   */
+  p?: number
+  /**
+   * Maximum memory usage
+   *
+   * If set to 0, there is no limit on memory usage
+   *
+   * (default: 0x40000400 bytes, 1GB + 1KB)
+   */
+  maxmem?: number
+  /**
+   * Key Derivation Function
+   *
+   * The scrypt standard uses `PBKDF2-HMAC-SHA256` as the KDF.
+   * This parameter allows users to specify a different KDF, changing the internal behavior of scrypt.
+   *
+   * Note: This is not the standard usage of `scrypt` and lacks relevant security analysis.
+   *
+   * (default: pbkdf2(hmac(sha256), 1))
+   */
+  kdf?: KDF
+}
 ```
 
 ## Elliptic Curve List
