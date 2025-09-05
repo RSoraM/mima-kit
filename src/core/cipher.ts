@@ -337,7 +337,7 @@ export const cbc = wrap<CBCMode>(
           throw new KitError('Decryption error')
         }
         const P = new U8(C.length)
-        let prev = iv
+        let prev = iv.slice(0)
         for (let i = 0; i < C.length;) {
           const offset = i
           const B = C.slice(i, i += BLOCK_SIZE)
@@ -441,7 +441,7 @@ export const cfb = wrap<CFBMode>(
       const encrypt = (M: Uint8Array) => {
         const P = padding(M, BLOCK_SIZE)
         const C = new U8(P.length)
-        let prev = iv
+        let prev = iv.slice(0)
         for (let i = 0; i < P.length;) {
           const offset = i
           const B = P.subarray(i, i += BLOCK_SIZE)
@@ -453,14 +453,14 @@ export const cfb = wrap<CFBMode>(
       }
       const decrypt = (C: Uint8Array) => {
         const P = new U8(C.length)
-        let prev = iv
+        let prev = iv.slice(0)
         for (let i = 0; i < C.length;) {
           const offset = i
           const B = C.subarray(i, i += BLOCK_SIZE)
           prev = c.encrypt(prev)
           B.forEach((_, i) => prev[i] ^= B[i])
           P.set(prev.subarray(0, B.length), offset)
-          prev = B
+          prev = U8.from(B)
         }
         return padding(P)
       }
@@ -549,7 +549,7 @@ export const ctr = wrap<CTRMode>(
         throw new KitError(`{info.ALGORITHM} iv must be ${BLOCK_SIZE} byte`)
       }
       const c = cipher(K)
-      const counter = new Counter(iv.slice())
+      const counter = new Counter(iv.slice(0))
       let S = new U8()
       let SByte = 0
       const squeeze = (TByte: number) => {

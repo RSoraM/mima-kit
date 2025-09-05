@@ -290,6 +290,10 @@ describe('sm2', () => {
     const signer = sm2ec.dsa()
     const signature = signer.sign(Z, key, M)
     expect(signer.verify(Z, key, M, signature)).toBe(true)
+  })
+  it('dsa-vector', () => {
+    const sm2ec = sm2(curve)
+    const M = UTF8('message digest')
 
     // Vector Source: SM2椭圆曲线公钥密码算法 第2部分：数字签名算法
     const key_from_outside = {
@@ -319,6 +323,9 @@ describe('sm2', () => {
     const sA = sm2ec.dh(ka, kx, kb, ky, ZA, ZB)
     const sB = sm2ec.dh(kb, ky, ka, kx, ZA, ZB)
     expect(sA.buffer).toMatchObject(sB.buffer)
+  })
+  it('dh-vector', () => {
+    const sm2ec = sm2(curve)
 
     // Vector Source: SM2椭圆曲线公钥密码算法 第3部分：数字证书
     const ka_from_outside = {
