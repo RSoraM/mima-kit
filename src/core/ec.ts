@@ -257,6 +257,7 @@ export function FpMEC(curve: FpMECParams): FpECUtils {
     const x3 = subtract(multiply(λ, λ, b), a, x1, x2)
     // y3 = (2 x1 + x2 + a) * λ - b * λ * λ * λ - y1
     const y3 = subtract(multiply(2n * x1 + x2 + a, λ), multiply(λ, λ, λ, b), y1)
+
     return { isInfinity: false, x: x3, y: y3 }
   }
   const mulPoint = (P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> => LadderMultiply(addPoint, P, k)

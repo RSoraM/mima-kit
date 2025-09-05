@@ -112,8 +112,7 @@ export function genBitMask(w: number | bigint) {
  * Extended Euclidean Algorithm
  *
  * - gcd: 最大公约数 / greatest common divisor
- * - a_inv: a 的模逆 / modular inverse of a
- * - b_inv: b 的模逆 / modular inverse of b
+ * - x: a 的贝祖系数 / Bézout coefficient of a
  */
 export function extendedEuclidean(a: bigint, b: bigint) {
   let [s0, s1, t0, t1, r0, r1] = [1n, 0n, 0n, 1n, a, b]
@@ -121,8 +120,7 @@ export function extendedEuclidean(a: bigint, b: bigint) {
   if (b === 0n) {
     return {
       gcd: a,
-      a_inv: 1n,
-      b_inv: 0n,
+      x: 1n,
     }
   }
 
@@ -135,8 +133,7 @@ export function extendedEuclidean(a: bigint, b: bigint) {
 
   return {
     gcd: r0,
-    a_inv: s0,
-    b_inv: t0,
+    x: s0,
   }
 }
 
@@ -266,11 +263,11 @@ export function modPow(x: bigint, y: bigint, n: bigint): bigint {
  * @param {bigint} n - modulus
  */
 export function modInverse(x: bigint, n: bigint): bigint {
-  const { gcd, a_inv: inv } = extendedEuclidean(x, n)
-  if (gcd !== 1n) {
+  const { gcd, x: _x } = extendedEuclidean(x, n)
+  if (gcd !== 1n)
     throw new KitError('Modular inverse does not exist')
-  }
-  return mod(inv, n)
+
+  return mod(_x, n)
 }
 
 /**
@@ -569,8 +566,8 @@ export function trying<T>(
   }
   catch (error) {
     return error instanceof Error
-    ? [error, null]
-    : [new KitError('Unknown error'), null]
+      ? [error, null]
+      : [new KitError('Unknown error'), null]
   }
 }
 
