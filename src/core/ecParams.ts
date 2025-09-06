@@ -1,7 +1,7 @@
 // * Prime Filed Elliptic Curve Interfaces
 
 /**
- * 伪射坐标表示的椭圆曲线的点
+ * 仿射坐标表示的椭圆曲线的点
  *
  * Affine Coordinates of Elliptic Curve Point
  */
