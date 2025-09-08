@@ -1,5 +1,5 @@
-import { Fp } from '../../core/ec'
 import { curve448, curve25519 } from '../../core/ecParams'
+import { GF } from '../../core/field'
 import { genRandomBI, getBIBits, KitError, U8 } from '../../core/utils'
 
 // * Interfaces
@@ -85,16 +85,19 @@ function cSwap(swap: bigint, x_2: bigint, x_3: bigint) {
   const dummy = mask & (x_2 ^ x_3)
   x_2 ^= dummy
   x_3 ^= dummy
+
   return [x_2, x_3]
 }
 /** 蒙哥马利梯子算法 / Montgomery Ladder Algorithm */
 function ladder(k: bigint, u: bigint, p: bigint, a24: bigint, bit: number) {
-  const { plus, subtract, pow, multiply } = Fp(p)
+  const { add, sub, pow, mul } = GF(p)
+
   let x_2 = 1n
   let z_2 = 0n
   let x_3 = u
   let z_3 = 1n
   let swap = 0n
+
   const bit_array = k.toString(2).padStart(bit, '0').split('').map(BigInt)
   for (const bit of bit_array) {
     swap ^= bit;
@@ -102,23 +105,25 @@ function ladder(k: bigint, u: bigint, p: bigint, a24: bigint, bit: number) {
     [z_2, z_3] = cSwap(swap, z_2, z_3)
     swap = bit
 
-    const A = plus(x_2, z_2)
+    const A = add(x_2, z_2)
     const AA = pow(A, 2n)
-    const B = subtract(x_2, z_2)
+    const B = sub(x_2, z_2)
     const BB = pow(B, 2n)
-    const E = subtract(AA, BB)
-    const C = plus(x_3, z_3)
-    const D = subtract(x_3, z_3)
-    const DA = multiply(D, A)
-    const CB = multiply(C, B)
-    x_3 = pow(plus(DA, CB), 2n)
-    z_3 = multiply(u, pow(subtract(DA, CB), 2n))
-    x_2 = multiply(AA, BB)
-    z_2 = multiply(E, plus(AA, multiply(E, a24)))
+    const E = sub(AA, BB)
+    const C = add(x_3, z_3)
+    const D = sub(x_3, z_3)
+    const DA = mul(D, A)
+    const CB = mul(C, B)
+    x_3 = pow(add(DA, CB), 2n)
+    z_3 = mul(u, pow(sub(DA, CB), 2n))
+    x_2 = mul(AA, BB)
+    z_2 = mul(E, add(AA, mul(E, a24)))
   }
+
   [x_2, x_3] = cSwap(swap, x_2, x_3);
   [z_2, z_3] = cSwap(swap, z_2, z_3)
-  return multiply(x_2, pow(z_2, p - 2n))
+
+  return mul(x_2, pow(z_2, p - 2n))
 }
 
 /** x25519 椭圆曲线算法 / Elliptic Curve Algorithm */
@@ -133,8 +138,10 @@ export const x25519: X25519 = (() => {
   function clamp(d: bigint) {
     d = d & 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8n
     d = d | 0x4000000000000000000000000000000000000000000000000000000000000000n
+
     return d
   }
+
   function gen(type?: 'key_pair'): X25519KeyPair<U8>
   function gen(type: 'private_key'): X25519PrivateKey<U8>
   function gen(type: 'public_key', s_key: X25519PrivateKey): X25519KeyPair<U8>
@@ -150,6 +157,7 @@ export const x25519: X25519 = (() => {
       // public key
       const x = ladder(clamp(d), Gx, p, a24, 255)
       const Q = U8.fromBI(x, p_byte)
+
       return { Q, d: d_buffer }
     }
     else if (type === 'private_key') {
@@ -158,20 +166,24 @@ export const x25519: X25519 = (() => {
     else if (type === 'public_key') {
       const d_buffer = typeof s_key!.d === 'bigint' ? U8.fromBI(s_key!.d) : U8.from(s_key!.d)
       const d = typeof s_key!.d === 'bigint' ? s_key!.d : d_buffer.toBI()
-      if (d === 0n) {
+      if (d === 0n)
         throw new KitError('Invalid private key')
-      }
+
       const x = ladder(clamp(d), Gx, p, a24, 255)
       const Q = U8.fromBI(x, p_byte)
+
       return { Q, d: d_buffer }
     }
   }
+
   const ecdh: X25519['dh'] = (s_key: X25519PrivateKey, p_key: X25519PublicKey): U8 => {
     const u = typeof p_key.Q === 'bigint' ? p_key.Q : U8.from(p_key.Q).toBI()
     const k = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
     const x = ladder(clamp(k), u, p, a24, 255)
+
     return U8.fromBI(x, p_byte)
   }
+
   return { gen, dh: ecdh }
 })()
 
@@ -187,8 +199,10 @@ export const x448: X448 = (() => {
   function clamp(d: bigint) {
     d = d & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCn
     d = d | 0x8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000n
+
     return d
   }
+
   function gen(type?: 'key_pair'): X448KeyPair<U8>
   function gen(type: 'private_key'): X448PrivateKey<U8>
   function gen(type: 'public_key', s_key: X448PrivateKey): X448KeyPair<U8>
@@ -204,6 +218,7 @@ export const x448: X448 = (() => {
       // public key
       const x = ladder(clamp(d), Gx, p, a24, 448)
       const Q = U8.fromBI(x, p_byte)
+
       return { Q, d: d_buffer }
     }
     else if (type === 'private_key') {
@@ -212,19 +227,23 @@ export const x448: X448 = (() => {
     else if (type === 'public_key') {
       const d_buffer = typeof s_key!.d === 'bigint' ? U8.fromBI(s_key!.d) : U8.from(s_key!.d)
       const d = typeof s_key!.d === 'bigint' ? s_key!.d : d_buffer.toBI()
-      if (d === 0n) {
+      if (d === 0n)
         throw new KitError('Invalid private key')
-      }
+
       const x = ladder(clamp(d), Gx, p, a24, 448)
       const Q = U8.fromBI(x, p_byte)
+
       return { Q, d: d_buffer }
     }
   }
+
   const ecdh: X448['dh'] = (s_key: X448PrivateKey, p_key: X448PublicKey): U8 => {
     const u = typeof p_key.Q === 'bigint' ? p_key.Q : U8.from(p_key.Q).toBI()
     const k = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
     const x = ladder(clamp(k), u, p, a24, 448)
+
     return U8.fromBI(x, p_byte)
   }
+
   return { gen, dh: ecdh }
 })()

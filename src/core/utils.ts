@@ -275,7 +275,7 @@ export function modInverse(x: bigint, n: bigint): bigint {
  *
  * Modular prime square operation: n ^ 0.5 (mod p)
  */
-export function modPrimeSquare(n: bigint, p: bigint): bigint {
+export function modPrimeSquareRoot(n: bigint, p: bigint): bigint {
   n = mod(n, p)
   return tonelliShanks(n, p)
 }

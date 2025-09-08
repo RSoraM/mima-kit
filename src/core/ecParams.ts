@@ -1,15 +1,6 @@
-// * Prime Filed Elliptic Curve Interfaces
+import type { AffinePoint } from './field'
 
-/**
- * 仿射坐标表示的椭圆曲线的点
- *
- * Affine Coordinates of Elliptic Curve Point
- */
-export interface FpECPoint<T = bigint | Uint8Array> {
-  isInfinity: boolean
-  x: T
-  y: T
-}
+// * Prime Filed Elliptic Curve Interfaces
 
 /**
  * 素域 Weierstrass 椭圆曲线参数
@@ -25,7 +16,7 @@ export interface FpWECParams {
   /** Coefficient b */
   readonly b: bigint
   /** Base point */
-  readonly G: Readonly<FpECPoint<bigint>>
+  readonly G: Readonly<AffinePoint<bigint>>
   /** Order */
   readonly n: bigint
   /** co-factor */
@@ -46,7 +37,7 @@ export interface FpMECParams {
   /** Coefficient b */
   readonly b: 1n
   /** Base point */
-  readonly G: Readonly<FpECPoint<bigint>>
+  readonly G: Readonly<AffinePoint<bigint>>
   /** Order */
   readonly n: bigint
   /** co-factor */
@@ -67,7 +58,7 @@ export interface FpTECParams {
   /** Coefficient b */
   readonly d: bigint
   /** Base point */
-  readonly G: Readonly<FpECPoint<bigint>>
+  readonly G: Readonly<AffinePoint<bigint>>
   /** Order */
   readonly n: bigint
   /** co-factor */
@@ -76,20 +67,17 @@ export interface FpTECParams {
 
 // * Binary Field Elliptic Curve Interfaces
 
-export interface F2mECPoint extends FpECPoint {
-}
-
 /**
  * 二元域椭圆曲线参数
  *
  * Binary Field Elliptic Curve Parameters
  */
-export interface FbECParams {
+export interface FbWECParams {
   readonly m: number
-  readonly f: (x: bigint) => bigint
+  readonly IP: bigint
   readonly a: bigint
   readonly b: bigint
-  readonly G: Readonly<F2mECPoint>
+  readonly G: Readonly<AffinePoint>
   readonly n: bigint
   readonly h: bigint
 }
@@ -429,9 +417,9 @@ export const secp521r1: FpWECParams = Object.freeze({
 
 // * SEC-1 Binary Curves
 
-export const sect163k1: FbECParams = Object.freeze({
+export const sect163k1: FbWECParams = Object.freeze({
   m: 163,
-  f: (x: bigint) => x ** 163n + x ** 7n + x ** 6n + x ** 3n + 1n,
+  IP: (1n << 163n) + (1n << 7n) + (1n << 6n) + (1n << 3n) + 1n,
   a: 0x1n,
   b: 0x1n,
   G: {
@@ -572,7 +560,7 @@ export const curve25519: FpMECParams = Object.freeze({
   G: {
     isInfinity: false,
     x: 9n,
-    y: 0x5F51E65E475F794B1FE122D388B72EB36DC2B28192839E4DD6163A5D81312C14n,
+    y: 0x20AE19A1B8A086B4E01EDD2C7748D14C923D4D7E6D7C61B229E9C5A27ECED3D9n,
   },
   n: 0x1000000000000000000000000000000014DEF9DEA2F79CD65812631A5CF5D3EDn,
   h: 8n,

@@ -150,7 +150,10 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   const p_bit = getBIBits(p)
   const p_byte = (p_bit + 7) >> 3
   const ecc = FpECC(curve)
-  const { addPoint, mulPoint } = ecc.utils
+  const { addPoint, mulPoint, toAffine, toJacobian } = ecc.utils
+
+  /** 基点 (雅可比坐标系) */
+  const GJ = toJacobian(G)
 
   const a_buffer = U8.fromBI(a)
   const b_buffer = U8.fromBI(b)
@@ -163,9 +166,9 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   const U8ToPoint = ecc.utils.U8ToPoint
   const di: SM2DI = (id: Uint8Array, key: ECPublicKey, hash: Hash = sm3) => {
     const ent = id.length << 3
-    if (ent > 0xFFFF) {
+    if (ent > 0xFFFF)
       throw new KitError('ID长度超过了最大限制')
-    }
+
     const ENT = new Uint8Array([ent >> 8, ent & 0xFF])
     const a = a_buffer
     const b = b_buffer
@@ -187,9 +190,9 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
     ZA = new Uint8Array(),
     ZB = new Uint8Array(),
   ) => {
-    if (isLegalPK(KB) === false || isLegalPK(KY) === false) {
+    if (isLegalPK(KB) === false || isLegalPK(KY) === false)
       throw new KitError('非法的公钥')
-    }
+
     const KA_d = typeof KA.d === 'bigint' ? KA.d : U8.from(KA.d).toBI()
     const KX_d = typeof KX.d === 'bigint' ? KX.d : U8.from(KX.d).toBI()
     const KX_Q_x = typeof KX.Q.x === 'bigint' ? KX.Q.x : U8.from(KX.Q.x).toBI()
@@ -198,18 +201,21 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
     const x2 = (1n << BigInt(w)) + (KY_Q_x & w_mask)
 
     const t = mod(KA_d + KX_d * x1, n)
-    const V = mulPoint(addPoint(KB.Q, mulPoint(KY.Q, x2)), h * t)
-    if (V.isInfinity) {
+    const KBQ = toJacobian(KB.Q)
+    const KYQ = toJacobian(KY.Q)
+    const V_j = mulPoint(addPoint(KBQ, mulPoint(KYQ, x2)), h * t)
+    if (V_j.isInfinity)
       throw new KitError('协商失败')
-    }
+
+    const V = toAffine(V_j)
     const xu = U8.fromBI(V.x)
     const yu = U8.fromBI(V.y)
     return joinBuffer(xu, yu, ZA, ZB)
   }
   const dsa: SM2DSA = (hash: Hash = sm3) => {
-    if (hash.DIGEST_SIZE !== 32) {
+    if (hash.DIGEST_SIZE !== 32)
       throw new KitError('不支持的哈希算法')
-    }
+
     const sign = (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => {
       const dA = typeof key.d === 'bigint' ? key.d : U8.from(key.d).toBI()
       let r = 0n
@@ -217,42 +223,44 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
       const e = hash(joinBuffer(Z, M)).toBI()
       do {
         const k = gen('private_key').d.toBI()
-        const p = mulPoint(G, k)
+        const p = toAffine(mulPoint(GJ, k))
         r = mod(e + p.x, n)
-        if (r === 0n || r + k === n) {
+        if (r === 0n || r + k === n)
           continue
-        }
+
         const numerator = mod(k - r * dA, n)
         const denominator = modInverse(1n + dA, n)
         s = mod(numerator * denominator, n)
-        if (s === 0n) {
+        if (s === 0n)
           continue
-        }
         break
       } while (1)
-      const r_buffer = new U8(p_byte)
+
+        const r_buffer = new U8(p_byte)
       const s_buffer = new U8(p_byte)
       r_buffer.set(U8.fromBI(r))
       s_buffer.set(U8.fromBI(s))
+
       return { r: r_buffer, s: s_buffer }
     }
     const verify = (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => {
-      const PA = key.Q
+      const PA = toJacobian(key.Q)
       const r = typeof S.r === 'bigint' ? S.r : U8.from(S.r).toBI()
       const s = typeof S.s === 'bigint' ? S.s : U8.from(S.s).toBI()
-      if (r <= 0n || r >= n || s <= 0n || s >= n) {
+      if (r <= 0n || r >= n || s <= 0n || s >= n)
         return false
-      }
+
       const e = hash(joinBuffer(Z, M)).toBI()
       const t = mod(r + s, n)
-      if (t === 0n) {
+      if (t === 0n)
         return false
-      }
-      const p = addPoint(
-        mulPoint(G, s),
+
+      const p = toAffine(addPoint(
+        mulPoint(GJ, s),
         mulPoint(PA, t),
-      )
+      ))
       const R = mod(e + p.x, n)
+
       return R === r
     }
     return { sign, verify }
@@ -260,34 +268,35 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   const es: SM2EncryptionScheme = (hash = sm3, kdf = x963kdf(sm3), order = 'c1c3c2') => {
     const encrypt: SM2Encrypt = (p_key: ECPublicKey, M: Uint8Array) => {
       const C1 = gen()
-      const S = mulPoint(p_key.Q, h)
-      if (S.isInfinity) {
+      const Q = toJacobian(p_key.Q)
+      const S = mulPoint(Q, h)
+      if (S.isInfinity)
         throw new KitError('加密失败')
-      }
-      const { x, y } = mulPoint(p_key.Q, C1.d)
+
+      const { x, y } = toAffine(mulPoint(Q, C1.d))
       const x2 = U8.fromBI(x)
       const y2 = U8.fromBI(y)
       const ikm = joinBuffer(x2, y2)
       const C2 = kdf(M.length, ikm)
       C2.forEach((_, i) => C2[i] ^= M[i])
       const C3 = hash(joinBuffer(x2, M, y2))
-      if (order === 'c1c2c3') {
-        return joinBuffer(PointToU8(C1.Q), C2, C3)
-      }
-      else {
-        return joinBuffer(PointToU8(C1.Q), C3, C2)
-      }
+
+      return order === 'c1c2c3'
+        ? joinBuffer(PointToU8(C1.Q), C2, C3)
+        : joinBuffer(PointToU8(C1.Q), C3, C2)
     }
     const decrypt: SM2Decrypt = (s_key: ECPrivateKey, C: Uint8Array) => {
       const C1_Length = (p_byte << 1) + 1
       const C3_Length = hash.DIGEST_SIZE
       const C2_Length = C.length - C1_Length - C3_Length
-      const C1 = U8ToPoint(C.subarray(0, C1_Length))
+      const C1 = toJacobian(
+        U8ToPoint(C.subarray(0, C1_Length)),
+      )
       const S = mulPoint(C1, h)
-      if (S.isInfinity) {
+      if (S.isInfinity)
         throw new KitError('解密失败')
-      }
-      const { x, y } = mulPoint(C1, s_key.d)
+
+      const { x, y } = toAffine(mulPoint(C1, s_key.d))
       const x2 = U8.fromBI(x)
       const y2 = U8.fromBI(y)
       const ikm = joinBuffer(x2, y2)
@@ -304,13 +313,13 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
       }
       const M = t.map((_, i) => t[i] ^ C2[i])
       const u = hash(joinBuffer(x2, M, y2))
-      u.forEach((_, i) => {
-        if (u[i] !== C3[i]) {
-          throw new KitError('解密失败')
-        }
-      })
+      const isEqual = u.length === C3.length && u.every((val, i) => val === C3[i])
+      if (!isEqual)
+        throw new KitError('解密失败')
+
       return M
     }
+
     return { encrypt, decrypt }
   }
 

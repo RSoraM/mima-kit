@@ -1,135 +1,72 @@
-import type { FpECPoint, FpMECParams, FpTECParams, FpWECParams } from './ecParams'
-import { mod, modInverse, modPow, modPrimeSquare, U8 } from './utils'
+import type { FpMECParams, FpTECParams, FpWECParams } from './ecParams'
+import type { AffinePoint, CSUtils, GFUtils, JacobianPoint } from './field'
+import { CoordinateSystem, GF } from './field'
+import { U8 } from './utils'
 
 // * Interfaces
 
-export interface FpUtils {
-  /** 素域加法 / Prime Field Addition */
-  plus: (...args: bigint[]) => bigint
-  /** 素域乘法 / Prime Field Multiplication */
-  multiply: (...args: bigint[]) => bigint
-  /** 素域减法 / Prime Field Subtraction */
-  subtract: (a: bigint, ...args: bigint[]) => bigint
-  /** 素域除法 / Prime Field Division */
-  divide: (a: bigint, b: bigint) => bigint
-  /** 素域取模 / Prime Field Modulus */
-  mod: (a: bigint) => bigint
-  /** 素域幂运算 / Prime Field Power */
-  pow: (a: bigint, b: bigint) => bigint
-  /** 素域逆元 / Prime Field Modular Inverse */
-  inverse: (a: bigint) => bigint
-  /** 素域平方根 / Prime Field Square Root */
-  root: (a: bigint) => bigint
-}
-
-export interface FpECUtils {
+export interface ECUtils extends CSUtils {
   /**
-   * 素域椭圆曲线点加法
+   * 域运算
    *
-   * Prime Field Elliptic Curve Point Addition
+   * Field Operations
    */
-  addPoint: (A: FpECPoint, B: FpECPoint) => FpECPoint<bigint>
+  gf: GFUtils
   /**
-   * 素域椭圆曲线点乘法
+   * 素域椭圆曲线点加法 (雅可比坐标系)
    *
-   * Prime Field Elliptic Curve Point Multiplication
+   * Prime Field Elliptic Curve Point Addition (Jacobian Coordinate System)
    */
-  mulPoint: (P: FpECPoint, k: bigint | Uint8Array) => FpECPoint<bigint>
+  addPoint: (A: JacobianPoint, B: JacobianPoint) => JacobianPoint
+  /**
+   * 素域椭圆曲线点乘法 (雅可比坐标系)
+   *
+   * Prime Field Elliptic Curve Point Multiplication (Jacobian Coordinate System)
+   */
+  mulPoint: (P: JacobianPoint, k: bigint | Uint8Array) => JacobianPoint
+  /**
+   * 素域椭圆曲线点加法 (仿射坐标系)
+   *
+   * Prime Field Elliptic Curve Point Addition (Affine Coordinate System)
+   *
+   * @deprecated 仅作参考，不推荐使用 / For reference only, not recommended for use
+   */
+  _addPoint?: (A: AffinePoint, B: AffinePoint) => AffinePoint<bigint>
+  /**
+   * 素域椭圆曲线点乘法 (仿射坐标系)
+   *
+   * Prime Field Elliptic Curve Point Multiplication (Affine Coordinate System)
+   *
+   * @deprecated 仅作参考，不推荐使用 / For reference only, not recommended for use
+   */
+  _mulPoint?: (P: AffinePoint, k: bigint | Uint8Array) => AffinePoint<bigint>
 }
 
 // * FpEC Components
 
-/**
- * 将椭圆曲线点转换为 U8 格式
- *
- * Convert EC Point to U8 Format
- */
-export function U8Point(point?: FpECPoint, byte?: number): FpECPoint<U8> {
-  if (!point) {
-    return { isInfinity: true, x: new U8(), y: new U8() }
-  }
-  const isInfinity = point.isInfinity
-  const x = typeof point.x === 'bigint'
-    ? U8.fromBI(point.x, byte)
-    : U8.from(point.x)
-  const y = typeof point.y === 'bigint'
-    ? U8.fromBI(point.y, byte)
-    : U8.from(point.y)
-  return { isInfinity, x, y }
-}
-
-/**
- * 将椭圆曲线点转换为 bigint 格式
- *
- * Convert EC Point to bigint Format
- */
-export function BIPoint(point?: FpECPoint): FpECPoint<bigint> {
-  if (!point) {
-    return { isInfinity: true, x: 0n, y: 0n }
-  }
-  const isInfinity = point.isInfinity
-  const x = typeof point.x === 'bigint'
-    ? point.x
-    : U8.from(point.x).toBI()
-  const y = typeof point.y === 'bigint'
-    ? point.y
-    : U8.from(point.y).toBI()
-  return { isInfinity, x, y }
-}
-
-/**
- * 蒙哥马利梯子点乘法
- *
- * Montgomery Ladder Point Multiplication
- *
- * @param addPoint 素域椭圆曲线点加法函数 / Prime Field EC Point Addition Function
- * @param {FpECPoint} P 椭圆曲线点 / EC Point
- * @param {bigint | Uint8Array} k 标量 / Scalar
- */
-function LadderMultiply(addPoint: FpECUtils['addPoint'], P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> {
+function LadderMultiply(
+  add: ECUtils['addPoint'],
+  P: JacobianPoint,
+  k: bigint | Uint8Array,
+): JacobianPoint {
   k = typeof k === 'bigint' ? k : U8.from(k).toBI()
 
-  let R0 = BIPoint()
-  let R1 = BIPoint(P)
+  let R0: JacobianPoint = { isInfinity: true, x: 0n, y: 1n, z: 0n }
+  let R1: JacobianPoint = { isInfinity: P.isInfinity, x: P.x, y: P.y, z: P.z }
+
   // MSb -> LSb
   const bit_array = k.toString(2).split('')
   for (const bit of bit_array) {
     if (bit === '1') {
-      R0 = addPoint(R0, R1)
-      R1 = addPoint(R1, R1)
+      R0 = add(R0, R1)
+      R1 = add(R1, R1)
     }
     else {
-      R1 = addPoint(R0, R1)
-      R0 = addPoint(R0, R0)
+      R1 = add(R0, R1)
+      R0 = add(R0, R0)
     }
   }
   return R0
-}
-
-/** 素域运算 / Prime Field Operations */
-export function Fp(p: bigint): FpUtils {
-  const _mod = (a: bigint) => mod(a, p)
-  const inverse = (a: bigint) => modInverse(a, p)
-  const root = (a: bigint) => modPrimeSquare(a, p)
-  const pow = (a: bigint, b: bigint) => modPow(a, b, p)
-
-  const plus = (...args: bigint[]) => args.reduce((acc, cur) => _mod(acc + cur))
-  const multiply = (...args: bigint[]) => args.reduce((acc, cur) => _mod(acc * cur))
-  const subtract = (a: bigint, ...args: bigint[]) => {
-    const b: bigint[] = args.map(v => _mod(p - v))
-    return plus(a, ...b)
-  }
-  const divide = (a: bigint, b: bigint) => multiply(a, inverse(b))
-  return {
-    plus,
-    multiply,
-    subtract,
-    divide,
-    mod: _mod,
-    pow,
-    inverse,
-    root,
-  }
 }
 
 /**
@@ -137,7 +74,7 @@ export function Fp(p: bigint): FpUtils {
  *
  * Prime Field Elliptic Curve Operations
  */
-export function FpEC(curve: FpWECParams | FpMECParams | FpTECParams): FpECUtils {
+export function FpEC(curve: FpWECParams | FpMECParams | FpTECParams): ECUtils {
   switch (curve.type) {
     case 'Weierstrass':
       return FpWEC(curve)
@@ -153,18 +90,20 @@ export function FpEC(curve: FpWECParams | FpMECParams | FpTECParams): FpECUtils 
  *
  * Prime Field Weierstrass Elliptic Curve Operations
  */
-export function FpWEC(curve: FpWECParams): FpECUtils {
+export function FpWEC(curve: FpWECParams): ECUtils {
   const { p, a } = curve
-  const { plus, multiply, subtract, divide } = Fp(p)
+  const gf = GF(p)
+  const cs = CoordinateSystem(gf)
 
-  const addPoint = (A: FpECPoint, B: FpECPoint): FpECPoint<bigint> => {
+  const { add, sub, mul, div } = gf
+  const { toAffine } = cs
+
+  const _addPoint = (A: AffinePoint, B: AffinePoint): AffinePoint<bigint> => {
     // O + P = P
-    if (A.isInfinity) {
-      return BIPoint(B)
-    }
-    if (B.isInfinity) {
-      return BIPoint(A)
-    }
+    if (A.isInfinity)
+      return toAffine(B, 'bigint')
+    if (B.isInfinity)
+      return toAffine(A, 'bigint')
 
     let [x1, y1] = [A.x, A.y]
     let [x2, y2] = [B.x, B.y]
@@ -175,35 +114,116 @@ export function FpWEC(curve: FpWECParams): FpECUtils {
     y2 = typeof y2 === 'bigint' ? y2 : U8.from(y2).toBI()
 
     // P + (-P) = O
-    if (x1 === x2 && y1 !== y2) {
-      return BIPoint()
-    }
+    if (sub(x1, x2) === 0n && add(y1, y2) === 0n)
+      return { isInfinity: true, x: 0n, y: 0n }
 
     let λ = 0n
     // P1 + P2
     if (x1 !== x2) {
       // λ = (y2 - y1) / (x2 - x1)
-      const numerator = subtract(y2, y1)
-      const denominator = subtract(x2, x1)
-      λ = divide(numerator, denominator)
+      const numerator = sub(y2, y1)
+      const denominator = sub(x2, x1)
+      λ = div(numerator, denominator)
     }
     // P1 + P1
     else {
+      // 若 y1 为 0，则切线斜率不存在，结果为无穷远点
+      if (y1 === 0n)
+        return { isInfinity: true, x: 0n, y: 0n }
+
       // λ = (3 * x1 * x1 + a) / 2 * y1
-      const numerator = plus(multiply(3n, x1, x1), a)
-      const denominator = multiply(2n, y1)
-      λ = divide(numerator, denominator)
+      const numerator = add(mul(3n, x1, x1), a)
+      const denominator = mul(2n, y1)
+      λ = div(numerator, denominator)
     }
 
     // x3 = λ * λ - x1 - x2
-    const x3 = subtract(multiply(λ, λ), x1, x2)
+    const x3 = sub(mul(λ, λ), x1, x2)
     // y3 = λ * (x1 - x3) - y1
-    const y3 = subtract(multiply(λ, subtract(x1, x3)), y1)
+    const y3 = sub(mul(λ, sub(x1, x3)), y1)
 
     return { isInfinity: false, x: x3, y: y3 }
   }
-  const mulPoint = (P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> => LadderMultiply(addPoint, P, k)
-  return { addPoint, mulPoint }
+
+  const addPoint = (A: JacobianPoint, B: JacobianPoint): JacobianPoint => {
+    // O + P = P
+    if (A.isInfinity)
+      return B
+    if (B.isInfinity)
+      return A
+
+    // P + (-P) = O
+    if (sub(A.x, B.x) === 0n && add(A.y, B.y) === 0n)
+      return { isInfinity: true, x: 1n, y: 1n, z: 0n }
+
+    const U1 = mul(A.x, B.z, B.z)
+    const U2 = mul(B.x, A.z, A.z)
+    const S1 = mul(A.y, B.z, B.z, B.z)
+    const S2 = mul(B.y, A.z, A.z, A.z)
+
+    if (U1 === U2 && S1 !== S2)
+      return { isInfinity: true, x: 1n, y: 1n, z: 0n }
+
+    // P1 + P1
+    if (U1 === U2 && S1 === S2) {
+      const XX = mul(A.x, A.x)
+      const YY = mul(A.y, A.y)
+      const ZZ = mul(A.z, A.z)
+      const S = mul(4n, A.x, YY)
+      // M = 3 * XX + a * ZZ^2
+      const M = add(
+        mul(3n, XX),
+        mul(a, ZZ, ZZ),
+      )
+      // X3 = M^2 - 2 * S
+      const X3 = sub(
+        mul(M, M),
+        mul(2n, S),
+      )
+      // Y3 = M * (S - X3) - 8 * YYYY
+      const Y3 = sub(
+        mul(M, sub(S, X3)),
+        mul(8n, YY, YY),
+      )
+      // Z3 = 2 * Y1 * Z1
+      const Z3 = mul(2n, A.y, A.z)
+
+      return { isInfinity: false, x: X3, y: Y3, z: Z3 }
+    }
+    // P1 + P2
+    else {
+      const H = sub(U2, U1)
+      const R = sub(S2, S1)
+      const HH = mul(H, H)
+      const HHH = mul(H, HH)
+      const U1HH = mul(U1, HH)
+      // X3 = R^2 - H^3 - 2 * U1 * H^2
+      const X3 = sub(
+        mul(R, R),
+        HHH,
+        mul(2n, U1HH),
+      )
+      // Y3 = R * (U1 * H^2 - X3) - S1 * H^3
+      const Y3 = sub(
+        mul(R, sub(U1HH, X3)),
+        mul(S1, HHH),
+      )
+      // Z3 = H * Z1 * Z2
+      const Z3 = mul(H, A.z, B.z)
+
+      return { isInfinity: false, x: X3, y: Y3, z: Z3 }
+    }
+  }
+
+  const mulPoint = (P: JacobianPoint, k: bigint | Uint8Array): JacobianPoint => LadderMultiply(addPoint, P, k)
+
+  return {
+    gf,
+    addPoint,
+    mulPoint,
+    _addPoint,
+    ...cs,
+  }
 }
 
 /**
@@ -211,18 +231,20 @@ export function FpWEC(curve: FpWECParams): FpECUtils {
  *
  * Prime Field Montgomery Elliptic Curve Operations
  */
-export function FpMEC(curve: FpMECParams): FpECUtils {
+export function FpMEC(curve: FpMECParams): ECUtils {
   const { p, a, b } = curve
-  const { plus, multiply, subtract, divide } = Fp(p)
+  const gf = GF(p)
+  const cs = CoordinateSystem(gf)
 
-  const addPoint = (A: FpECPoint, B: FpECPoint): FpECPoint<bigint> => {
+  const { add, sub, mul, div } = gf
+  const { toAffine } = cs
+
+  const _addPoint = (A: AffinePoint, B: AffinePoint): AffinePoint<bigint> => {
     // O + P = P
-    if (A.isInfinity) {
-      return BIPoint(B)
-    }
-    if (B.isInfinity) {
-      return BIPoint(A)
-    }
+    if (A.isInfinity)
+      return toAffine(B, 'bigint')
+    if (B.isInfinity)
+      return toAffine(A, 'bigint')
 
     let [x1, y1] = [A.x, A.y]
     let [x2, y2] = [B.x, B.y]
@@ -233,35 +255,123 @@ export function FpMEC(curve: FpMECParams): FpECUtils {
     y2 = typeof y2 === 'bigint' ? y2 : U8.from(y2).toBI()
 
     // P + (-P) = O
-    if (x1 === x2 && y1 !== y2) {
-      return BIPoint()
-    }
+    if (sub(x1, x2) === 0n && add(y1, y2) === 0n)
+      return { isInfinity: true, x: 0n, y: 0n }
 
     let λ = 0n
     // P1 + P2
     if (x1 !== x2) {
       // λ = (y2 - y1) / (x2 - x1)
-      const numerator = subtract(y2, y1)
-      const denominator = subtract(x2, x1)
-      λ = divide(numerator, denominator)
+      const numerator = sub(y2, y1)
+      const denominator = sub(x2, x1)
+      λ = div(numerator, denominator)
     }
     // P1 + P1
     else {
+      // 若 y1 为 0，则切线斜率不存在，结果为无穷远点
+      if (y1 === 0n)
+        return { isInfinity: true, x: 0n, y: 0n }
+
       // λ = (3 * x1 * x1 + 2 * a * x1 + 1) / 2 * b * y1
-      const numerator = plus(multiply(3n, x1, x1), multiply(2n, a, x1), 1n)
-      const denominator = multiply(2n, b, y1)
-      λ = divide(numerator, denominator)
+      const numerator = add(mul(3n, x1, x1), mul(2n, a, x1), 1n)
+      const denominator = mul(2n, b, y1)
+      λ = div(numerator, denominator)
     }
 
     // x3 = b * λ * λ - a - x1 - x2
-    const x3 = subtract(multiply(λ, λ, b), a, x1, x2)
+    const x3 = sub(mul(λ, λ, b), a, x1, x2)
     // y3 = (2 x1 + x2 + a) * λ - b * λ * λ * λ - y1
-    const y3 = subtract(multiply(2n * x1 + x2 + a, λ), multiply(λ, λ, λ, b), y1)
+    const y3 = sub(mul(2n * x1 + x2 + a, λ), mul(λ, λ, λ, b), y1)
 
     return { isInfinity: false, x: x3, y: y3 }
   }
-  const mulPoint = (P: FpECPoint, k: bigint | Uint8Array): FpECPoint<bigint> => LadderMultiply(addPoint, P, k)
-  return { addPoint, mulPoint }
+
+  const addPoint = (A: JacobianPoint, B: JacobianPoint): JacobianPoint => {
+    // O + P = P
+    if (A.isInfinity)
+      return B
+    if (B.isInfinity)
+      return A
+
+    const X1 = A.x
+    const Y1 = A.y
+    const Z1 = A.z
+    const X2 = B.x
+    const Y2 = B.y
+    const Z2 = B.z
+    const ZZ1 = mul(Z1, Z1) // Z1^2
+    const ZZ2 = mul(Z2, Z2) // Z2^2
+    const U1 = mul(X1, ZZ2)
+    const U2 = mul(X2, ZZ1)
+    const S1 = mul(Y1, ZZ2, Z2)
+    const S2 = mul(Y2, ZZ1, Z1)
+    const H = sub(U2, U1) // H = U2 - U1
+    const R = sub(S2, S1) // R = S2 - S1
+
+    // P + (-P) = O
+    if (H === 0n && R !== 0n)
+      return { isInfinity: true, x: 1n, y: 1n, z: 0n }
+
+    // P1 + P1
+    if (H === 0n && R === 0n) {
+      // 若 Y1 为 0，则切线斜率不存在，结果为无穷远点
+      if (Y1 === 0n)
+        return { isInfinity: true, x: 1n, y: 1n, z: 0n }
+
+      const ZZ = ZZ1
+      const Z4 = mul(ZZ, ZZ)
+      const XX = mul(X1, X1)
+      // N = 3 * X1^2 + 2 * a * X1 * Z1^2 + Z1^4 (λ 的分子，已清除分母)
+      const N = add(
+        mul(3n, XX),
+        mul(2n, a, X1, ZZ),
+        Z4,
+      )
+      // Z3 = 2 * b * Y1 * Z1 = λ 的分母
+      const Z3 = mul(2n, b, Y1, Z1)
+      const YY = mul(Y1, Y1)
+
+      // X3 = b * N^2 - a * Z3^2 - 8 * b^2 * X1 * Y1^2
+      const X3 = sub(
+        mul(b, N, N),
+        mul(a, Z3, Z3),
+        mul(8n, b, b, X1, YY),
+      )
+      // Y3 = 4 * b^2 * (3 * X1 + a * Z1^2) * N * Y1^2 - b * N^3 - 8 * b^3 * Y1^4
+      const Y3 = sub(
+        mul(4n, b, b, add(mul(3n, X1), mul(a, ZZ)), N, YY),
+        mul(b, N, N, N),
+        mul(8n, b, b, b, YY, YY),
+      )
+      return { isInfinity: false, x: X3, y: Y3, z: Z3 }
+    }
+    // P1 + P2
+    else {
+      const HH = mul(H, H) // HH = H^2
+      const X3 = sub(
+        mul(b, R, R),
+        mul(a, ZZ1, ZZ2, HH),
+        mul(add(U1, U2), HH),
+      )
+      const Y3 = sub(
+        mul(R, sub(mul(U1, HH), X3)),
+        mul(S1, HH, H),
+      )
+      const Z3 = mul(H, Z1, Z2)
+
+      return { isInfinity: false, x: X3, y: Y3, z: Z3 }
+    }
+  }
+
+  const mulPoint = (P: JacobianPoint, k: bigint | Uint8Array): JacobianPoint => LadderMultiply(addPoint, P, k)
+
+  return {
+    gf,
+    _addPoint,
+    addPoint,
+    mulPoint,
+    ...cs,
+  }
 }
 
 /**
@@ -270,7 +380,7 @@ export function FpMEC(curve: FpMECParams): FpECUtils {
  * Prime Field Twisted Edwards Elliptic Curve Operations
  */
 // eslint-disable-next-line unused-imports/no-unused-vars
-export function FpTEC(curve: FpTECParams): FpECUtils {
+export function FpTEC(curve: FpTECParams): ECUtils {
   // TODO
   return {} as any
 }
