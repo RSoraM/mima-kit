@@ -59,7 +59,8 @@ export { ISO7816_PAD, NO_PAD, PKCS7_PAD, X923_PAD, ZERO_PAD } from './core/ciphe
 // * Codec
 export type { Codec } from './core/codec'
 export { B32, B64, B64URL, CSV, HEX, UTF8 } from './core/codec'
-export type { FpECPoint } from './core/ecParams'
+
+// * ECC Params
 export type { FpMECParams, FpWECParams } from './core/ecParams'
 export { sm2p256v1 } from './core/ecParams'
 
@@ -77,6 +78,10 @@ export { p192, p224, p256, p384, p521 } from './core/ecParams'
 export { w448, w25519 } from './core/ecParams'
 export { curve448, curve25519 } from './core/ecParams'
 export { bp192r1, bp224r1, bp256r1, bp320r1, bp384r1, bp512r1 } from './core/ecParams'
+
+// * Galois Field Utils
+export type { GFUtils } from './core/field'
+export { GF } from './core/field'
 
 // * Hash Utils
 export type { Digest, Hash, HashDescription } from './core/hash'

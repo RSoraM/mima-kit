@@ -70,7 +70,7 @@ export function pbkdf2(k_hash: KeyHash, iterations = 1000): KDF {
     ikm = U8.from(ikm)
 
     /** Output Keying Material */
-    const okm: Uint8Array[] = []
+    const okm = new U8(k_byte)
 
     let T: Uint8Array
     let U: Uint8Array
@@ -82,11 +82,11 @@ export function pbkdf2(k_hash: KeyHash, iterations = 1000): KDF {
         U = k_hash(ikm, U)
         T.forEach((_, j) => T[j] ^= U[j])
       }
-      okm.push(T)
+      okm.set(T, okm_byte)
       counter.inc()
     }
 
-    return joinBuffer(...okm).slice(0, k_byte)
+    return okm
   }
 }
 
