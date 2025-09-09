@@ -7,6 +7,7 @@ import { x448, x25519 } from '../src/cipher/pkcs/x25519_448'
 import { ecb, NO_PAD } from '../src/core/cipher'
 import { HEX, UTF8 } from '../src/core/codec'
 import * as ecParams from '../src/core/ecParams'
+import { GF2 } from '../src/core/field'
 import { hkdf, pbkdf2, scrypt, x963kdf } from '../src/core/kdf'
 import { U8 } from '../src/core/utils'
 import { hmac } from '../src/hash/hmac'
@@ -17,7 +18,7 @@ import { sm3 } from '../src/hash/sm3'
 const { pkcs1_es_1_5, pkcs1_es_oaep } = pkcs1
 const { pkcs1_ssa_1_5, pkcs1_ssa_pss } = pkcs1
 
-const { secp160r1 } = ecParams
+const { secp160r1, sect163k1 } = ecParams
 
 describe('pkcs#1', () => {
   const m = UTF8('meow, 喵， 🐱')
@@ -404,4 +405,95 @@ describe('sm2', () => {
     const cipher_from_outside = sm2ec.es(undefined, undefined, 'c1c2c3')
     expect(cipher_from_outside.decrypt(key_from_outside, C_from_outside)).toMatchObject(M)
   })
+})
+
+describe('gf2', () => {
+  // vector source: https://sagecell.sagemath.org
+
+  const gf = GF2(sect163k1.m, sect163k1.IP)
+  const x = 0x1DBFD60B8BC7B317EE5B82B49BC4331D3516C4226n
+  const y = 0x3CB11CBD786BF745C8FFA5CFEB34A2E89E3D5514Bn
+
+  it('add', () =>
+    expect(gf.add(x, y)).toBe(0x210ECAB6F3AC445226A4277B70F091F5AB2B9136Dn))
+  it('sub', () =>
+    expect(gf.sub(x, y)).toBe(0x210ECAB6F3AC445226A4277B70F091F5AB2B9136Dn))
+  it('mul', () =>
+    expect(gf.mul(x, y)).toBe(0xE1425E42292CD16D6B6EAF8A0CF9F9B59BE5B720n))
+  it('div', () =>
+    expect(gf.div(x, y)).toBe(0x5465392D46497EF0F837A62B7AB9CE9ACAE211F12n))
+  it('squ', () =>
+    expect(gf.squ(x)).toBe(0x6E157102393D623EB377AB890CCB9DC492F0916A7n))
+  it('inv', () =>
+    expect(gf.inv(x)).toBe(0x511D27B568F484E177FCEC85712E7C3EA44D59BB0n))
+  it('sqrt', () =>
+    expect(gf.root(x)).toBe(0x7AA6A350395887F4D27F4DC468C5377B0EB2462E1n))
+  it('pow', () =>
+    expect(gf.pow(x, y)).toBe(0x4B70BD3D9949890AC03A284CD6996CD29C46088F4n))
+
+  // # 定义二元域 GF(2)
+  // F2 = GF(2)
+
+  // # 定义多项式环
+  // P.<x> = PolynomialRing(F2)
+
+  // # 定义不可约多项式: x^163 + x^7 + x^6 + x^3 + 1
+  // irreducible_poly = x^163 + x^7 + x^6 + x^3 + 1
+
+  // # 验证不可约多项式是否确实是不可约的
+  // if irreducible_poly.is_irreducible():
+  //   print("多项式是不可约的")
+  // else:
+  //   print("警告：多项式是可约的")
+
+  // # 使用不可约多项式创建有限域 GF(2^163)
+  // GF2_163 = GF(2^163, modulus=irreducible_poly, name='a')
+  // a = GF2_163.gen()
+
+  // # x = GF2_163.random_element()
+  // # y = GF2_163.random_element()
+  // x = GF2_163.from_integer(0x1dbfd60b8bc7b317ee5b82b49bc4331d3516c4226)
+  // y = GF2_163.from_integer(0x3cb11cbd786bf745c8ffa5cfeb34a2e89e3d5514b)
+
+  // print(f"x: {hex(x.to_integer())} -> {x}")
+  // print(f"y: {hex(y.to_integer())} -> {y}")
+  // print()
+
+  // # 计算加法
+  // result = x + y
+  // print(f"x + y: {hex(result.to_integer())}")
+
+  // # 计算减法（在 GF(2^m) 中，加法和减法是相同的）
+  // result = x - y
+  // print(f"x - y: {hex(result.to_integer())}")
+
+  // # 计算乘法
+  // result = x * y
+  // print(f"x * y: {hex(result.to_integer())}")
+
+  // # 计算除法
+  // if y != 0:
+  //   result = x / y
+  //   print(f"x / y: {hex(result.to_integer())}")
+  // else:
+  //   print("y 是零，无法进行除法")
+
+  // # 计算平方
+  // result = x^2
+  // print(f"x^2: {hex(result.to_integer())}")
+
+  // # 计算乘法逆元
+  // if x != 0:
+  //   result = x^(-1)
+  //   print(f"x^(-1): {hex(result.to_integer())}")
+  // else:
+  //   print("x 是零，没有逆元")
+
+  // # 计算平方根
+  // result = x.sqrt()
+  // print(f"sqrt(x): {hex(result.to_integer())}")
+
+  // # 计算 x 的 y 次方幂
+  // result = x^(y.to_integer())
+  // print(f"x^y: {hex(result.to_integer())}")
 })

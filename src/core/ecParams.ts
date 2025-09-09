@@ -73,7 +73,7 @@ export interface FpTECParams {
  * Binary Field Elliptic Curve Parameters
  */
 export interface FbWECParams {
-  readonly m: number
+  readonly m: bigint
   readonly IP: bigint
   readonly a: bigint
   readonly b: bigint
@@ -418,7 +418,7 @@ export const secp521r1: FpWECParams = Object.freeze({
 // * SEC-1 Binary Curves
 
 export const sect163k1: FbWECParams = Object.freeze({
-  m: 163,
+  m: 163n,
   IP: (1n << 163n) + (1n << 7n) + (1n << 6n) + (1n << 3n) + 1n,
   a: 0x1n,
   b: 0x1n,
