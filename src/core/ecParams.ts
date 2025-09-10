@@ -1,16 +1,9 @@
 import type { AffinePoint } from './field'
 
-// * Prime Filed Elliptic Curve Interfaces
+// * Elliptic Curve Interfaces
 
-/**
- * 素域 Weierstrass 椭圆曲线参数
- *
- * Prime Field Weierstrass Elliptic Curve Parameters
- */
-export interface FpWECParams {
-  type: 'Weierstrass'
-  /** Prime */
-  readonly p: bigint
+/** 椭圆曲线参数 / Elliptic Curve Parameters */
+interface ECParams {
   /** Coefficient a */
   readonly a: bigint
   /** Coefficient b */
@@ -21,6 +14,23 @@ export interface FpWECParams {
   readonly n: bigint
   /** co-factor */
   readonly h: bigint
+}
+
+// * Prime Filed Elliptic Curve Interfaces
+
+/** 素域椭圆曲线参数 / Prime Field Elliptic Curve Parameters */
+interface FpECParams extends ECParams {
+  /** Prime */
+  readonly p: bigint
+}
+
+/**
+ * 素域 Weierstrass 椭圆曲线参数
+ *
+ * Prime Field Weierstrass Elliptic Curve Parameters
+ */
+export interface FpWECParams extends FpECParams {
+  type: 'Weierstrass'
 }
 
 /**
@@ -28,20 +38,8 @@ export interface FpWECParams {
  *
  * Prime Field Montgomery Elliptic Curve Parameters
  */
-export interface FpMECParams {
+export interface FpMECParams extends FpECParams {
   type: 'Montgomery'
-  /** Prime */
-  readonly p: bigint
-  /** Coefficient a */
-  readonly a: bigint
-  /** Coefficient b */
-  readonly b: 1n
-  /** Base point */
-  readonly G: Readonly<AffinePoint<bigint>>
-  /** Order */
-  readonly n: bigint
-  /** co-factor */
-  readonly h: bigint
 }
 
 /**
@@ -49,37 +47,36 @@ export interface FpMECParams {
  *
  * Prime Field Twisted Edwards Elliptic Curve Parameters
  */
-export interface FpTECParams {
+export interface FpTECParams extends FpECParams {
   type: 'TwistedEdwards'
-  /** Prime */
-  readonly p: bigint
-  /** Coefficient a */
-  readonly a: bigint
-  /** Coefficient b */
-  readonly d: bigint
-  /** Base point */
-  readonly G: Readonly<AffinePoint<bigint>>
-  /** Order */
-  readonly n: bigint
-  /** co-factor */
-  readonly h: bigint
 }
 
 // * Binary Field Elliptic Curve Interfaces
 
-/**
- * 二元域椭圆曲线参数
- *
- * Binary Field Elliptic Curve Parameters
- */
-export interface FbWECParams {
+/** 二进制域椭圆曲线参数 / Binary Field Elliptic Curve Parameters */
+interface FbECParams extends ECParams {
+  /** Degree of the reduction polynomial */
   readonly m: bigint
+  /** Irreducible polynomial */
   readonly IP: bigint
-  readonly a: bigint
-  readonly b: bigint
-  readonly G: Readonly<AffinePoint>
-  readonly n: bigint
-  readonly h: bigint
+}
+
+/**
+ * 二进制域 伪随机 椭圆曲线参数
+ *
+ * Binary Field Pseudo-Random Elliptic Curve Parameters
+ */
+export interface FbPECParams extends FbECParams {
+  type: 'Pseudo-Random'
+}
+
+/**
+ * 二进制域 Koblitz 椭圆曲线参数
+ *
+ * Binary Field Koblitz Elliptic Curve Parameters
+ */
+export interface FbKECParams extends FbECParams {
+  type: 'Koblitz'
 }
 
 // * SM2 Prime Curve
@@ -417,7 +414,8 @@ export const secp521r1: FpWECParams = Object.freeze({
 
 // * SEC-1 Binary Curves
 
-export const sect163k1: FbWECParams = Object.freeze({
+export const sect163k1: FbKECParams = Object.freeze({
+  type: 'Koblitz',
   m: 163n,
   IP: (1n << 163n) + (1n << 7n) + (1n << 6n) + (1n << 3n) + 1n,
   a: 0x1n,
@@ -428,6 +426,36 @@ export const sect163k1: FbWECParams = Object.freeze({
     y: 0x0289070FB05D38FF58321F2E800536D538CCDAA3D9n,
   },
   n: 0x04000000000000000000020108A2E0CC0D99F8A5EFn,
+  h: 2n,
+})
+
+export const sect163r1: FbPECParams = Object.freeze({
+  type: 'Pseudo-Random',
+  m: 163n,
+  IP: (1n << 163n) + (1n << 7n) + (1n << 6n) + (1n << 3n) + 1n,
+  a: 0x07B6882CAAEFA84F9554FF8428BD88E246D2782AE2n,
+  b: 0x0713612DCDDCB40AAB946BDA29CA91F73AF958AFD9n,
+  G: {
+    isInfinity: false,
+    x: 0x0369979697AB43897789566789567F787A7876A654n,
+    y: 0x00435EDB42EFAFB2989D51FEFCE3C80988F41FF883n,
+  },
+  n: 0x03FFFFFFFFFFFFFFFFFFFF48AAB689C29CA710279Bn,
+  h: 2n,
+})
+
+export const sect163r2: FbPECParams = Object.freeze({
+  type: 'Pseudo-Random',
+  m: 163n,
+  IP: (1n << 163n) + (1n << 7n) + (1n << 6n) + (1n << 3n) + 1n,
+  a: 0x01n,
+  b: 0x020A601907B8C953CA1481EB10512F78744A3205FDn,
+  G: {
+    isInfinity: false,
+    x: 0x03F0EBA16286A2D57EA0991168D4994637E8343E36n,
+    y: 0x00D51FBC6C71A0094FA2CDD545B11C5C0C797324F1n,
+  },
+  n: 0x040000000000000000000292FE77E70C12A4234C33n,
   h: 2n,
 })
 
@@ -594,7 +622,7 @@ export const ed25519: FpTECParams = Object.freeze({
   type: 'TwistedEdwards',
   p: 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEDn,
   a: -1n,
-  d: 0x52036CEE2B6FFE738CC740797779E89800700A4D4141D8AB75EB4DCA135978A3n,
+  b: 0x52036CEE2B6FFE738CC740797779E89800700A4D4141D8AB75EB4DCA135978A3n,
   G: {
     isInfinity: false,
     x: 0x216936D3CD6E53FEC0A4E231FDD6DC5C692CC7609525A7B2C9562D608F25D51An,
@@ -613,7 +641,7 @@ export const ed448: FpTECParams = Object.freeze({
   type: 'TwistedEdwards',
   p: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn,
   a: 1n,
-  d: -39081n,
+  b: -39081n,
   G: {
     isInfinity: false,
     x: 0x4F1970C66BED0DED221D15A622BF36DA9E146570470F1767EA6DE324A3D3A46412AE1AF72AB66511433B80E18B00938E2626A82BC70CC05En,

@@ -126,9 +126,9 @@ export function GF(p: bigint): GFUtils {
 }
 
 /**
- * 二进制扩展域
+ * 二进制域
  *
- * Binary Extension Field
+ * Binary Field
  *
  * @param {number} m - 次数 / degree
  * @param {bigint} IP - 不可约多项式 / irreducible polynomial
@@ -243,7 +243,8 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
   // 平方根：重复平方 m-1 次 (a -> a^{2^(m-1)})
   const root = (a: bigint): bigint => {
     let r = a & mask
-    for (let i = 0; i < Number(m) - 1; i++) {
+    const end = Number(m) - 1
+    for (let i = 0; i < end; i++) {
       r = squ(r)
     }
     return r
@@ -313,8 +314,9 @@ export function CoordinateSystem(gf: GFUtils): CSUtils {
 
     const z_inv = inv(P.z)
     const z_inv2 = mul(z_inv, z_inv)
+    const z_inv3 = mul(z_inv2, z_inv)
     const x = mul(P.x, z_inv2)
-    const y = mul(P.y, mul(z_inv2, z_inv))
+    const y = mul(P.y, z_inv3)
 
     return {
       isInfinity: false,

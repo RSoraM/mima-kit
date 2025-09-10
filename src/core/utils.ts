@@ -277,7 +277,11 @@ export function modInverse(x: bigint, n: bigint): bigint {
  */
 export function modPrimeSquareRoot(n: bigint, p: bigint): bigint {
   n = mod(n, p)
-  return tonelliShanks(n, p)
+  if (n === 0n)
+    return 0n
+  const r1 = tonelliShanks(n, p)
+  const r2 = mod(p - r1, p)
+  return r1 <= r2 ? r1 : r2
 }
 
 // * Buffer utility functions
