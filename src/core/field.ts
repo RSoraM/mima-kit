@@ -30,16 +30,30 @@ export interface AffinePoint<T = bigint | Uint8Array> {
   y: T
 }
 
+export interface XYZPoint {
+  type: 'jacobian' | 'ld'
+  isInfinity: boolean
+  x: bigint
+  y: bigint
+  z: bigint
+}
+
 /**
  * 雅可比坐标系的点
  *
  * Jacobian Coordinate Point
  */
-export interface JacobianPoint {
-  isInfinity: boolean
-  x: bigint
-  y: bigint
-  z: bigint
+export interface JacobianPoint extends XYZPoint {
+  type: 'jacobian'
+}
+
+/**
+ * 洛佩兹-达哈布坐标系的点
+ *
+ * López-Dahab Coordinate Point
+ */
+export interface LDPoint extends XYZPoint {
+  type: 'ld'
 }
 
 /**
@@ -54,8 +68,8 @@ export interface CSUtils {
    * Jacobian Coordinate System to Affine Coordinate System
    */
   toAffine: {
-    (P: JacobianPoint, format?: 'bigint'): AffinePoint<bigint>
-    (P: JacobianPoint, format: 'u8', byte?: number): AffinePoint<U8>
+    (P: XYZPoint, format?: 'bigint'): AffinePoint<bigint>
+    (P: XYZPoint, format: 'u8', byte?: number): AffinePoint<U8>
     (P: AffinePoint, format?: 'bigint'): AffinePoint<bigint>
     (P: AffinePoint, format: 'u8', byte?: number): AffinePoint<U8>
     (P: undefined, format?: 'bigint'): AffinePoint<bigint>
@@ -68,8 +82,18 @@ export interface CSUtils {
    */
   toJacobian: {
     (P: JacobianPoint): JacobianPoint
-    (P: AffinePoint): JacobianPoint
+    (P: AffinePoint, Z?: bigint): JacobianPoint
     (P: undefined): JacobianPoint
+  }
+  /**
+   * 洛佩兹-达哈布坐标系 -> 仿射坐标系
+   *
+   * López-Dahab Coordinate System to Affine Coordinate System
+   */
+  toLD: {
+    (P: LDPoint): LDPoint
+    (P: AffinePoint, Z?: bigint): LDPoint
+    (P: undefined): LDPoint
   }
 }
 
@@ -134,11 +158,15 @@ export function GF(p: bigint): GFUtils {
  * @param {bigint} IP - 不可约多项式 / irreducible polynomial
  */
 export function GF2(m: bigint, IP: bigint): GFUtils {
-  const mask = (1n << m) - 1n
-  const topBit = 1n << m
+  /** m - 1 */
+  const m_1 = Number(m - 1n)
+  /** 2^n */
+  const p_n = 1n << m
+  /** 2^n - 1 */
+  const mask = p_n - 1n
 
   // 要求 IP 最高项为 x^m
-  if ((IP & topBit) === 0n)
+  if ((IP & p_n) === 0n)
     throw new KitError('Irreducible polynomial IP must have degree m (set bit at x^m)')
 
   // 约化：按 IP 做多项式模约化
@@ -158,7 +186,7 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
   const sub = add
 
   // 多项式乘法: 俄罗斯乘法 + 单步约化
-  const mul = (a: bigint, b: bigint): bigint => {
+  const _mul = (a: bigint, b: bigint): bigint => {
     let result = 0n
     let a_val = a & mask
     let b_val = b & mask
@@ -177,6 +205,7 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
 
     return result & mask
   }
+  const mul = (...args: bigint[]) => args.reduce((acc, cur) => _mul(acc, cur))
 
   // 专用平方: 每个比特 i -> 2i，然后约化
   const squ = (a: bigint): bigint => {
@@ -199,15 +228,15 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
       throw new KitError('Division by zero')
     let acc = 1n
     let t = a
-    for (let i = 1; i <= Number(m) - 1; i++) {
+    for (let i = 1; i <= m_1; i++) {
       t = squ(t)       // t = a^{2^i}
-      acc = mul(acc, t)
+      acc = _mul(acc, t)
     }
     return acc & mask  // acc = a^{2^m-2}
   }
 
   // 多项式除法: a / b = a * inv(b)
-  const div = (a: bigint, b: bigint): bigint => mul(a, inv(b))
+  const div = (a: bigint, b: bigint): bigint => _mul(a, inv(b))
 
   // 幂运算: 针对 2 的幂优化，否则通用平方-乘
   const pow = (a: bigint, b: bigint): bigint => {
@@ -233,8 +262,8 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
     let exp = b
     while (exp > 0n) {
       if (exp & 1n)
-        result = mul(result, base)
-      base = mul(base, base)
+        result = _mul(result, base)
+      base = _mul(base, base)
       exp >>= 1n
     }
     return result & mask
@@ -243,7 +272,7 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
   // 平方根：重复平方 m-1 次 (a -> a^{2^(m-1)})
   const root = (a: bigint): bigint => {
     let r = a & mask
-    const end = Number(m) - 1
+    const end = m_1
     for (let i = 0; i < end; i++) {
       r = squ(r)
     }
@@ -257,7 +286,7 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
     return n.toString(2).length
   }
 
-  const mod = (a: bigint) => reduce(a & (mask | topBit))
+  const mod = (a: bigint) => reduce(a & (mask | p_n))
 
   return {
     add,
@@ -275,11 +304,8 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
 // * Coordinate Systems
 
 export function CoordinateSystem(gf: GFUtils): CSUtils {
-  const { mul, inv, mod } = gf
+  const { mul, inv, mod, squ } = gf
 
-  const isJacobian = (P: JacobianPoint | AffinePoint): P is JacobianPoint => {
-    return 'z' in P
-  }
   const toBI = (value: Uint8Array | bigint): bigint => {
     return typeof value === 'bigint' ? value : U8.from(value).toBI()
   }
@@ -288,7 +314,7 @@ export function CoordinateSystem(gf: GFUtils): CSUtils {
   }
 
   function toAffine(
-    P?: JacobianPoint | AffinePoint,
+    P?: XYZPoint | AffinePoint,
     format: 'bigint' | 'u8' = 'bigint',
     byte?: number,
   ) {
@@ -298,7 +324,7 @@ export function CoordinateSystem(gf: GFUtils): CSUtils {
         : { isInfinity: true, x: new U8(), y: new U8() }
     }
 
-    if (!isJacobian(P)) {
+    if (!('z' in P)) {
       return {
         isInfinity: false,
         x: format === 'bigint' ? toBI(P.x) : toU8(P.x, byte),
@@ -308,15 +334,25 @@ export function CoordinateSystem(gf: GFUtils): CSUtils {
 
     if (P.z === 0n)
       return { isInfinity: true, x: 0n, y: 0n }
-
     if (P.z === 1n)
       return { isInfinity: false, x: mod(P.x), y: mod(P.y) }
 
+    if (P.type !== 'jacobian' && P.type !== 'ld')
+      throw new KitError('Invalid point type')
+
+    let x = 0n
+    let y = 0n
     const z_inv = inv(P.z)
-    const z_inv2 = mul(z_inv, z_inv)
-    const z_inv3 = mul(z_inv2, z_inv)
-    const x = mul(P.x, z_inv2)
-    const y = mul(P.y, z_inv3)
+    const z_inv2 = squ(z_inv)
+    if (P.type === 'jacobian') {
+      const z_inv3 = mul(z_inv2, z_inv)
+      x = mul(P.x, z_inv2)
+      y = mul(P.y, z_inv3)
+    }
+    else if (P.type === 'ld') {
+      x = mul(P.x, z_inv)
+      y = mul(P.y, z_inv2) // y = Y / Z^2
+    }
 
     return {
       isInfinity: false,
@@ -327,23 +363,48 @@ export function CoordinateSystem(gf: GFUtils): CSUtils {
 
   function toJacobian(
     P?: JacobianPoint | AffinePoint,
-  ) {
-    if (!P || P.isInfinity)
-      return { isInfinity: true, x: 1n, y: 1n, z: 0n }
+    Z = 1n,
+  ): JacobianPoint {
+    if (!P || P.isInfinity || Z === 0n)
+      return { type: 'jacobian', isInfinity: true, x: 1n, y: 1n, z: 0n }
 
-    if (isJacobian(P))
+    if ('z' in P && P.type === 'jacobian')
       return P
 
-    return {
-      isInfinity: false,
-      x: toBI(P.x),
-      y: toBI(P.y),
-      z: 1n,
-    }
+    const X = toBI(P.x)
+    const Y = toBI(P.y)
+    if (Z === 1n)
+      return { type: 'jacobian', isInfinity: false, x: X, y: Y, z: Z }
+
+    const ZZ = mul(Z, Z)
+    const ZZZ = mul(ZZ, Z)
+
+    return { type: 'jacobian', isInfinity: false, x: mul(X, ZZ), y: mul(Y, ZZZ), z: Z }
+  }
+
+  function toLD(
+    P?: LDPoint | AffinePoint,
+    Z = 1n,
+  ): LDPoint {
+    if (!P || P.isInfinity)
+      return { type: 'ld', isInfinity: true, x: 1n, y: 1n, z: 0n }
+
+    if ('z' in P && P.type === 'ld')
+      return P
+
+    const X = toBI(P.x)
+    const Y = toBI(P.y)
+    if (Z === 1n)
+      return { type: 'ld', isInfinity: false, x: X, y: Y, z: Z }
+
+    const ZZ = mul(Z, Z)
+
+    return { type: 'ld', isInfinity: false, x: mul(X, Z), y: mul(Y, ZZ), z: Z }
   }
 
   return {
     toAffine: toAffine as CSUtils['toAffine'],
     toJacobian: toJacobian as CSUtils['toJacobian'],
+    toLD: toLD as CSUtils['toLD'],
   }
 }
