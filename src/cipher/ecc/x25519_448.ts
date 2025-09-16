@@ -1,5 +1,5 @@
-import { curve448, curve25519 } from '../../core/ecParams'
-import { GF } from '../../core/field'
+import { curve448, curve25519 } from '../../core/ec_params'
+import { GF } from '../../core/galois_field'
 import { genRandomBI, getBIBits, KitError, U8 } from '../../core/utils'
 
 // * Interfaces

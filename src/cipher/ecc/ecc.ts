@@ -1,37 +1,34 @@
 import type { BlockCipher, BlockCipherInfo } from '../../core/cipher'
-import type { ECUtils } from '../../core/ec'
-import type { FpMECParams, FpWECParams } from '../../core/ecParams'
-import type { AffinePoint } from '../../core/field'
+import type { AffinePoint } from '../../core/coordinate_system'
+import type { ECJacobian, ECLópezDahab, FbKECParams, FbPECParams, FpMECParams, FpWECParams } from '../../core/ec'
 import type { Digest, KeyHash } from '../../core/hash'
 import type { KDF } from '../../core/kdf'
+import { aes } from '../../cipher/blockCipher/aes'
 import { cbc, createCipher } from '../../core/cipher'
-import { FpEC } from '../../core/ec'
+import { EC } from '../../core/ec'
 import { x963kdf } from '../../core/kdf'
-import { genBitMask, genRandomBI, getBIBits, joinBuffer, KitError, mod, modInverse, U8 } from '../../core/utils'
+import { genBitMask, genRandomBI, getBIBits, joinBuffer, KitError, mod, modInverse, U8  } from '../../core/utils'
 import { hmac } from '../../hash/hmac'
 import { sha256 } from '../../hash/sha256'
-import { aes } from '../blockCipher/aes'
 
 // * Interfaces
 
-export interface ECPublicKey<T = bigint | Uint8Array> {
+export interface ECPublicKey {
   /** 椭圆曲线公钥 / Elliptic Curve Public Key */
-  readonly Q: Readonly<AffinePoint<T>>
+  readonly Q: Readonly<AffinePoint>
 }
-export interface ECPrivateKey<T = bigint | Uint8Array> {
+export interface ECPrivateKey {
   /** 椭圆曲线私钥 / Elliptic Curve Private Key */
-  readonly d: T
+  readonly d: bigint
 }
-/** 椭圆曲线密钥对 / Elliptic Curve Key Pair */
-export interface ECKeyPair<T = bigint | Uint8Array> extends ECPrivateKey<T>, ECPublicKey<T> {
-}
+export interface ECKeyPair extends ECPrivateKey, ECPublicKey {}
 
 export interface ECDH {
   /**
    * @param {ECPrivateKey} s_key - 己方私钥 / Self Private Key
    * @param {ECPublicKey} p_key - 对方公钥 / Counterparty Public Key
    */
-  (s_key: ECPrivateKey, p_key: ECPublicKey): AffinePoint<U8>
+  (s_key: ECPrivateKey, p_key: ECPublicKey): AffinePoint
 }
 
 export interface ECMQV {
@@ -41,14 +38,14 @@ export interface ECMQV {
    * @param {ECPublicKey} v1 - 对方公钥 / Counterparty Public Key
    * @param {ECPublicKey} v2 - 对方临时公钥 / Counterparty Temporary Public Key
    */
-  (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey): AffinePoint<U8>
+  (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey): AffinePoint
 }
 
-export interface ECDSASignature<T = bigint | Uint8Array> {
+export interface ECDSASignature {
   /** 临时公钥 / Temporary Public Key */
-  r: T
+  r: bigint
   /** 签名值 / Signature Value */
-  s: T
+  s: bigint
 }
 export interface ECDSA {
   /**
@@ -59,7 +56,7 @@ export interface ECDSA {
      * @param {ECPrivateKey} s_key - 签名方私钥 / Signer's Private Key
      * @param {Uint8Array} M - 消息 / Message
      */
-    sign: (s_key: ECPrivateKey, M: Uint8Array) => ECDSASignature<U8>
+    sign: (s_key: ECPrivateKey, M: Uint8Array) => ECDSASignature
     /**
      * @param {ECPublicKey} p_key - 签名方公钥 / Signer's Public Key
      * @param {Uint8Array} M - 消息 / Message
@@ -130,33 +127,15 @@ export interface ECIES {
   }
 }
 
-export interface FpECCrypto {
-  utils: {
-    /**
-     * 判断公钥是否合法
-     *
-     * Determine if the public key is legal
-     */
-    isLegalPK: (p_key: ECPublicKey) => boolean
-    /**
-     * 判断私钥是否合法
-     *
-     * Determine if the private key is legal
-     */
-    isLegalSK: (s_key: ECPrivateKey) => boolean
-    /**
-     * 点转换为字节串，默认不压缩
-     *
-     * Convert Point to Byte String, not compressed by default
-     */
-    PointToU8: (point: AffinePoint, compress?: boolean) => U8
-    /**
-     * 字节串转换为点
-     *
-     * Convert Byte String to Point
-     */
-    U8ToPoint: (buffer: Uint8Array) => AffinePoint<U8>
-  } & ECUtils
+/**
+ * 椭圆曲线密码学
+ *
+ * Elliptic Curve Crypto
+ *
+ * @template P - 点类型 / Point Type
+ * @template C - 曲线参数类型 / Curve Parameters Type
+ */
+export interface ECCBase {
   /**
    * 生成椭圆曲线密钥
    *
@@ -164,11 +143,11 @@ export interface FpECCrypto {
    */
   gen: {
     /** 生成密钥对 / Generate Key Pair */
-    (type?: 'key_pair'): ECKeyPair<U8>
+    (type?: 'key_pair'): ECKeyPair
     /** 生成私钥 / Generate Private Key */
-    (type: 'private_key'): ECPrivateKey<U8>
+    (type: 'private_key'): ECPrivateKey
     /** 生成公钥 / Generate Public Key */
-    (type: 'public_key', s_key: ECPrivateKey): ECKeyPair<U8>
+    (type: 'public_key', s_key: ECPrivateKey): ECKeyPair
   }
   /**
    * 椭圆曲线迪菲-赫尔曼, 密钥协商算法
@@ -201,6 +180,22 @@ export interface FpECCrypto {
    */
   ies: ECIES
 }
+export interface ECCFpWeierstrass extends ECCBase {
+  parameters: FpWECParams
+  utils: ECJacobian
+}
+export interface ECCFpMontgomery extends ECCBase {
+  parameters: FpMECParams
+  utils: ECJacobian
+}
+export interface ECCFbPseudoRandom extends ECCBase {
+  parameters: FbPECParams
+  utils: ECLópezDahab
+}
+export interface ECCFbKoblitz extends ECCBase {
+  parameters: FbKECParams
+  utils: ECLópezDahab
+}
 
 // * Functions
 
@@ -223,227 +218,140 @@ export function defineECIES(config?: ECIESConfig) {
   return { cipher, mac, kdf, S1, S2, iv }
 }
 
-// * EC Algorithms
+// * ECC
 
-/**
- * 素域椭圆曲线密码学组件
- *
- * Prime Field Elliptic Curve Cryptography Components
- */
-export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
-  const { p, a, b, G, n, h } = curve
-  const p_bit = getBIBits(p)
-  const p_byte = (p_bit + 7) >> 3
+export function ECC(curve: FpWECParams): ECCFpWeierstrass
+export function ECC(curve: FpMECParams): ECCFpMontgomery
+export function ECC(curve: FbPECParams): ECCFbPseudoRandom
+export function ECC(curve: FbKECParams): ECCFbKoblitz
+export function ECC(curve: FpWECParams | FpMECParams | FbPECParams | FbKECParams) {
+  let ec
+  switch (curve.type) {
+    case 'Weierstrass':
+    case 'Montgomery':
+      ec = EC(curve)
+      break
+    case 'Pseudo-Random':
+    case 'Koblitz':
+      ec = EC(curve)
+      break
+    default:
+      throw new KitError('unsupported curve type')
+  }
+  let toCatalyst
+  switch (ec.catalyst) {
+    case 'jacobian':
+      toCatalyst = ec.cs.toJacobian
+      break
+    case 'ld':
+      toCatalyst = ec.cs.toLD
+      break
+    default:
+      throw new KitError('unsupported catalyst type')
+  }
+
+  const { G, n, h } = curve
+  /** 优化基点 */
+  const CG = toCatalyst(G)
   const n_bit = getBIBits(n)
   const n_mask = genBitMask(n_bit)
-  const fp = FpEC(curve)
-  const { gf, addPoint, mulPoint, toAffine, toJacobian } = fp
-  const { add, mul, root } = gf
+  const p = 'p' in curve ? curve.p : undefined
+  const p_bit = p ? getBIBits(p) : undefined
+  const p_byte = p ? (p_bit! + 7) >> 3 : undefined
+  const m = 'm' in curve ? curve.m : undefined
+  const m_bit = m ? getBIBits(m) : undefined
+  const m_byte = m ? (m_bit! + 7) >> 3 : undefined
+  const ele_byte = p_byte ?? m_byte!
 
-  /** 基点 (雅可比坐标系) */
-  const GJ = toJacobian(G)
+  const { addPoint, mulPoint, isLegalSK, isLegalPK } = ec
+  const toAffine = ec.cs.toAffine
 
-  const isLegalPK: FpECCrypto['utils']['isLegalPK'] = (p_key: ECPublicKey): boolean => {
-    const P = toJacobian(p_key.Q)
-
-    // P != O
-    if (P.isInfinity)
-      return false
-
-    // P(x, y) ∈ E
-    const { x, y } = P
-    if (x < 0n || x >= p || y < 0n || y >= p)
-      return false
-
-    if (curve.type === 'Weierstrass') {
-      // y^2 = x^3 + ax + b
-      const l = mul(y, y)
-      const r = add(mul(x, x, x), mul(a, x), b)
-      if (l !== r)
-        return false
-
-      // nP = O
-      const nP = mulPoint(P, n)
-
-      return nP.isInfinity
-    }
-    if (curve.type === 'Montgomery') {
-      // By^2 = x^3 + Ax^2 + x
-      const l = mul(b, y, y)
-      const r = add(mul(x, x, x), mul(a, x, x), x)
-      if (l !== r)
-        return false
-
-      // nP = O
-      const nP = mulPoint(P, n)
-
-      return nP.isInfinity
-    }
-    // unknown curve type
-    else {
-      return false
-    }
-  }
-  const isLegalSK: FpECCrypto['utils']['isLegalSK'] = (s_key: ECPrivateKey): boolean => {
-    const d = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
-    if (d < 0n || d >= p)
-      return false
-    return !mulPoint(GJ, d).isInfinity
-  }
-  const PointToU8: FpECCrypto['utils']['PointToU8'] = (point: AffinePoint, compress = false): U8 => {
-    if (point.isInfinity)
-      return new U8([0x00])
-
-    const { x, y } = toAffine(point, 'u8', p_byte)
-    const sign_y = y[y.length - 1] & 1
-    const PC = new U8([compress ? 0x02 | sign_y : 0x04])
-    const X1 = x
-    const Y1 = compress ? new U8() : y
-
-    return joinBuffer(PC, X1, Y1)
-  }
-  const U8ToPoint: FpECCrypto['utils']['U8ToPoint'] = (buffer: Uint8Array): AffinePoint<U8> => {
-    const point_buffer = U8.from(buffer)
-    const PC = point_buffer[0]
-    if (PC !== 0x00 && PC !== 0x02 && PC !== 0x03 && PC !== 0x04)
-      throw new KitError('Invalid Point')
-
-    if (PC === 0x00 && point_buffer.length === 1)
-      throw new KitError('Invalid Point')
-
-    // 无穷远点
-    if (PC === 0x00)
-      return toAffine(undefined, 'u8')
-
-    // 无压缩
-    if (PC === 0x04) {
-      if (point_buffer.length !== (p_byte << 1) + 1)
-        throw new KitError('Invalid Point')
-
-      const x = point_buffer.slice(1, p_byte + 1)
-      const y = point_buffer.slice(p_byte + 1)
-
-      return { isInfinity: false, x, y }
-    }
-    // 解压缩
-    else {
-      if (point_buffer.length !== p_byte + 1)
-        throw new KitError('Invalid Point')
-
-      const x_buffer = point_buffer.slice(1)
-      const x = x_buffer.toBI()
-      const sign_y = BigInt(PC & 1)
-
-      if (curve.type === 'Weierstrass') {
-        let y = 0n
-        y = add(mul(x, x, x), mul(a, x), b)
-        y = root(y)
-        y = (y & 1n) === sign_y ? y : p - y
-
-        return toAffine({ isInfinity: false, x: x_buffer, y }, 'u8', p_byte)
-      }
-      else if (curve.type === 'Montgomery') {
-        let y = 0n
-        y = add(mul(x, x, x), mul(a, x, x), x)
-        y = root(y / b)
-        y = (y & 1n) === sign_y ? y : p - y
-
-        return toAffine({ isInfinity: false, x: x_buffer, y }, 'u8', p_byte)
-      }
-      else {
-        throw new KitError('Unknown curve type')
-      }
-    }
-  }
-  // Key generation
-  function gen(type?: 'key_pair'): ECKeyPair<U8>
-  function gen(type: 'private_key'): ECPrivateKey<U8>
-  function gen(type: 'public_key', s_key: ECPrivateKey): ECKeyPair<U8>
+  function gen(type?: 'key_pair'): ECKeyPair
+  function gen(type: 'private_key'): ECPrivateKey
+  function gen(type: 'public_key', s_key: ECPrivateKey): ECKeyPair
   function gen(
     type: 'key_pair' | 'private_key' | 'public_key' = 'key_pair',
     s_key?: ECPrivateKey,
   ) {
     if (type === 'key_pair') {
       // private key
-      const { buffer, result: d } = genRandomBI(n, p_byte)
+      const { result: d } = genRandomBI(n, ele_byte)
       // public key
-      const _ = mulPoint(GJ, d)
-      const Q = toAffine(_, 'u8', p_byte)
+      const _ = mulPoint(CG as any, d)
+      const Q = toAffine(_)
 
-      return { Q, d: buffer }
+      return { Q, d }
     }
     else if (type === 'private_key') {
-      return { d: genRandomBI(n, p_byte).buffer }
+      const { result: d } = genRandomBI(n, ele_byte)
+      return { d }
     }
     else if (type === 'public_key') {
-      const d_buffer = typeof s_key!.d === 'bigint' ? U8.fromBI(s_key!.d) : U8.from(s_key!.d)
-      const d = typeof s_key!.d === 'bigint' ? s_key!.d : d_buffer.toBI()
+      const d = s_key!.d
       if (d === 0n)
         throw new KitError('Invalid private key')
 
-      const _ = mulPoint(GJ, d)
-      const Q = toAffine(_, 'u8', p_byte)
+      const _ = mulPoint(CG as any, d)
+      const Q = toAffine(_)
 
-      return { Q, d: d_buffer }
+      return { Q, d }
     }
   }
-  // Key agreement
-  const ecdh: ECDH = (s_key: ECPrivateKey, p_key: ECPublicKey) => {
-    if (!isLegalPK(p_key))
+
+  const dh: ECDH = (s_key: ECPrivateKey, p_key: ECPublicKey) => {
+    if (!isLegalPK(p_key.Q))
       throw new KitError('Invalid public key')
 
-    if (!isLegalSK(s_key))
+    if (!isLegalSK(s_key.d))
       throw new KitError('Invalid private key')
 
-    const Q = toJacobian(p_key.Q)
+    const Q = toCatalyst(p_key.Q)
     const d = s_key.d
-    const S = mulPoint(Q, d)
+    const S = mulPoint(Q as any, d)
     if (S.isInfinity)
       throw new KitError('the result of ECDH is the point at infinity')
 
-    return toAffine(S, 'u8', p_byte)
+    return toAffine(S)
   }
-  const eccdh: ECDH = (s_key: ECPrivateKey, p_key: ECPublicKey) => {
-    if (!isLegalPK(p_key))
+  const cdh: ECDH = (s_key: ECPrivateKey, p_key: ECPublicKey) => {
+    if (!isLegalPK(p_key.Q))
       throw new KitError('Invalid public key')
 
-    if (!isLegalSK(s_key))
+    if (!isLegalSK(s_key.d))
       throw new KitError('Invalid private key')
 
-    const Q = toJacobian(p_key.Q)
-    const d = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
-    const S = mulPoint(toJacobian(Q), d * h)
-
+    const Q = toCatalyst(p_key.Q)
+    const d = s_key.d
+    const S = mulPoint(Q as any, d * h)
     if (S.isInfinity)
-      throw new KitError('the result of ECCDH is the point at infinity')
+      throw new KitError('the result of ECDH is the point at infinity')
 
-    return toAffine(S, 'u8', p_byte)
+    return toAffine(S)
   }
-  const ecmqv: ECMQV = (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey) => {
-    if (!isLegalPK(v1) || !isLegalPK(v2))
+  const mqv: ECMQV = (u1: ECKeyPair, u2: ECKeyPair, v1: ECPublicKey, v2: ECPublicKey) => {
+    if (!isLegalPK(v1.Q) || !isLegalPK(v2.Q))
       throw new KitError('Invalid public key')
 
     const ceilLog2n = n_bit
     const L = 1n << BigInt(Math.ceil(ceilLog2n / 2))
-    const u1d = typeof u1.d === 'bigint' ? u1.d : U8.from(u1.d).toBI()
-    const u2d = typeof u2.d === 'bigint' ? u2.d : U8.from(u2.d).toBI()
-    const u2Qx = typeof u2.Q.x === 'bigint' ? u2.Q.x : U8.from(u2.Q.x).toBI()
-    const v2Qx = typeof v2.Q.x === 'bigint' ? v2.Q.x : U8.from(v2.Q.x).toBI()
+    const u1d = u1.d
+    const u2d = u2.d
+    const u2Qx = u2.Q.x
+    const v2Qx = v2.Q.x
     const Q2u = mod(u2Qx, L) + L
     const Q2v = mod(v2Qx, L) + L
     const s = mod(u2d + Q2u * u1d, n)
-    const v2Q = toJacobian(v2.Q)
-    const v1Q = toJacobian(v1.Q)
-    const P = mulPoint(addPoint(v2Q, mulPoint(v1Q, Q2v)), s * h)
+    const v2Q = toCatalyst(v2.Q)
+    const v1Q = toCatalyst(v1.Q)
+    const P = mulPoint(addPoint(v2Q as any, mulPoint(v1Q as any, Q2v) as any) as any, s * h)
     if (P.isInfinity)
       throw new KitError('Public key not available')
 
-    return toAffine(P, 'u8', p_byte)
+    return toAffine(P)
   }
-  // Digital signature
-  const ecdsa: ECDSA = (hash: Digest = sha256) => {
+  const dsa: ECDSA = (hash: Digest = sha256) => {
     const sign = (s_key: ECPrivateKey, M: Uint8Array) => {
-      const d = typeof s_key.d === 'bigint' ? s_key.d : U8.from(s_key.d).toBI()
+      const d = s_key.d
       let r = 0n
       let s = 0n
       let z = hash(M).toBI()
@@ -452,8 +360,8 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       }
       do {
         const K = gen()
-        const k = K.d.toBI()
-        const x1 = K.Q.x.toBI()
+        const k = K.d
+        const x1 = K.Q.x
         r = mod(x1, n)
         if (r === 0n)
           continue
@@ -461,15 +369,13 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
         s = modInverse(k, n) * mod(z + r * d, n)
         s = mod(s, n)
       } while (s === 0n)
-      const r_buffer = U8.fromBI(r)
-      const s_buffer = U8.fromBI(s)
 
-      return { r: r_buffer, s: s_buffer }
+      return { r, s }
     }
     const verify = (p_key: ECPublicKey, M: Uint8Array, signature: ECDSASignature) => {
-      const Q = toJacobian(p_key.Q)
-      const r = typeof signature.r === 'bigint' ? signature.r : U8.from(signature.r).toBI()
-      const s = typeof signature.s === 'bigint' ? signature.s : U8.from(signature.s).toBI()
+      const Q = toCatalyst(p_key.Q)
+      const r = signature.r
+      const s = signature.s
       if (r <= 0n || r >= n || s <= 0n || s >= n)
         return false
 
@@ -480,7 +386,7 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
       const w = modInverse(s, n)
       const u1 = mod(z * w, n)
       const u2 = mod(r * w, n)
-      const P_j = addPoint(mulPoint(GJ, u1), mulPoint(Q, u2))
+      const P_j = addPoint(mulPoint(CG as any, u1) as any, mulPoint(Q as any, u2) as any)
       const P = toAffine(P_j)
       const v = mod(P.x, n)
 
@@ -489,21 +395,20 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
 
     return { sign, verify }
   }
-  // Integrated encryption scheme
-  const ecies: ECIES = (config?: ECIESConfig) => {
+  const ies: ECIES = (config?: ECIESConfig) => {
     const { cipher, mac, kdf, S1, S2, iv } = defineECIES(config)
     const encrypt = (p_key: ECPublicKey, M: Uint8Array) => {
-      if (!isLegalPK(p_key))
+      if (!isLegalPK(p_key.Q))
         throw new KitError('Invalid public key')
 
       let s_key: ECKeyPair
-      let deriveShare: AffinePoint<U8>
+      let deriveShare: AffinePoint
       do {
         s_key = gen()
-        deriveShare = ecdh(s_key, p_key)
+        deriveShare = dh(s_key, p_key)
       } while (deriveShare.isInfinity)
 
-      const Z = deriveShare.x
+      const Z = U8.fromBI(deriveShare.x)
       const K = kdf((cipher.KEY_SIZE + mac.KEY_SIZE), joinBuffer(Z, S1))
       const KE = K.slice(0, cipher.KEY_SIZE)
       const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + mac.KEY_SIZE)
@@ -517,11 +422,11 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
     const decrypt = (s_key: ECPrivateKey, CT: ECIESCiphertext) => {
       const { R, C, D } = CT
       // 密钥派生
-      const deriveShare = ecdh(s_key, R)
+      const deriveShare = dh(s_key, R)
       if (deriveShare.isInfinity)
         throw new KitError('ECIES Decryption failed')
 
-      const Z = deriveShare.x
+      const Z = U8.fromBI(deriveShare.x)
       const K = kdf((cipher.KEY_SIZE + mac.KEY_SIZE), joinBuffer(Z, S1))
       const KE = K.slice(0, cipher.KEY_SIZE)
       const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + mac.KEY_SIZE)
@@ -539,21 +444,14 @@ export function FpECC(curve: FpWECParams | FpMECParams): FpECCrypto {
   }
 
   return {
-    utils: {
-      ...fp,
-      addPoint,
-      mulPoint,
-      isLegalPK,
-      isLegalSK,
-      PointToU8,
-      U8ToPoint,
-    },
+    parameters: curve,
+    utils: ec,
     gen,
-    dh: ecdh,
-    cdh: eccdh,
-    mqv: ecmqv,
-    dsa: ecdsa,
-    ies: ecies,
+    dh,
+    cdh,
+    mqv,
+    dsa,
+    ies,
   }
 }
 

@@ -1,11 +1,12 @@
+import type { ECJacobian, ECLópezDahab, FbKECParams, FbPECParams, FpMECParams, FpWECParams } from '../../core/ec'
 import type { Hash } from '../../core/hash'
 import type { KDF } from '../../core/kdf'
-import type { ECKeyPair, ECPrivateKey, ECPublicKey, FpECCrypto } from './ecc'
-import { sm2p256v1 } from '../../core/ecParams'
+import type { ECCBase, ECKeyPair, ECPrivateKey, ECPublicKey } from './ecc'
+import { sm2p256v1 } from '../../core/ec_params'
 import { x963kdf } from '../../core/kdf'
 import { genBitMask, getBIBits, joinBuffer, KitError, mod, modInverse, U8 } from '../../core/utils'
 import { sm3 } from '../../hash/sm3'
-import { FpECC } from './ecc'
+import { ECC } from './ecc'
 
 export interface SM2DI {
   /**
@@ -37,9 +38,9 @@ export interface SM2DH {
   (KA: ECKeyPair, KX: ECKeyPair, KB: ECPublicKey, KY: ECPublicKey, ZA?: Uint8Array, ZB?: Uint8Array): U8
 }
 
-export interface SM2DSASignature<T = bigint | Uint8Array> {
-  r: T
-  s: T
+export interface SM2DSASignature {
+  r: bigint
+  s: bigint
 }
 export interface SM2DSA {
   /**
@@ -55,7 +56,7 @@ export interface SM2DSA {
      * @param {ECPrivateKey} key - 签名方私钥 / Signer Private Key
      * @param {Uint8Array} M - 消息 / Message
      */
-    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature<U8>
+    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature
     /**
      * @param {Uint8Array} Z - 标识派生值 / Identity Derived Value
      * @param {ECPublicKey} key - 签名方公钥 / Signer Public Key
@@ -104,14 +105,13 @@ export interface SM2EncryptionScheme {
   }
 }
 
-export interface FpSM2Crypto {
-  utils: FpECCrypto['utils']
+export interface SM2Base {
   /**
    * 生成 SM2 椭圆曲线密钥
    *
    * Generate SM2 Elliptic Curve Key
    */
-  gen: FpECCrypto['gen']
+  gen: ECCBase['gen']
   /**
    * SM2 可辨别标识散列
    *
@@ -137,23 +137,77 @@ export interface FpSM2Crypto {
    */
   dsa: SM2DSA
 }
+export interface SM2FpWeierstrass extends SM2Base {
+  parameters: FpWECParams
+  utils: ECJacobian
+}
+export interface SM2FpMontgomery extends SM2Base {
+  parameters: FpMECParams
+  utils: ECJacobian
+}
+export interface SM2FbPseudoRandom extends SM2Base {
+  parameters: FbPECParams
+  utils: ECLópezDahab
+}
+export interface SM2FbKoblitz extends SM2Base {
+  parameters: FbKECParams
+  utils: ECLópezDahab
+}
 
 /**
  * SM2 椭圆曲线公钥密码算法
  *
  * Public Key Cryptography Algorithm SM2 Based on Elliptic Curves
  *
- * @param {FpECParams} curve - 椭圆曲线参数 / Elliptic Curve Parameters (default: sm2p256v1)
+ * @param curve - 椭圆曲线参数 / Elliptic Curve Parameters (default: sm2p256v1)
  */
-export function sm2(curve = sm2p256v1): FpSM2Crypto {
-  const { p, a, b, G, n, h } = curve
-  const p_bit = getBIBits(p)
-  const p_byte = (p_bit + 7) >> 3
-  const ecc = FpECC(curve)
-  const { addPoint, mulPoint, toAffine, toJacobian } = ecc.utils
+export function sm2(curve: FpWECParams): SM2FpWeierstrass
+export function sm2(curve: FpMECParams): SM2FpMontgomery
+export function sm2(curve: FbPECParams): SM2FbPseudoRandom
+export function sm2(curve: FbKECParams): SM2FbKoblitz
+export function sm2(curve: FpWECParams | FpMECParams | FbPECParams | FbKECParams = sm2p256v1) {
+  let ecc
+  switch (curve.type) {
+    case 'Weierstrass':
+      ecc = ECC(curve)
+      break
+    case 'Montgomery':
+      ecc = ECC(curve)
+      break
+    case 'Pseudo-Random':
+      ecc = ECC(curve)
+      break
+    case 'Koblitz':
+      ecc = ECC(curve)
+      break
+    default:
+      throw new KitError('unsupported curve type')
+  }
+  let toCatalyst
+  switch (ecc.utils.catalyst) {
+    case 'jacobian':
+      toCatalyst = ecc.utils.cs.toJacobian
+      break
+    case 'ld':
+      toCatalyst = ecc.utils.cs.toLD
+      break
+    default:
+      throw new KitError('unsupported catalyst type')
+  }
 
-  /** 基点 (雅可比坐标系) */
-  const GJ = toJacobian(G)
+  const { G, a, b, n, h } = curve
+  /** 优化基点 */
+  const CG = toCatalyst(G)
+  const p = 'p' in curve ? curve.p : undefined
+  const p_bit = p ? getBIBits(p) : undefined
+  const p_byte = p ? (p_bit! + 7) >> 3 : undefined
+  const m = 'm' in curve ? curve.m : undefined
+  const m_bit = m ? getBIBits(m) : undefined
+  const m_byte = m ? (m_bit! + 7) >> 3 : undefined
+  const ele_byte = p_byte ?? m_byte!
+
+  const { addPoint, mulPoint, isLegalPK } = ecc.utils
+  const toAffine = ecc.utils.cs.toAffine
 
   const a_buffer = U8.fromBI(a)
   const b_buffer = U8.fromBI(b)
@@ -161,7 +215,6 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
   const Gy_buffer = U8.fromBI(G.y)
 
   const gen = ecc.gen
-  const isLegalPK = ecc.utils.isLegalPK
   const PointToU8 = ecc.utils.PointToU8
   const U8ToPoint = ecc.utils.U8ToPoint
   const di: SM2DI = (id: Uint8Array, key: ECPublicKey, hash: Hash = sm3) => {
@@ -190,26 +243,27 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
     ZA = new Uint8Array(),
     ZB = new Uint8Array(),
   ) => {
-    if (isLegalPK(KB) === false || isLegalPK(KY) === false)
+    if (isLegalPK(KB.Q) === false || isLegalPK(KY.Q) === false)
       throw new KitError('非法的公钥')
 
-    const KA_d = typeof KA.d === 'bigint' ? KA.d : U8.from(KA.d).toBI()
-    const KX_d = typeof KX.d === 'bigint' ? KX.d : U8.from(KX.d).toBI()
-    const KX_Q_x = typeof KX.Q.x === 'bigint' ? KX.Q.x : U8.from(KX.Q.x).toBI()
-    const KY_Q_x = typeof KY.Q.x === 'bigint' ? KY.Q.x : U8.from(KY.Q.x).toBI()
+    const KA_d = KA.d
+    const KX_d = KX.d
+    const KX_Q_x = KX.Q.x
+    const KY_Q_x = KY.Q.x
     const x1 = (1n << BigInt(w)) + (KX_Q_x & w_mask)
     const x2 = (1n << BigInt(w)) + (KY_Q_x & w_mask)
 
     const t = mod(KA_d + KX_d * x1, n)
-    const KBQ = toJacobian(KB.Q)
-    const KYQ = toJacobian(KY.Q)
-    const V_j = mulPoint(addPoint(KBQ, mulPoint(KYQ, x2)), h * t)
+    const KBQ = toCatalyst(KB.Q)
+    const KYQ = toCatalyst(KY.Q)
+    const V_j = mulPoint(addPoint(KBQ as any, mulPoint(KYQ as any, x2) as any) as any, h * t)
     if (V_j.isInfinity)
       throw new KitError('协商失败')
 
     const V = toAffine(V_j)
     const xu = U8.fromBI(V.x)
     const yu = U8.fromBI(V.y)
+
     return joinBuffer(xu, yu, ZA, ZB)
   }
   const dsa: SM2DSA = (hash: Hash = sm3) => {
@@ -217,13 +271,13 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
       throw new KitError('不支持的哈希算法')
 
     const sign = (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => {
-      const dA = typeof key.d === 'bigint' ? key.d : U8.from(key.d).toBI()
+      const dA = key.d
       let r = 0n
       let s = 0n
       const e = hash(joinBuffer(Z, M)).toBI()
       do {
-        const k = gen('private_key').d.toBI()
-        const p = toAffine(mulPoint(GJ, k))
+        const k = gen('private_key').d
+        const p = toAffine(mulPoint(CG as any, k))
         r = mod(e + p.x, n)
         if (r === 0n || r + k === n)
           continue
@@ -236,17 +290,11 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
         break
       } while (1)
 
-        const r_buffer = new U8(p_byte)
-      const s_buffer = new U8(p_byte)
-      r_buffer.set(U8.fromBI(r))
-      s_buffer.set(U8.fromBI(s))
-
-      return { r: r_buffer, s: s_buffer }
+      return { r, s }
     }
     const verify = (Z: Uint8Array, key: ECPublicKey, M: Uint8Array, S: SM2DSASignature) => {
-      const PA = toJacobian(key.Q)
-      const r = typeof S.r === 'bigint' ? S.r : U8.from(S.r).toBI()
-      const s = typeof S.s === 'bigint' ? S.s : U8.from(S.s).toBI()
+      const PA = toCatalyst(key.Q)
+      const { r, s } = S
       if (r <= 0n || r >= n || s <= 0n || s >= n)
         return false
 
@@ -256,24 +304,25 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
         return false
 
       const p = toAffine(addPoint(
-        mulPoint(GJ, s),
-        mulPoint(PA, t),
+        mulPoint(CG as any, s) as any,
+        mulPoint(PA as any, t) as any,
       ))
       const R = mod(e + p.x, n)
 
       return R === r
     }
+
     return { sign, verify }
   }
   const es: SM2EncryptionScheme = (hash = sm3, kdf = x963kdf(sm3), order = 'c1c3c2') => {
     const encrypt: SM2Encrypt = (p_key: ECPublicKey, M: Uint8Array) => {
       const C1 = gen()
-      const Q = toJacobian(p_key.Q)
-      const S = mulPoint(Q, h)
+      const Q = toCatalyst(p_key.Q)
+      const S = mulPoint(Q as any, h)
       if (S.isInfinity)
         throw new KitError('加密失败')
 
-      const { x, y } = toAffine(mulPoint(Q, C1.d))
+      const { x, y } = toAffine(mulPoint(Q as any, C1.d))
       const x2 = U8.fromBI(x)
       const y2 = U8.fromBI(y)
       const ikm = joinBuffer(x2, y2)
@@ -286,17 +335,17 @@ export function sm2(curve = sm2p256v1): FpSM2Crypto {
         : joinBuffer(PointToU8(C1.Q), C3, C2)
     }
     const decrypt: SM2Decrypt = (s_key: ECPrivateKey, C: Uint8Array) => {
-      const C1_Length = (p_byte << 1) + 1
+      const C1_Length = (ele_byte << 1) + 1
       const C3_Length = hash.DIGEST_SIZE
       const C2_Length = C.length - C1_Length - C3_Length
-      const C1 = toJacobian(
+      const C1 = toCatalyst(
         U8ToPoint(C.subarray(0, C1_Length)),
       )
-      const S = mulPoint(C1, h)
+      const S = mulPoint(C1 as any, h)
       if (S.isInfinity)
         throw new KitError('解密失败')
 
-      const { x, y } = toAffine(mulPoint(C1, s_key.d))
+      const { x, y } = toAffine(mulPoint(C1 as any, s_key.d))
       const x2 = U8.fromBI(x)
       const y2 = U8.fromBI(y)
       const ikm = joinBuffer(x2, y2)

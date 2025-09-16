@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { es_xor, FpECC } from '../src/cipher/pkcs/ecc'
+import { ECC, es_xor } from '../src/cipher/pkcs/ecc'
 import * as pkcs1 from '../src/cipher/pkcs/pkcs1'
 import { rsa } from '../src/cipher/pkcs/rsa'
 import { sm2 } from '../src/cipher/pkcs/sm2'
 import { x448, x25519 } from '../src/cipher/pkcs/x25519_448'
 import { ecb, NO_PAD } from '../src/core/cipher'
 import { HEX, UTF8 } from '../src/core/codec'
-import * as ecParams from '../src/core/ecParams'
+import * as ecParams from '../src/core/ec_params'
 import { hkdf, pbkdf2, scrypt, x963kdf } from '../src/core/kdf'
 import { U8 } from '../src/core/utils'
 import { hmac } from '../src/hash/hmac'
@@ -71,10 +71,11 @@ describe('pkcs#1', () => {
 describe('ecc', () => {
   // vector source: http://rfc.nop.hu/secg/gec2.pdf
   it('secp160r1-ecdh', () => {
-    const ec = FpECC(secp160r1)
+    const ec = ECC(secp160r1)
     const u_k = {
       d: 971761939728640320549601132085879836204587084162n,
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: 466448783855397898016055842232266600516272889280n,
         y: 1110706324081757720403272427311003102474457754220n,
@@ -83,6 +84,7 @@ describe('ecc', () => {
     const v_k = {
       d: 399525573676508631577122671218044116107572676710n,
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: 420773078745784176406965940076771545932416607676n,
         y: 221937774842090227911893783570676792435918278531n,
@@ -91,18 +93,19 @@ describe('ecc', () => {
     const s_u = ec.dh(u_k, v_k)
     const s_v = ec.dh(v_k, u_k)
     const s_outside = U8.fromBI(1155982782519895915997745984453282631351432623114n)
-    expect(s_u.x).toMatchObject(s_v.x)
-    expect(s_u.x).toMatchObject(s_outside)
+    expect(s_u.x).toBe(s_v.x)
+    expect(s_u.x).toBe(1155982782519895915997745984453282631351432623114n)
     const kdf = x963kdf(sha1)
     const K = kdf(20 << 3, s_outside)
     const K_outside = HEX('744AB703F5BC082E59185F6D049D2D367DB245C2')
     expect(K_outside.every((v, i) => v === K[i])).toBe(true)
   })
   it('secp160r1-ecmqv', () => {
-    const ec = FpECC(secp160r1)
+    const ec = ECC(secp160r1)
     const u_k1 = {
       d: 971761939728640320549601132085879836204587084162n,
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: 466448783855397898016055842232266600516272889280n,
         y: 1110706324081757720403272427311003102474457754220n,
@@ -111,6 +114,7 @@ describe('ecc', () => {
     const u_k2 = {
       d: 117720748206090884214100397070943062470184499100n,
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: 1242349848876241038961169594145217616154763512351n,
         y: 1228723083615049968259530566733073401525145323751n,
@@ -119,6 +123,7 @@ describe('ecc', () => {
     const v_k1 = {
       d: 399525573676508631577122671218044116107572676710n,
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: 420773078745784176406965940076771545932416607676n,
         y: 221937774842090227911893783570676792435918278531n,
@@ -127,6 +132,7 @@ describe('ecc', () => {
     const v_k2 = {
       d: 141325380784931851783969312377642205317371311134n,
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: 641868187219485959973483930084949222543277290421n,
         y: 560813476551307469487939594456722559518188737232n,
@@ -135,19 +141,20 @@ describe('ecc', () => {
     const s_u = ec.mqv(u_k1, u_k2, v_k1, v_k2)
     const s_v = ec.mqv(v_k1, v_k2, u_k1, u_k2)
     const s_outside = U8.fromBI(516158222599696982690660648801682584432269985196n)
-    expect(s_u.x).toMatchObject(s_v.x)
-    expect(s_u.x).toMatchObject(s_outside)
+    expect(s_u.x).toBe(s_v.x)
+    expect(s_u.x).toBe(516158222599696982690660648801682584432269985196n)
     const kdf = x963kdf(sha1)
     const K = kdf(20 << 3, s_outside)
     const K_outside = HEX('C06763F8C3D2452C1CC5D29BD61918FB485063F6')
     expect(K_outside.every((v, i) => v === K[i])).toBe(true)
   })
   it('secp160r1-ecdsa', () => {
-    const ec = FpECC(secp160r1)
+    const ec = ECC(secp160r1)
     const dsa = ec.dsa(sha1)
     const key = {
       d: 971761939728640320549601132085879836204587084162n,
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: 466448783855397898016055842232266600516272889280n,
         y: 1110706324081757720403272427311003102474457754220n,
@@ -163,7 +170,7 @@ describe('ecc', () => {
     expect(dsa.verify(key, msg, sig_outside)).toBe(true)
   })
   it('secp160r1-ecies', () => {
-    const ec = FpECC(secp160r1)
+    const ec = ECC(secp160r1)
     const cipher = ecb(es_xor, NO_PAD)
     const kdf = x963kdf(sha1)
     /** HMAC-SHA-1-160 with 20 bytes keys */
@@ -173,6 +180,7 @@ describe('ecc', () => {
     const key = {
       d: 399525573676508631577122671218044116107572676710n,
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: 420773078745784176406965940076771545932416607676n,
         y: 221937774842090227911893783570676792435918278531n,
@@ -183,6 +191,7 @@ describe('ecc', () => {
     const cip_outside = {
       R: {
         Q: {
+          type: 'affine' as const,
           isInfinity: false,
           x: 1176954224688105769566774212902092897866168635793n,
           y: 1130322298812061698910820170565981471918861336822n,
@@ -195,9 +204,10 @@ describe('ecc', () => {
     expect(ecies.decrypt(key, cip_outside)).toMatchObject(msg)
   })
   it('secp160r1-point-compress', () => {
-    const ec = FpECC(secp160r1)
+    const ec = ECC(secp160r1)
     const { PointToU8, U8ToPoint } = ec.utils
     const R = {
+      type: 'affine' as const,
       isInfinity: false,
       x: 1176954224688105769566774212902092897866168635793n,
       y: 1130322298812061698910820170565981471918861336822n,
@@ -206,7 +216,7 @@ describe('ecc', () => {
     const P_outside = HEX('02CE2873E5BE449563391FEB47DDCBA2DC16379191')
     const Q = U8ToPoint(P_outside)
     expect(P).toMatchObject(P_outside)
-    expect(Q.y.toBI()).toBe(R.y)
+    expect(Q.y).toBe(R.y)
   })
   // vector source: https://tools.ietf.org/html/rfc7748
   it('x25519', () => {
@@ -272,6 +282,7 @@ describe('sm2', () => {
     a: HEX('787968B4FA32C3FD2417842E73BBFEFF2F3C848B6831D7E0EC65228B3937E498').toBI(),
     b: HEX('63E4C6D3B23B0C849CF84241484BFE48F61D59A5B16BA06E6E12D1DA27C5249A').toBI(),
     G: {
+      type: 'affine',
       isInfinity: false,
       x: HEX('421DEBD61B62EAB6746434EBC3CC315E32220B3BADD50BDC4C4E6C147FEDD43D').toBI(),
       y: HEX('0680512BCBB42C07D47349D2153B70C4E5D7FDFCBFA36EA1A85841B9E46E09A2').toBI(),
@@ -299,6 +310,7 @@ describe('sm2', () => {
     const key_from_outside = {
       d: HEX('128B2FA8BD433C6C068C8D803DFF79792A519A55171B1B650C23661D15897263').toBI(),
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: HEX('0AE4C7798AA0F119471BEE11825BE46202BB79E2A5844495E97C04FF4DF2548A').toBI(),
         y: HEX('7C0240F88F1CD4E16352A73C17B7F16F07353E53A176D684A9FE0C6BB798E857').toBI(),
@@ -331,6 +343,7 @@ describe('sm2', () => {
     const ka_from_outside = {
       d: HEX('6FCBA2EF 9AE0AB90 2BC3BDE3 FF915D44 BA4CC78F 88E2F8E7 F8996D3B 8CCEEDEE').toBI(),
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: HEX('3099093B F3C137D8 FCBBCDF4 A2AE50F3 B0F216C3 122D7942 5FE03A45 DBFE1655').toBI(),
         y: HEX('3DF79E8D AC1CF0EC BAA2F2B4 9D51A4B3 87F2EFAF 48233908 6A27A8E0 5BAED98B').toBI(),
@@ -339,6 +352,7 @@ describe('sm2', () => {
     const kx_from_outside = {
       d: HEX('83A2C9C8 B96E5AF7 0BD480B4 72409A9A 327257F1 EBB73F5B 073354B2 48668563').toBI(),
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: HEX('6CB56338 16F4DD56 0B1DEC45 8310CBCC 6856C095 05324A6D 23150C40 8F162BF0').toBI(),
         y: HEX('0D6FCF62 F1036C0A 1B6DACCF 57399223 A65F7D7B F2D9637E 5BBBEB85 7961BF1A').toBI(),
@@ -348,6 +362,7 @@ describe('sm2', () => {
     const kb_from_outside = {
       d: HEX('5E35D7D3 F3C54DBA C72E6181 9E730B01 9A84208C A3A35E4C 2E353DFC CB2A3B53').toBI(),
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: HEX('245493D4 46C38D8C C0F11837 4690E7DF 633A8A4B FB3329B5 ECE604B2 B4F37F43').toBI(),
         y: HEX('53C0869F 4B9E1777 3DE68FEC 45E14904 E0DEA45B F6CECF99 18C85EA0 47C60A4C').toBI(),
@@ -356,6 +371,7 @@ describe('sm2', () => {
     const ky_from_outside = {
       d: HEX('33FE2194 0342161C 55619C4A 0C060293 D543C80A F19748CE 176D8347 7DE71C80').toBI(),
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: HEX('1799B2A2 C7782953 00D9A232 5C686129 B8F2B533 7B3DCF45 14E8BBC1 9D900EE5').toBI(),
         y: HEX('54C9288C 82733EFD F7808AE7 F27D0E73 2F7C73A7 D9AC98B7 D8740A91 D0DB3CF4').toBI(),
@@ -395,6 +411,7 @@ describe('sm2', () => {
     const key_from_outside = {
       d: HEX('1649AB77 A00637BD 5E2EFE28 3FBF3535 34AA7F7C B89463F2 08DDBC29 20BB0DA0').toBI(),
       Q: {
+        type: 'affine' as const,
         isInfinity: false,
         x: HEX('435B39CC A8F3B508 C1488AFC 67BE491A 0F7BA07E 581A0E48 49A5CF70 628A7E0A').toBI(),
         y: HEX('75DDBA78 F15FEECB 4C7895E2 C1CDF5FE 01DEBB2C DBADF453 99CCF77B BA076A42').toBI(),

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { FbEC, FpEC } from '../src/core/ec'
-import { curve25519, secp160r1, sect163k1, sect163r1 } from '../src/core/ecParams'
-import { CoordinateSystem, GF, GF2 } from '../src/core/field'
+import { CoordinateSystem } from '../src/core/coordinate_system'
+import { EC } from '../src/core/ec'
+import { curve25519, secp160r1, sect163k1, sect163r1 } from '../src/core/ec_params'
+import { GF, GF2 } from '../src/core/galois_field'
 
 describe('field-p', () => {
   it('op', () => {
@@ -38,7 +39,7 @@ describe('field-p', () => {
   })
 
   it('weierstrass', () => {
-    const ec = FpEC(secp160r1)
+    const ec = EC(secp160r1)
     const R = {
       isInfinity: false,
       x: 0x4A96B5688EF573284664698968C38BB913CBFC82n,
@@ -77,20 +78,20 @@ describe('field-p', () => {
     expect(G4).toMatchObject(R4)
     // expect(Gn).toMatchObject(Rn)
 
-    const J = ec.toJacobian(G)
+    const J = ec.cs.toJacobian(G)
     const J2 = ec.addPoint(J, J)
     const J3 = ec.addPoint(J2, J)
     const J4 = ec.addPoint(J3, J)
     const Jn = ec.mulPoint(J, n)
-    expect(ec.toAffine(J)).toMatchObject(G)
-    expect(ec.toAffine(J2)).toMatchObject(G2)
-    expect(ec.toAffine(J3)).toMatchObject(G3)
-    expect(ec.toAffine(J4)).toMatchObject(G4)
-    expect(ec.toAffine(Jn)).toMatchObject(Rn)
+    expect(ec.cs.toAffine(J)).toMatchObject(G)
+    expect(ec.cs.toAffine(J2)).toMatchObject(G2)
+    expect(ec.cs.toAffine(J3)).toMatchObject(G3)
+    expect(ec.cs.toAffine(J4)).toMatchObject(G4)
+    expect(ec.cs.toAffine(Jn)).toMatchObject(Rn)
   })
 
   it('montgomery', () => {
-    const ec = FpEC(curve25519)
+    const ec = EC(curve25519)
     const R = {
       isInfinity: false,
       x: 0x9n,
@@ -129,16 +130,16 @@ describe('field-p', () => {
     expect(G4).toMatchObject(R4)
     expect(Gn).toMatchObject(Rn)
 
-    const J = ec.toJacobian(G)
+    const J = ec.cs.toJacobian(G)
     const J2 = ec.addPoint(J, J)
     const J3 = ec.addPoint(J2, J)
     const J4 = ec.addPoint(J3, J)
     const Jn = ec.mulPoint(J, n)
-    expect(ec.toAffine(J)).toMatchObject(G)
-    expect(ec.toAffine(J2)).toMatchObject(G2)
-    expect(ec.toAffine(J3)).toMatchObject(G3)
-    expect(ec.toAffine(J4)).toMatchObject(G4)
-    expect(ec.toAffine(Jn)).toMatchObject(Rn)
+    expect(ec.cs.toAffine(J)).toMatchObject(G)
+    expect(ec.cs.toAffine(J2)).toMatchObject(G2)
+    expect(ec.cs.toAffine(J3)).toMatchObject(G3)
+    expect(ec.cs.toAffine(J4)).toMatchObject(G4)
+    expect(ec.cs.toAffine(Jn)).toMatchObject(Rn)
   })
 })
 
@@ -179,7 +180,7 @@ describe('field-2m', () => {
   })
 
   it('pseudo-random', () => {
-    const ec = FbEC(sect163r1)
+    const ec = EC(sect163r1)
     const R = {
       isInfinity: false,
       x: 0x0369979697AB43897789566789567F787A7876A654n,
@@ -219,20 +220,20 @@ describe('field-2m', () => {
     // expect(ec._addPoint!(G2, G2)).toMatchObject(R4)
     // expect(Gn).toMatchObject(Rn)
 
-    const J = ec.toLD(G, 0x28B22AA5B3CD1EB33B17A2FB272492F9C612B7160n)
+    const J = ec.cs.toLD(G, 0x28B22AA5B3CD1EB33B17A2FB272492F9C612B7160n)
     const J2 = ec.addPoint(J, J)
     const J3 = ec.addPoint(J2, J)
     const J4 = ec.addPoint(J3, J)
     const Jn = ec.mulPoint(J, n)
-    expect(ec.toAffine(J)).toMatchObject(R)
-    expect(ec.toAffine(J2)).toMatchObject(R2)
-    expect(ec.toAffine(J3)).toMatchObject(R3)
-    expect(ec.toAffine(J4)).toMatchObject(R4)
-    expect(ec.toAffine(Jn)).toMatchObject(Rn)
+    expect(ec.cs.toAffine(J)).toMatchObject(R)
+    expect(ec.cs.toAffine(J2)).toMatchObject(R2)
+    expect(ec.cs.toAffine(J3)).toMatchObject(R3)
+    expect(ec.cs.toAffine(J4)).toMatchObject(R4)
+    expect(ec.cs.toAffine(Jn)).toMatchObject(Rn)
   })
 
   it('koblitz', () => {
-    const ec = FbEC(sect163k1)
+    const ec = EC(sect163k1)
     const R = {
       isInfinity: false,
       x: 0x02FE13C0537BBC11ACAA07D793DE4E6D5E5C94EEE8n,
@@ -271,16 +272,16 @@ describe('field-2m', () => {
     // expect(G4).toMatchObject(R4)
     // expect(Gn).toMatchObject(Rn)
 
-    const J = ec.toLD(G)
+    const J = ec.cs.toLD(G)
     const J2 = ec.addPoint(J, J)
     const J3 = ec.addPoint(J2, J)
     const J4 = ec.addPoint(J3, J)
     const Jn = ec.mulPoint(J, n)
-    expect(ec.toAffine(J)).toMatchObject(R)
-    expect(ec.toAffine(J2)).toMatchObject(R2)
-    expect(ec.toAffine(J3)).toMatchObject(R3)
-    expect(ec.toAffine(J4)).toMatchObject(R4)
-    expect(ec.toAffine(Jn)).toMatchObject(Rn)
+    expect(ec.cs.toAffine(J)).toMatchObject(R)
+    expect(ec.cs.toAffine(J2)).toMatchObject(R2)
+    expect(ec.cs.toAffine(J3)).toMatchObject(R3)
+    expect(ec.cs.toAffine(J4)).toMatchObject(R4)
+    expect(ec.cs.toAffine(Jn)).toMatchObject(Rn)
   })
 })
 
