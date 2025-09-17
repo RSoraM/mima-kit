@@ -1,4 +1,4 @@
-import { getBIBits, KitError, mod, modInverse, modPow, modPrimeSquareRoot } from './utils'
+import { KitError, mod, modInverse, modPow, modPrimeSquareRoot } from './utils'
 
 // * Interfaces
 
@@ -87,64 +87,83 @@ export function GF(p: bigint): GFUtils {
 export function GF2(m: bigint, IP: bigint): GFUtils {
   /** m - 1 */
   const m_1 = Number(m - 1n)
-  /** 2^n */
-  const p_n = 1n << m
+  /** 2^m */
+  const m_h = 1n << m
   /** 2^n - 1 */
-  const mask = p_n - 1n
+  const mask = m_h - 1n
 
   // 要求 IP 最高项为 x^m
-  if ((IP & p_n) === 0n)
-    throw new KitError('Irreducible polynomial IP must have degree m (set bit at x^m)')
-
-  // 约化：按 IP 做多项式模约化
-  function reduce(a: bigint): bigint {
-    let r = a
-    const deg_b = getBIBits(IP) - 1
-    // r >> m 快速判断是否仍有高于 m 的项
-    while ((r >> m) !== 0n) {
-      const shift = getBIBits(r) - deg_b - 1
-      r ^= (IP << BigInt(shift))
-    }
-    return r & mask
-  }
+  if ((IP & m_h) === 0n)
+    throw new KitError('Irreducible polynomial must have degree m (set bit at x^m)')
 
   // 多项式加法与减法: a + b mod 2 = a ^ b
   const add = (...args: bigint[]) => args.reduce((acc, cur) => acc ^ cur) & mask
   const sub = add
 
-  // 多项式乘法: 俄罗斯乘法 + 单步约化
+  // 约化: 按 IP 做多项式模约化
+  function reduce(poly: bigint): bigint {
+    let result = poly
+    const irreducible_degree = Number(m)
+
+    // 计算多项式的最高位
+    let poly_degree = result.toString(2).length - 1
+
+    // 当多项式度数 >= m 时进行约简
+    while (poly_degree >= irreducible_degree) {
+      const shift = poly_degree - irreducible_degree
+      // 将不可约多项式左移 shift 位后异或到结果中
+      result ^= IP << BigInt(shift)
+
+      // 更新多项式度数（优化：直接跳过连续的0）
+      poly_degree = result.toString(2).length - 1
+    }
+
+    return result
+  }
+
+  // 乘法
   const _mul = (a: bigint, b: bigint): bigint => {
+    if (a === 0n || b === 0n)
+      return 0n
+
     let result = 0n
     let a_val = a & mask
     let b_val = b & mask
-    const highBit = 1n << (m - 1n)
+    const ipMask = IP & mask
 
+    // 使用更高效的位运算优化
     while (b_val) {
-      if (b_val & 1n)
-        result ^= a_val
+      // 使用位运算优化：检查最低位
+      result ^= (b_val & 1n) ? a_val : 0n
       b_val >>= 1n
 
-      const carry = (a_val & highBit) !== 0n
-      a_val = (a_val << 1n) & mask
-      if (carry)
-        a_val ^= (IP & mask) // 用 IP 去掉 x^m 项的约化
+      // 优化进位处理
+      if (a_val & (1n << (m - 1n))) {
+        a_val = (a_val << 1n) & mask
+        a_val ^= ipMask
+      }
+      else {
+        a_val = (a_val << 1n) & mask
+      }
     }
 
-    return result & mask
+    return result
   }
   const mul = (...args: bigint[]) => args.reduce((acc, cur) => _mul(acc, cur))
 
-  // 专用平方: 每个比特 i -> 2i，然后约化
+  // 专用平方
   const squ = (a: bigint): bigint => {
-    let x = a & mask
+    if (a === 0n)
+      return 0n
+    if (a === 1n)
+      return 1n
+
     let r = 0n
-    let i = 0n
-    while (x) {
+    for (let x = a & mask, i = 0n; x > 0n; x >>= 1n, i++) {
       if (x & 1n)
-        r ^= (1n << (2n * i))
-      x >>= 1n
-      i += 1n
+        r |= (1n << (2n * i))
     }
+
     return reduce(r)
   }
 
@@ -156,19 +175,30 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
     let acc = 1n
     let t = a
     for (let i = 1; i <= m_1; i++) {
-      t = squ(t)       // t = a^{2^i}
+      // t = a^{2^i}
+      t = _mul(t, t)
       acc = _mul(acc, t)
     }
-    return acc & mask  // acc = a^{2^m-2}
+
+    // acc = a^{2^m-2}
+    return acc & mask
   }
 
-  // 多项式除法: a / b = a * inv(b)
-  const div = (a: bigint, b: bigint): bigint => _mul(a, inv(b))
+  // 除法
+  const div = (a: bigint, b: bigint): bigint => {
+    a &= mask
+    b &= mask
+    if (b === 0n)
+      throw new KitError('Division by zero')
+    return mul(a, inv(b))
+  }
 
   // 幂运算: 针对 2 的幂优化，否则通用平方-乘
   const pow = (a: bigint, b: bigint): bigint => {
     if (b === 0n)
       return 1n
+    if (a === 0n)
+      return 0n
     if (b < 0n)
       return inv(pow(a, -b))
 
@@ -177,7 +207,7 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
       let r = a & mask
       let e = b
       while (e > 1n) {
-        r = squ(r)
+        r = mul(r, r)
         e >>= 1n
       }
       return r
@@ -197,21 +227,12 @@ export function GF2(m: bigint, IP: bigint): GFUtils {
   }
 
   // 平方根：重复平方 m-1 次 (a -> a^{2^(m-1)})
-  const root = (a: bigint): bigint => {
-    let r = a & mask
-    const end = m_1
-    for (let i = 0; i < end; i++) {
-      r = squ(r)
-    }
-    return r
-  }
+  const root = (a: bigint): bigint => pow(a, 1n << BigInt(m_1))
 
   // 辅助：是否在域内
-  function include(a: bigint): boolean {
-    return a >= 0n && a < mask
-  }
+  const include = (a: bigint): boolean => a >= 0n && a <= mask
 
-  const mod = (a: bigint) => reduce(a & (mask | p_n))
+  const mod = (a: bigint) => reduce(a & (mask | m_h))
 
   return {
     add,

@@ -80,12 +80,7 @@ export function genRandomBI(max: bigint, byte: number) {
  * Get the bit length of a BigInt
  */
 export function getBIBits(n: bigint) {
-  let bit = 0
-  while (n > 0) {
-    bit++
-    n >>= 1n
-  }
-  return bit
+  return n === 0n ? 0 : n.toString(2).length
 }
 
 /**

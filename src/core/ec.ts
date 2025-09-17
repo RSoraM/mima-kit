@@ -677,7 +677,7 @@ export function FbEC(curve: FbKECParams | FbPECParams): ECLópezDahab {
   const cs = CoordinateSystem(field)
   const m_byte = (Number(m) + 7) >> 3
 
-  const { add, sub, mul, div, squ, root, include } = field
+  const { add, sub, mul, div, root, include } = field
   const { toAffine, toLD } = cs
 
   const _addPoint = (A: AffinePoint, B: AffinePoint): AffinePoint => {
@@ -743,15 +743,15 @@ export function FbEC(curve: FbKECParams | FbPECParams): ECLópezDahab {
     // P1 + P1
     if (A === 0n && B === 0n) {
       const [X, Y, Z] = [X1, Y1, Z1]
-      const A = squ(X)
-      const B = squ(Z)
+      const A = mul(X, X)
+      const B = mul(Z, Z)
       const Z3 = mul(A, B)
-      const C = squ(A)
-      const D = mul(b, squ(B))
+      const C = mul(A, A)
+      const D = mul(b, B, B)
       const X3 = add(C, D)
       const Y3 = add(
         mul(D, Z3),
-        mul(X3, add(mul(a, Z3), squ(Y), D)),
+        mul(X3, add(mul(a, Z3), mul(Y, Y), D)),
       )
 
       return { type: 'ld', isInfinity: false, x: X3, y: Y3, z: Z3 }
@@ -760,10 +760,10 @@ export function FbEC(curve: FbKECParams | FbPECParams): ECLópezDahab {
     else {
       const C = mul(Z1, A)
       const D = mul(Z2, C)
-      const Z3 = squ(D)
-      const X3 = add(mul(D, add(squ(A), B)), squ(B), mul(a, Z3))
+      const Z3 = mul(D, D)
+      const X3 = add(mul(D, add(mul(A, A), B)), mul(B, B), mul(a, Z3))
       const E = mul(C, D)
-      const F = mul(squ(E), Y2)
+      const F = mul(E, E, Y2)
       const G = add(X3, mul(X2, E))
       const Y3 = add(mul(Z3, X3), F, mul(B, D, G))
 
@@ -786,7 +786,7 @@ export function FbEC(curve: FbKECParams | FbPECParams): ECLópezDahab {
       return false
 
     // y^2 + xy = x^3 + ax^2 + b
-    const l = add(squ(y), mul(x, y))
+    const l = add(mul(y, y), mul(x, y))
     const r = add(mul(x, x, x), mul(a, x, x), b)
     if (l !== r)
       return false
