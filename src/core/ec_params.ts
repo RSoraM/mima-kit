@@ -399,6 +399,22 @@ export const sect163r2: FbPECParams = Object.freeze({
   h: 2n,
 })
 
+export const sect233k1: FbKECParams = Object.freeze({
+  type: 'Koblitz',
+  m: 233n,
+  IP: (1n << 233n) + (1n << 74n) + 1n,
+  a: 0n,
+  b: 1n,
+  G: {
+    type: 'affine' as const,
+    isInfinity: false,
+    x: 0x017232BA853A7E731AF129F22FF4149563A419C26BF50A4C9D6EEFAD6126n,
+    y: 0x01DB537DECE819B7F70F555A67C427A8CD9BF18AEB9B56E0C11056FAE6A3n,
+  },
+  n: 0x8000000000000000000000000000069D5BB915BCD46EFB1AD5F173ABDFn,
+  h: 4n,
+})
+
 // * X9.63 Prime Curves
 
 /**
