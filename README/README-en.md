@@ -34,7 +34,11 @@ npm install mima-kit
 # Table of Contents
 
 <!-- 字符编码 -->
-<a href="#character-codec">
+<details>
+<summary>
+<a href="#character-codec">Character Codec</a>
+</summary>
+</details>
 <!-- 字符编码 -->
 
 <!-- 散列算法 -->
@@ -1285,58 +1289,63 @@ const v = cipher.verify(p, s)
 
 ## ECC
 
+> ⚠️ Version 0.1.0 introduces significant modifications to ECC-related interfaces. If your application relies on these modules, please ensure you review the relevant code.
+
 Specification: [SEC 1](https://www.secg.org/sec1-v2.pdf)
 
-`Elliptic-Curve Cryptography` is an asymmetric encryption algorithm based on elliptic curves. `mima-kit` currently only supports the `ECC` algorithm based on the prime field `Weierstrass` and `Montgomery` elliptic curve.
+`Elliptic-Curve Cryptography` is an asymmetric encryption algorithm based on elliptic curves. `mima-kit` supports the following elliptic curve `ECC` algorithms:
+
+- Prime field `Weierstrass` curves
+- Prime field `Montgomery` curves
+- Binary extension field `Koblitz` curves
 
 You need to select an `Elliptic Curve` before using the `ECC` algorithm. See [Elliptic Curve List](#elliptic-curve-list).
 
-> There are many elliptic curve in the `mima-kit` repository that are not exported outside the package. You can find these `Elliptic Curve` in `/src/core/ecParams.ts`. Most of these `Elliptic Curve` are too old and uncommon curves, and I haven't tested whether they work properly.
+> There are many elliptic curve in the `mima-kit` repository that are not exported outside the package. You can find these `Elliptic Curve` in `/src/core/ec_params.ts`. Most of these `Elliptic Curve` are too old and uncommon curves, and I haven't tested whether they work properly.
 
 ```typescript
-const ec = FpECC(secp256r1)
-// Generate ECC key pair: ECKeyPair<U8>
-const key = ec.gen()
-const key = ec.gen('key_pair')
-// Generate ECC private key: ECPrivateKey<U8>
-const s_key = ec.gen('private_key')
-// Generate ECC public key: ECKeypair<U8>
-const p_key = ec.gen('public_key', s_key)
+const ecc = ECC(secp256r1)
+// Generate ECC key pair: ECKeyPair
+const key = ecc.gen()
+const key = ecc.gen('key_pair')
+// Generate ECC private key: ECPrivateKey
+const s_key = ecc.gen('private_key')
+// Generate ECC public key: ECKeyPair
+const p_key = ecc.gen('public_key', s_key)
 ```
 
 ```typescript
-/** Affine Coordinates of Elliptic Curve Point */
-interface FpECPoint<T = bigint | Uint8Array> {
+/** Affine Coordinate Point */
+interface AffinePoint {
+  type: 'affine'
   isInfinity: boolean
-  x: T
-  y: T
+  x: bigint
+  y: bigint
 }
-interface ECPublicKey<T = bigint | Uint8Array> {
+interface ECPublicKey {
   /** Elliptic Curve Public Key */
-  readonly Q: Readonly<FpECPoint<T>>
+  readonly Q: Readonly<AffinePoint>
 }
-interface ECPrivateKey<T = bigint | Uint8Array> {
+interface ECPrivateKey {
   /** Elliptic Curve Private Key */
-  readonly d: T
+  readonly d: bigint
 }
-/** Elliptic Curve Key Pair */
-interface ECKeyPair<T = bigint | Uint8Array> extends ECPrivateKey<T>, ECPublicKey<T> {
-}
+interface ECKeyPair extends ECPrivateKey, ECPublicKey {}
 ```
 
 ### Point Compress
 
-`Point Compress` is a public key compression method of the `ECC` algorithm, used to convert `FpECPoint` and `U8`.
+`Point Compress` is a public key compression method of the `ECC` algorithm, used to convert `AffinePoint` and `U8`.
 
 ```typescript
-const ec = FpECC(secp256r1)
-const { PointToU8, U8ToPoint } = ec.utils
-const P = ec.gen().Q
+const ecc = ECC(secp256r1)
+const { PointToU8, U8ToPoint } = ecc.utils
+const P = ecc.gen().Q
 // will not compress by default
 const U = pointToU8(P)
 // compress
 const U = pointToU8(P, true)
-// decompress: FpECPoint<U8>
+// decompress: AffinePoint
 const P = U8ToPoint(U)
 ```
 
@@ -1344,14 +1353,14 @@ const P = U8ToPoint(U)
 
 `Elliptic Curve Diffie-Hellman` is a key agreement protocol for the `ECC` algorithm. After the shared key is calculated, a `KDF` is usually used to derive one or more keys from the shared key.
 
-> The result of `ECDH` is an `FpECPoint<U8>`, which is typically used with `x` as key material for a `KDF`.
+> The result of `ECDH` is an `AffinePoint`, which is typically used with `x` as key material for a `KDF`.
 
 ```typescript
-const ec = FpECC(secp256r1)
-const keyA = ec.gen()
-const keyB = ec.gen()
-const secretA = ec.dh(keyA, keyB).x
-const secretB = ec.dh(keyB, keyA).x
+const ecc = ECC(secp256r1)
+const keyA = ecc.gen()
+const keyB = ecc.gen()
+const secretA = ecc.dh(keyA, keyB).x
+const secretB = ecc.dh(keyB, keyA).x
 // secretA === secretB
 ```
 
@@ -1359,14 +1368,14 @@ const secretB = ec.dh(keyB, keyA).x
 
 `Elliptic Curve Co-factor Diffie-Hellman` is a key agreement protocol based on `ECDH`. For curves with `co-factor` equal to `1`, the results of `ECDH` and `ECCDH` are the same.
 
-> The result of `ECDH` is an `FpECPoint<U8>`, which is typically used with `x` as key material for a `KDF`.
+> The result of `ECDH` is an `AffinePoint`, which is typically used with `x` as key material for a `KDF`.
 
 ```typescript
-const ec = FpECC(w25519)
-const keyA = ec.gen()
-const keyB = ec.gen()
-const secretAc = ec.cdh(keyA, keyB).x
-const secretBc = ec.cdh(keyB, keyA).x
+const ecc = ECC(w25519)
+const keyA = ecc.gen()
+const keyB = ecc.gen()
+const secretAc = ecc.cdh(keyA, keyB).x
+const secretBc = ecc.cdh(keyB, keyA).x
 // secretAc === secretBc
 ```
 
@@ -1374,16 +1383,16 @@ const secretBc = ec.cdh(keyB, keyA).x
 
 `Elliptic Curve Menezes-Qu-Vanstone` is a key agreement protocol based on `ECDH`.
 
-> The result of `ECDH` is an `FpECPoint<U8>`, which is typically used with `x` as key material for a `KDF`.
+> The result of `ECDH` is an `AffinePoint`, which is typically used with `x` as key material for a `KDF`.
 
 ```typescript
-const ec = FpECC(secp256r1)
-const u_k1 = ec.gen()
-const u_k2 = ec.gen()
-const v_k1 = ec.gen()
-const v_k2 = ec.gen()
-const secretA = ec.mqv(u_k1, u_k2, v_k1, v_k2).x
-const secretB = ec.mqv(v_k1, v_k2, u_k1, u_k2).x
+const ecc = ECC(secp256r1)
+const u_k1 = ecc.gen()
+const u_k2 = ecc.gen()
+const v_k1 = ecc.gen()
+const v_k2 = ecc.gen()
+const secretA = ecc.mqv(u_k1, u_k2, v_k1, v_k2).x
+const secretB = ecc.mqv(v_k1, v_k2, u_k1, u_k2).x
 // secretA === secretB
 ```
 
@@ -1394,25 +1403,25 @@ const secretB = ec.mqv(v_k1, v_k2, u_k1, u_k2).x
 > The `signature` method of `ECDSA` returns the `ECDSASignature` type instead of the `U8` type. Because the result of `ECDSA` signature contains two values of `r` and `s`. Under different standards, the conversion and concatenation methods of `r` and `s` may be different. Therefore, returning `ECDSASignature` can provide more flexibility.
 
 ```typescript
-const ec = FpECC(secp256r1)
-const key = ec.gen()
+const ecc = ECC(secp256r1)
+const key = ecc.gen()
 const p = UTF8('mima-kit')
 // using SHA-256 by default
-const signer = ec.dsa()
+const signer = ecc.dsa()
 // using SHA-1
-const signer = ec.dsa(sha1)
+const signer = ecc.dsa(sha1)
 // sign: ECDSASignature<U8>
-const s = cipher.sign(key, p)
-const v = cipher.verify(key, p, s)
+const s = signer.sign(key, p)
+const v = signer.verify(key, p, s)
 // v === true
 ```
 
 ```typescript
-interface ECDSASignature<T = bigint | Uint8Array> {
+interface ECDSASignature {
   /** Temporary Public Key */
-  r: T
+  r: bigint
   /** Signature Value */
-  s: T
+  s: bigint
 }
 ```
 
@@ -1423,9 +1432,9 @@ interface ECDSASignature<T = bigint | Uint8Array> {
 > The result of `ECIES` is an `ECIESCiphertext` type, which contains the `temporary public key`, the `ciphertext` and the `check value`.
 
 ```typescript
-const ec = FpECC(secp256r1)
-const key = ec.gen()
-const cipher = ec.ies()
+const ecc = ECC(secp256r1)
+const key = ecc.gen()
+const cipher = ecc.ies()
 const p = UTF8('mima-kit')
 const c = cipher.encrypt(key, p)
 const m = cipher.decrypt(key, c)
@@ -1462,6 +1471,8 @@ interface ECIESCiphertext {
 Specification: [GB/T 35276-2017](https://www.oscca.gov.cn/sca/xxgk/2010-12/17/1002386/files/b791a9f908bb4803875ab6aeeb7b4e03.pdf)
 
 The `SM2` algorithm is an asymmetric encryption algorithm based on the `elliptic curve` released by the State Cryptography Administration of China. In theory, the `SM2` algorithm can use any `elliptic curve`, but in practice, the `SM2` algorithm usually uses the `sm2p256v1` curve, so `mima-kit` uses the `sm2p256v1` curve as the default curve for the `SM2` algorithm.
+
+> Since `SM2` and `ECC` share the same underlying operations, the curves supported by `ECC` are also available for `SM2`. Note that this is not the standard usage of `SM2` and lacks relevant security analysis.
 
 ```typescript
 const sm2ec = sm2()
@@ -1568,9 +1579,9 @@ signer.verify(ZA, KA, M, signature) // true
 ```
 
 ```typescript
-interface SM2DSASignature<T = bigint | Uint8Array> {
-  r: T
-  s: T
+interface SM2DSASignature {
+  r: bigint
+  s: bigint
 }
 interface SM2DSA {
   /**
@@ -1582,7 +1593,7 @@ interface SM2DSA {
      * @param {ECPrivateKey} key - Signer Private Key
      * @param {Uint8Array} M - Message
      */
-    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature<U8>
+    sign: (Z: Uint8Array, key: ECPrivateKey, M: Uint8Array) => SM2DSASignature
     /**
      * @param {Uint8Array} Z - Identity Derived Value
      * @param {ECPublicKey} key - Signer Public Key
@@ -1596,11 +1607,11 @@ interface SM2DSA {
 
 ### SM2-ES
 
-`SM2-ES` is an encryption scheme for the `SM2` algorithm.
+`SM2-ES` is an Integrated Encryption Scheme for the `SM2` algorithm.
 
 ```typescript
 const sm2ec = sm2(curve)
-const M = UTF8('The king\'s ears are donkey ears')
+const M = UTF8('Labhraí Loingseach has donkey’s ears')
 
 const key = sm2ec.gen()
 const cipher = sm2ec.es()
@@ -1640,11 +1651,11 @@ interface SM2EncryptionScheme {
 
 Specification: [RFC 7748](https://www.rfc-editor.org/rfc/rfc7748.html)
 
-`x25519` and `x448` are `ECC` algorithms based on the `Montgomery` curve. They are not instances of `FpECC`, but separate algorithms.
+`x25519` and `x448` are `ECC` algorithms based on the `Montgomery` curve. They are not instances of `ECC`, but separate algorithms.
 
 > Note that `x25519` and `x448` provided by `mima-kit` may not be fully compatible with other implementations. This is because `RFC 7748` specifies `little-endian` as the encoding method, while `mima-kit` uses `big-endian` as the encoding method. By converting the `endian`, it should be compatible with other implementations.
 
-> Although `FpECC` can also perform calculations on the `Montgomery` curve, the `x25519` and `x448` algorithms only require the `x` coordinate, and their algorithm implementations will `clamp` the private key, so their underlying algorithms are more efficient independent algorithms.
+> Although `ECC` can also perform calculations on the `Montgomery` curve, the `x25519` and `x448` algorithms only require the `x` coordinate, and their algorithm implementations will `clamp` the private key, so their underlying algorithms are more efficient independent algorithms.
 
 ```typescript
 // Generate key pair: X25519KeyPair<U8>
@@ -1796,9 +1807,9 @@ interface ScryptConfig {
 
 ## Elliptic Curve List
 
-`mima-kit` does not export all `Elliptic Curves`, but you can find them in `/src/core/ecParams.ts`.
+`mima-kit` does not export all `Elliptic Curves`, but you can find them in `/src/core/ec_params.ts`.
 
-### `Weierstrass` Curves
+### Prime Field `Weierstrass` Curves
 
 > Outside the table, `sm2p256v1` is also a exported `Weierstrass` curve. It is applicable to all `ECC` algorithms, but it is commonly used in the `SM2` algorithm, so it is not included in the table.
 
@@ -1821,12 +1832,29 @@ interface ScryptConfig {
 | -           | -        | -            | `bp384r1` |
 | -           | -        | -            | `bp512r1` |
 
-### `Montgomery` Curves
+### Prime Field `Montgomery` Curves
 
 | NIST       |
 |------------|
 | Curve25519 |
 | Curve448   |
+
+### Binary Field
+
+| Type    | SEC       |
+|---------|-----------|
+| Koblitz | sect163k1 |
+| Random  | sect163r1 |
+| Random  | sect163r2 |
+| Koblitz | sect233k1 |
+| Random  | sect233r1 |
+| Koblitz | sect239k1 |
+| Koblitz | sect283k1 |
+| Random  | sect283r1 |
+| Koblitz | sect409k1 |
+| Random  | sect409r1 |
+| Koblitz | sect571k1 |
+| Random  | sect571r1 |
 
 # License
 
