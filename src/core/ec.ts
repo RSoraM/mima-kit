@@ -120,6 +120,8 @@ interface FpECParams extends ECParams {
  * 素域 Weierstrass 椭圆曲线参数
  *
  * Prime Field Weierstrass Elliptic Curve Parameters
+ *
+ * y^2 = x^3 + ax + b
  */
 export interface FpWECParams extends FpECParams {
   type: 'Weierstrass'
@@ -129,6 +131,8 @@ export interface FpWECParams extends FpECParams {
  * 素域 Montgomery 椭圆曲线参数
  *
  * Prime Field Montgomery Elliptic Curve Parameters
+ *
+ * b * y^2 = x^3 + a * x^2 + x
  */
 export interface FpMECParams extends FpECParams {
   type: 'Montgomery'
@@ -138,13 +142,15 @@ export interface FpMECParams extends FpECParams {
  * 素域 Twisted Edwards 椭圆曲线参数
  *
  * Prime Field Twisted Edwards Elliptic Curve Parameters
+ *
+ * ax^2 + y^2 = 1 + dx^2y^2
  */
 export interface FpTECParams extends FpECParams {
   type: 'TwistedEdwards'
 }
 
 /**
- * 二进制域椭圆曲线参数
+ * 二元扩域椭圆曲线参数
  *
  * Binary Field Elliptic Curve Parameters
  */
@@ -156,18 +162,22 @@ interface FbECParams extends ECParams {
 }
 
 /**
- * 二进制域 伪随机 椭圆曲线参数
+ * 二元扩域 伪随机 椭圆曲线参数
  *
  * Binary Field Pseudo-Random Elliptic Curve Parameters
+ *
+ * y^2 + xy = x^3 + ax^2 + b
  */
 export interface FbPECParams extends FbECParams {
   type: 'Pseudo-Random'
 }
 
 /**
- * 二进制域 Koblitz 椭圆曲线参数
+ * 二元扩域 Koblitz 椭圆曲线参数
  *
  * Binary Field Koblitz Elliptic Curve Parameters
+ *
+ * y^2 + xy = x^3 + ax^2 + b
  */
 export interface FbKECParams extends FbECParams {
   type: 'Koblitz'
@@ -205,7 +215,7 @@ function LadderMultiply(
   }
 
   // MSb -> LSb
-  const bit_array = k.toString(2).split('')
+  const bit_array = k.toString(2)
   for (const bit of bit_array) {
     if (bit === '1') {
       R0 = add(R0, R1)
@@ -665,7 +675,7 @@ export function FpMEC(curve: FpMECParams): ECJacobian {
 // * FbEC Components
 
 /**
- * 二进制域椭圆曲线运算
+ * 二元扩域椭圆曲线运算
  *
  * Binary Field Elliptic Curve Operations
  *

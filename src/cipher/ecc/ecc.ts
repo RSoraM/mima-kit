@@ -296,6 +296,7 @@ export function ECC(curve: FpWECParams | FpMECParams | FbPECParams | FbKECParams
 
       return { Q, d }
     }
+    throw new KitError('Invalid type')
   }
 
   const dh: ECDH = (s_key: ECPrivateKey, p_key: ECPublicKey) => {

@@ -23,9 +23,9 @@ export interface GFUtils {
 // * Galois Field
 
 /**
- * 伽罗瓦素域
+ * 素域
  *
- * Galois Field of prime order
+ * Prime Field
  *
  * @param {bigint} p - 素数 / prime number
  */
@@ -77,7 +77,7 @@ export function GF(p: bigint): GFUtils {
 }
 
 /**
- * 二进制域
+ * 二元扩域
  *
  * Binary Field
  *
