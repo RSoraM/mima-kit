@@ -112,6 +112,7 @@ function U8ToUTF8(input: Uint8Array) {
 export const UTF8 = createCodec(UTF8ToU8, U8ToUTF8, 'utf-8')
 
 function HEXToU8(input: string) {
+  input = input.replace(/^0x/, '')
   // eslint-disable-next-line node/prefer-global/buffer
   const [error, result] = trying(() => Buffer.from(
     input.replace(/[^0-9a-f]/gi, ''),
