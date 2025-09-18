@@ -677,7 +677,7 @@ export function FbEC(curve: FbKECParams | FbPECParams): ECLópezDahab {
   const cs = CoordinateSystem(field)
   const m_byte = (Number(m) + 7) >> 3
 
-  const { add, sub, mul, div, root, include } = field
+  const { add, sub, mul, div, inv, include } = field
   const { toAffine, toLD } = cs
 
   const _addPoint = (A: AffinePoint, B: AffinePoint): AffinePoint => {
@@ -802,6 +802,18 @@ export function FbEC(curve: FbKECParams | FbPECParams): ECLópezDahab {
     return !mulPoint(toLD(G), k).isInfinity
   }
 
+  // 半迹函数
+  function half_trace(d: bigint): bigint {
+    const k = (m - 1n) >> 1n
+    let s = d
+    let H = s
+    for (let i = 1; i <= k; i++) {
+      s = mul(s, s, s, s) // s^4
+      H = add(H, s)
+    }
+    return H
+  }
+
   const PointToU8 = (point: AffinePoint, compress = false): U8 => {
     if (point.isInfinity)
       return new U8([0x00])
@@ -836,19 +848,29 @@ export function FbEC(curve: FbKECParams | FbPECParams): ECLópezDahab {
     if ((PC === 0x02 || PC === 0x03) && point_buffer.length === m_byte + 1) {
       const x_buffer = point_buffer.slice(1)
       const x = x_buffer.toBI()
-      const sign_y = BigInt(PC & 1)
 
-      let y: bigint
-      if (x === 0n) {
-        y = root(b)
-      }
-      else {
-        y = add(mul(x, x, x), mul(a, x), 1n)
-        y = div(y, x)
-        y = mul(y, x)
-        y = root(y)
-      }
-      y = (y & 1n) === sign_y ? y : add(y, 1n)
+      if (x === 0n && PC === 0x02)
+        throw new KitError('Invalid Point')
+      if (x === 0n && PC === 0x03)
+        return { type: 'affine', isInfinity: false, x: 0n, y: 1n }
+
+      const inv_x = inv(x)
+      const inv_x2 = mul(inv_x, inv_x)
+      const d = add(x, 1n, inv_x2)
+
+      // 计算半迹得到 z0
+      const z0 = half_trace(d)
+
+      // 计算 y0 = x * z0
+      const y0 = mul(x, z0)
+
+      // 获取 z0 的 LSB（常数项）
+      const z0_LSB = z0 & 1n
+
+      // 根据前缀选择 y
+      const y = PC === 0x02
+        ? (z0_LSB === 0n ? y0 : add(y0, x))
+        : (z0_LSB === 1n ? y0 : add(y0, x))
 
       return { type: 'affine', isInfinity: false, x, y }
     }
