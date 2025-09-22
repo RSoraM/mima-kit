@@ -4,6 +4,15 @@ import { CoordinateSystem } from './coordinate_system'
 import { GF, GF2 } from './galois_field'
 import { getBIBits, joinBuffer, KitError, U8 } from './utils'
 
+/**
+ * TODO: 修改曲线参数的接口
+ *
+ * 使用这个数据库的格式: https://neuromancer.sk/std/
+ *
+ * 1. 更加通用的接口
+ * 2. 根据三项式基或五项式基优化二元扩域的运算和接口
+ */
+
 // * Elliptic Curve Interfaces
 
 interface PointAddition<P> {
