@@ -161,6 +161,7 @@ export interface SM2FbKoblitz extends SM2Base {
  *
  * @param curve - 椭圆曲线参数 / Elliptic Curve Parameters (default: sm2p256v1)
  */
+export function sm2(curve: undefined): SM2FpWeierstrass
 export function sm2(curve: FpWECParams): SM2FpWeierstrass
 export function sm2(curve: FpMECParams): SM2FpMontgomery
 export function sm2(curve: FbPECParams): SM2FbPseudoRandom
