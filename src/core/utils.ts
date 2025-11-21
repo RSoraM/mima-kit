@@ -1,13 +1,25 @@
 import type { Codec } from './codec'
 
-// * Math utility functions
+/* ========================================================================== */
+/* Math utility functions                                                     */
+/* ========================================================================== */
 
-/** 32-bit 循环左移 */
+/**
+ * 32-bit 循环左移 / 32-bit Rotate Left
+ *
+ * @param {number | bigint} x - 数值 / value
+ * @param {number | bigint} n - 位移 / shift
+ */
 export function rotateL32(x: number, n: number) {
   return ((x << n) | (x >>> (32 - n))) >>> 0
 }
 
-/** 32-bit 循环右移 */
+/**
+ * 32-bit 循环右移 / 32-bit Rotate Right
+ *
+ * @param {number | bigint} x - 数值 / value
+ * @param {number | bigint} n - 位移 / shift
+ */
 export function rotateR32(x: number, n: number) {
   return (x >>> n) | (x << (32 - n)) >>> 0
 }
@@ -15,7 +27,7 @@ export function rotateR32(x: number, n: number) {
 /**
  * 位循环左移 / Rotate Left
  *
- * @param {number} bit - 位数 / bit
+ * @param {number} bit - 限制位数 / limit bit
  * @param {number | bigint} x - 数值 / value
  * @param {number | bigint} n - 位移 / shift
  * @param {bigint} [mask] - 位掩码 / bit mask
@@ -39,7 +51,7 @@ export function rotateL(
 /**
  * 位循环右移 / Rotate Right
  *
- * @param {number} bit - 位数 / bit
+ * @param {number} bit - 限制位数 / limit bit
  * @param {number | bigint} x - 数值 / value
  * @param {number | bigint} n - 位移 / shift
  * @param {bigint} [mask] - 位掩码 / bit mask
@@ -60,18 +72,36 @@ export function rotateR(
   return x & mask
 }
 
-/** 生成随机大整数 / Generate Random BigInt */
-export function genRandomBI(max: bigint, byte: number) {
-  let result = 0n
+/**
+ * 在指定缓存区长度内生成随机大整数 / Generate random BigInt within specified buffer length
+ *
+ * @param {bigint} max - 最大值 (不包含) / maximum value (exclusive)
+ * @param {number} byte - 缓存区长度 / buffer length in byte
+ * @param {number} [max_attempts] - 最大尝试次数 / maximum attempts (default: 1000)
+ *
+ * @returns
+ * - buffer: 生成的随机缓存区 / generated random buffer
+ * - result: 生成的随机大整数 / generated random bigint
+ */
+export function genRandomBI(max: bigint, byte: number, max_attempts: number = 1000) {
+  if (max <= 1n)
+    throw new KitError('Max must be greater than 1')
 
-  // 生成随机数
+  // 创建缓存区
   const buffer = new U8(byte)
-  do {
+
+  // 生成随机数直到小于 max
+  let result = 0n
+  let attempts = 0
+  while (attempts < max_attempts) {
     crypto.getRandomValues(buffer)
     result = buffer.toBI()
-  } while (result >= max)
+    if (result < max)
+      return { buffer, result }
+    attempts++
+  }
 
-  return { buffer, result }
+  throw new KitError('Failed to generate random bigint within max attempts')
 }
 
 /**
@@ -106,6 +136,7 @@ export function genBitMask(w: number | bigint) {
  *
  * Extended Euclidean Algorithm
  *
+ * @returns
  * - gcd: 最大公约数 / greatest common divisor
  * - x: a 的贝祖系数 / Bézout coefficient of a
  */
@@ -220,8 +251,8 @@ export function lcm(a: bigint, b: bigint): bigint {
  *
  * Modulo operation: a mod b
  *
- * @param {bigint} a - dividend
- * @param {bigint} b - divisor
+ * @param {bigint} a - 被除数 / dividend
+ * @param {bigint} b - 除数 / divisor
  */
 export function mod(a: bigint, b: bigint): bigint {
   const r = a % b
@@ -279,7 +310,9 @@ export function modPrimeSquareRoot(n: bigint, p: bigint): bigint {
   return r1 <= r2 ? r1 : r2
 }
 
-// * Buffer utility functions
+/* ========================================================================== */
+/* Buffer utility functions                                                   */
+/* ========================================================================== */
 
 /**
  * @extends Uint8Array
@@ -288,39 +321,39 @@ export class U8 extends Uint8Array {
   /**
    * 从 U8 中获取一个字 / Get a word from U8
    *
-   * @param {number} word_byte - 字长 / word size
+   * @param {number} word_size - 字长 / word size (byte)
    * @param {number} index - 字索引 / word index
    * @param {boolean} [little_endian] - 是否为小端序 / little-endian (default: false)
    */
-  getWord(word_byte: number, index: number, little_endian = false): bigint {
-    const offset = index * word_byte
-    const buffer = this.subarray(offset, offset + word_byte)
+  getWord(word_size: number, index: number, little_endian = false): bigint {
+    const offset = index * word_size
+    const buffer = this.subarray(offset, offset + word_size)
     return little_endian ? buffer.toBI(true) : buffer.toBI()
   }
 
   /**
    * 将一个字写入 U8 / Set a word to U8
    *
-   * @param {number} word_byte - 字长 / word size
+   * @param {number} word_size - 字长 / word size (byte)
    * @param {number} index - 字索引 / word index
    * @param {bigint | Uint8Array} word - 字 / word
    * @param {boolean} [little_endian] - 是否为小端序 / little-endian (default: false)
    */
-  setWord(word_byte: number, index: number, word: bigint | Uint8Array, little_endian = false) {
-    const offset = index * word_byte
-    const buffer = typeof word === 'bigint' ? U8.fromBI(word, word_byte) : word
+  setWord(word_size: number, index: number, word: bigint | Uint8Array, little_endian = false) {
+    const offset = index * word_size
+    const buffer = typeof word === 'bigint' ? U8.fromBI(word, word_size) : word
     this.set(little_endian ? buffer.toReversed() : buffer, offset)
   }
 
   /**
    * U8 视图 / U8 view
    *
-   * @param {number} word_byte - 字长 / word size
+   * @param {number} word_size - 字长 / word size (byte)
    */
-  view(word_byte: number) {
-    const length = Math.floor(this.length / word_byte)
-    const get = (index: number, little_endian = false) => this.getWord(word_byte, index, little_endian)
-    const set = (index: number, word: bigint | Uint8Array, little_endian = false) => this.setWord(word_byte, index, word, little_endian)
+  view(word_size: number) {
+    const length = Math.floor(this.length / word_size)
+    const get = (index: number, little_endian = false) => this.getWord(word_size, index, little_endian)
+    const set = (index: number, word: bigint | Uint8Array, little_endian = false) => this.setWord(word_size, index, word, little_endian)
     return { get, set, length }
   }
 
@@ -554,7 +587,9 @@ export class Counter extends U8 {
   }
 }
 
-// * Other utility functions
+/* ========================================================================== */
+/* Other utility functions                                                    */
+/* ========================================================================== */
 
 export function trying<T>(
   fn: () => T,
