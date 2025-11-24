@@ -1,8 +1,6 @@
 import type { Codec } from './codec'
 
-/* ========================================================================== */
-/* Math utility functions                                                     */
-/* ========================================================================== */
+// * Math Utility Functions
 
 /**
  * 32-bit 循环左移 / 32-bit Rotate Left
@@ -310,9 +308,7 @@ export function modPrimeSquareRoot(n: bigint, p: bigint): bigint {
   return r1 <= r2 ? r1 : r2
 }
 
-/* ========================================================================== */
-/* Buffer utility functions                                                   */
-/* ========================================================================== */
+// * Buffer Utility Functions
 
 /**
  * @extends Uint8Array
@@ -587,9 +583,7 @@ export class Counter extends U8 {
   }
 }
 
-/* ========================================================================== */
-/* Other utility functions                                                    */
-/* ========================================================================== */
+// * Other Utility Functions
 
 export function trying<T>(
   fn: () => T,
