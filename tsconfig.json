@@ -4,13 +4,10 @@
     "lib": ["ESNext"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "types": [
-      "@vitest/browser/matchers"
-    ],
     "strict": true,
     "strictNullChecks": true,
-    "outDir": "dist/chunk",
     "esModuleInterop": true,
+    "outDir": "dist/chunk",
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
   },

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!!**/dist"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "useNamingConvention": {
+          "level": "info",
+          "options": {
+            "strictCase": false,
+            "conventions": [
+              {
+                "selector": { "kind": "variable" },
+                "formats": ["snake_case"]
+              },
+              {
+                "selector": { "kind": "const" },
+                "formats": ["CONSTANT_CASE", "snake_case"]
+              },
+              {
+                "selector": { "kind": "function" },
+                "formats": ["snake_case"]
+              },
+              {
+                "selector": { "kind": "functionParameter" },
+                "formats": ["snake_case"]
+              },
+              {
+                "selector": { "kind": "classMethod" },
+                "formats": ["camelCase"]
+              },
+              {
+                "selector": { "kind": "class" },
+                "formats": ["PascalCase"]
+              }
+            ]
+          }
+        }
+      },
+      "suspicious": {
+        "noExplicitAny": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}
