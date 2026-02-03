@@ -1,7 +1,7 @@
-import type { KeyHash } from '../core/hash'
-import { U8 } from '../core/utils'
-import { hmac } from './hmac'
-import { sha1 } from './sha1'
+import type { KeyHash } from '../core/hash';
+import { U8 } from '../core/utils';
+import { hmac } from './hmac';
+import { sha1 } from './sha1';
 
 /**
  * 生成 HOTP (基于计数的一次性密码)
@@ -13,14 +13,10 @@ import { sha1 } from './sha1'
  * @param {KeyHash} mac - 带密钥的加密散列算法 / Keyed Hashing Algorithm (default: HMAC-SHA1)
  * @returns {U8} - 返回的 HOTP 字节数组 / HOTP byte array
  */
-function hotp(
-  secret: Uint8Array,
-  counter: Uint8Array,
-  mac: KeyHash = hmac(sha1),
-): U8 {
-  const HS = mac(secret, counter)
-  const offset = HS[HS.length - 1] & 0x0F
-  return HS.slice(offset, offset + 4)
+function hotp(secret: Uint8Array, counter: Uint8Array, mac: KeyHash = hmac(sha1)): U8 {
+  const HS = mac(secret, counter);
+  const offset = HS[HS.length - 1] & 0x0f;
+  return HS.slice(offset, offset + 4);
 }
 
 interface TOTP {
@@ -32,14 +28,14 @@ interface TOTP {
    * @param {Uint8Array} secret - 密钥 / Secret key
    * @returns {string} - 返回的 TOTP 字符串 / TOTP string
    */
-  (secret: Uint8Array): string
+  (secret: Uint8Array): string;
 }
 
 interface TOTPParams {
   /**
    * 带密钥的加密散列算法 / Keyed Hashing Algorithm (default: HMAC-SHA1)
    */
-  mac?: KeyHash
+  mac?: KeyHash;
   /**
    * 当前时间戳 / Current timestamp (default: Date.now() milliseconds)
    *
@@ -47,15 +43,15 @@ interface TOTPParams {
    *
    * When this parameter is specified, the current timestamp will not be obtained from `Date.now()`.
    */
-  current?: number
+  current?: number;
   /**
    * 纪元时间戳 / Epoch timestamp (default: 0 milliseconds)
    */
-  epoch?: number
+  epoch?: number;
   /**
    * 时间步长 / Time step (default: 30000 milliseconds)
    */
-  step?: number
+  step?: number;
   /**
    * 计数器 / Counter
    *
@@ -65,11 +61,11 @@ interface TOTPParams {
    *
    * When this parameter is specified, the counter will not be calculated from the current timestamp.
    */
-  counter?: number | bigint | Uint8Array
+  counter?: number | bigint | Uint8Array;
   /**
    * 返回的数字位数 / Number of digits in the returned OTP (default: 6)
    */
-  digits?: number
+  digits?: number;
 }
 
 /**
@@ -80,29 +76,22 @@ interface TOTPParams {
  * @param {Uint8Array} secret - 密钥 / Secret key
  * @returns {string} - 返回的 TOTP 字符串 / TOTP string
  */
-export function totp(secret: Uint8Array): string
+export function totp(secret: Uint8Array): string;
 /**
  * 创建 TOTP 函数 / Create a TOTP function
  *
  * @param {TOTPParams} params - TOTP 参数 / TOTP parameters
  * @returns {TOTP} - 返回的 TOTP 函数 / TOTP function
  */
-export function totp(params: TOTPParams): TOTP
-export function totp(
-  args: Uint8Array | TOTPParams,
-) {
+export function totp(params: TOTPParams): TOTP;
+export function totp(args: Uint8Array | TOTPParams) {
   if (args instanceof Uint8Array) {
-    const K = args
-    const C = U8.fromBI(BigInt(Math.floor(Date.now() / 30000)), 8, false)
-    const HS = hotp(K, C, hmac(sha1))
-    const OTP = 0
-      | (HS[0] & 0x7F) << 24
-      | (HS[1] & 0xFF) << 16
-      | (HS[2] & 0xFF) << 8
-      | (HS[3] & 0xFF)
-    return (OTP % 1_000_000)
-      .toString()
-      .padStart(6, '0')
+    const K = args;
+    const C = U8.fromBI(BigInt(Math.floor(Date.now() / 30000)), 8, false);
+    const HS = hotp(K, C, hmac(sha1));
+    const OTP =
+      0 | ((HS[0] & 0x7f) << 24) | ((HS[1] & 0xff) << 16) | ((HS[2] & 0xff) << 8) | (HS[3] & 0xff);
+    return (OTP % 1_000_000).toString().padStart(6, '0');
   }
 
   return (secret: Uint8Array) => {
@@ -113,24 +102,23 @@ export function totp(
       step = 30000,
       counter = 0,
       digits = 6,
-    } = args || {}
+    } = args || {};
 
     if (!counter) {
-      const T = BigInt(Math.floor((current - epoch) / step))
-      counter = U8.fromBI(T, 8, false)
+      const T = BigInt(Math.floor((current - epoch) / step));
+      counter = U8.fromBI(T, 8, false);
     }
     if (!(counter instanceof Uint8Array)) {
-      counter = U8.fromBI(BigInt(counter), 8, false)
+      counter = U8.fromBI(BigInt(counter), 8, false);
     }
 
-    const BIN = hotp(secret, counter, mac)
-    const OTP = 0
-      | (BIN[0] & 0x7F) << 24
-      | (BIN[1] & 0xFF) << 16
-      | (BIN[2] & 0xFF) << 8
-      | (BIN[3] & 0xFF)
-    return (OTP % (10 ** digits))
-      .toString()
-      .padStart(digits, '0')
-  }
+    const BIN = hotp(secret, counter, mac);
+    const OTP =
+      0 |
+      ((BIN[0] & 0x7f) << 24) |
+      ((BIN[1] & 0xff) << 16) |
+      ((BIN[2] & 0xff) << 8) |
+      (BIN[3] & 0xff);
+    return (OTP % 10 ** digits).toString().padStart(digits, '0');
+  };
 }
