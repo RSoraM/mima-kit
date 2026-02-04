@@ -81,11 +81,7 @@ export function rotateR(
  * - buffer: 生成的随机缓存区 / generated random buffer
  * - result: 生成的随机大整数 / generated random bigint
  */
-export function genRandomBI(
-  max: bigint,
-  byte: number,
-  max_attempts: number = 1000,
-) {
+export function genRandomBI(max: bigint, byte: number, max_attempts: number = 1000) {
   if (max <= 1n) throw new KitError('Max must be greater than 1');
 
   // 创建缓存区
@@ -334,12 +330,7 @@ export class U8 extends Uint8Array {
    * @param {bigint | Uint8Array} word - 字 / word
    * @param {boolean} [little_endian] - 是否为小端序 / little-endian (default: false)
    */
-  setWord(
-    word_size: number,
-    index: number,
-    word: bigint | Uint8Array,
-    little_endian = false,
-  ) {
+  setWord(word_size: number, index: number, word: bigint | Uint8Array, little_endian = false) {
     const offset = index * word_size;
     const buffer = typeof word === 'bigint' ? U8.fromBI(word, word_size) : word;
     this.set(little_endian ? buffer.toReversed() : buffer, offset);
@@ -354,11 +345,8 @@ export class U8 extends Uint8Array {
     const length = Math.floor(this.length / word_size);
     const get = (index: number, little_endian = false) =>
       this.getWord(word_size, index, little_endian);
-    const set = (
-      index: number,
-      word: bigint | Uint8Array,
-      little_endian = false,
-    ) => this.setWord(word_size, index, word, little_endian);
+    const set = (index: number, word: bigint | Uint8Array, little_endian = false) =>
+      this.setWord(word_size, index, word, little_endian);
     return { get, set, length };
   }
 
@@ -430,10 +418,7 @@ export class U8 extends Uint8Array {
    * @param thisArg An object to which the this keyword can refer in the predicate function.
    * If thisArg is omitted, undefined is used as the this value.
    */
-  filter(
-    predicate: (value: number, index: number, array: this) => any,
-    thisArg?: any,
-  ): U8 {
+  filter(predicate: (value: number, index: number, array: this) => any, thisArg?: any): U8 {
     const _ = super.filter(predicate, thisArg);
     return new U8(_.buffer, _.byteOffset, _.byteLength);
   }
@@ -458,11 +443,7 @@ export class U8 extends Uint8Array {
    * @param mapfn A mapping function to call on every element of the array.
    * @param thisArg Value of 'this' used to invoke the mapfn.
    */
-  static from<T>(
-    elements: Iterable<T>,
-    mapfn?: (v: T, k: number) => number,
-    thisArg?: any,
-  ): U8;
+  static from<T>(elements: Iterable<T>, mapfn?: (v: T, k: number) => number, thisArg?: any): U8;
   /**
    * Creates an array from an array-like or iterable object.
    * @param arrayLike An array-like object to convert to an array.
@@ -474,11 +455,7 @@ export class U8 extends Uint8Array {
    * @param mapfn A mapping function to call on every element of the array.
    * @param thisArg Value of 'this' used to invoke the mapfn.
    */
-  static from<T>(
-    arrayLike: ArrayLike<T>,
-    mapfn: (v: T, k: number) => number,
-    thisArg?: any,
-  ): U8;
+  static from<T>(arrayLike: ArrayLike<T>, mapfn: (v: T, k: number) => number, thisArg?: any): U8;
   static from(array_like: any, mapfn?: any, this_arg?: any): U8 {
     const _ = Uint8Array.from(array_like, mapfn, this_arg);
     return new U8(_.buffer, _.byteOffset, _.byteLength);
@@ -492,10 +469,7 @@ export class U8 extends Uint8Array {
    * @param thisArg An object to which the this keyword can refer in the callbackfn function.
    * If thisArg is omitted, undefined is used as the this value.
    */
-  map(
-    callbackfn: (value: number, index: number, array: this) => number,
-    thisArg?: any,
-  ): U8 {
+  map(callbackfn: (value: number, index: number, array: this) => number, thisArg?: any): U8 {
     const _ = super.map(callbackfn, thisArg);
     return new U8(_.buffer, _.byteOffset, _.byteLength);
   }
@@ -520,6 +494,41 @@ export class U8 extends Uint8Array {
     const _ = super.subarray(begin, end);
     return new U8(_.buffer, _.byteOffset, _.byteLength);
   }
+
+  /**
+   * Copies the array and returns the copy with the elements in reverse order.
+   */
+  toReversed(): U8 {
+    const _ = super.toReversed();
+    return new U8(_.buffer, _.byteOffset, _.byteLength);
+  }
+
+  /**
+   * Copies and sorts the array.
+   * @param compareFn Function used to determine the order of the elements. It is expected to return
+   * a negative value if the first argument is less than the second argument, zero if they're equal, and a positive
+   * value otherwise. If omitted, the elements are sorted in ascending order.
+   * ```ts
+   * const myNums = Uint8Array.from([11, 2, 22, 1]);
+   * myNums.toSorted((a, b) => a - b) // Uint8Array(4) [1, 2, 11, 22]
+   * ```
+   */
+  toSorted(compareFn?: (a: number, b: number) => number): U8 {
+    const _ = super.toSorted(compareFn);
+    return new U8(_.buffer, _.byteOffset, _.byteLength);
+  }
+
+  /**
+   * Copies the array and inserts the given number at the provided index.
+   * @param index The index of the value to overwrite. If the index is
+   * negative, then it replaces from the end of the array.
+   * @param value The value to insert into the copied array.
+   * @returns A copy of the original array with the inserted value.
+   */
+  with(index: number, value: number): U8 {
+    const _ = super.with(index, value);
+    return new U8(_.buffer, _.byteOffset, _.byteLength);
+  }
 }
 
 type TypedArray =
@@ -537,11 +546,7 @@ type TypedArray =
  * 将 TypedArray 转换为 Uint8Array
  */
 export function u8(source: TypedArray): U8 {
-  return new U8(
-    source.buffer as ArrayBuffer,
-    source.byteOffset,
-    source.byteLength,
-  );
+  return new U8(source.buffer as ArrayBuffer, source.byteOffset, source.byteLength);
 }
 
 /**
@@ -550,11 +555,7 @@ export function u8(source: TypedArray): U8 {
  * 将 TypedArray 转换为 Uint16Array
  */
 export function u16(source: TypedArray): Uint16Array {
-  return new Uint16Array(
-    source.buffer,
-    source.byteOffset,
-    source.byteLength >> 1,
-  );
+  return new Uint16Array(source.buffer, source.byteOffset, source.byteLength >> 1);
 }
 
 /**
@@ -563,11 +564,7 @@ export function u16(source: TypedArray): Uint16Array {
  * 将 TypedArray 转换为 Uint32Array
  */
 export function u32(source: TypedArray): Uint32Array {
-  return new Uint32Array(
-    source.buffer,
-    source.byteOffset,
-    source.byteLength >> 2,
-  );
+  return new Uint32Array(source.buffer, source.byteOffset, source.byteLength >> 2);
 }
 
 /**
@@ -674,9 +671,7 @@ export function trying<T>(fn: () => T): [Error, null] | [null, T] {
     const result = fn();
     return [null, result];
   } catch (error) {
-    return error instanceof Error
-      ? [error, null]
-      : [new KitError('Unknown error'), null];
+    return error instanceof Error ? [error, null] : [new KitError('Unknown error'), null];
   }
 }
 
