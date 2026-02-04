@@ -153,7 +153,7 @@ function digest(state: U8, message: Uint8Array) {
   p[m_byte] = 0x80;
 
   // appending length
-  const p_view = new DataView(p.buffer);
+  const p_view = new DataView(p.buffer, p.byteOffset, p.byteLength);
   p_view.setBigUint64(p.byteLength - 16, m_bit >> 32n);
   p_view.setBigUint64(p.byteLength - 8, m_bit & 0xffffffffffffffffn);
 

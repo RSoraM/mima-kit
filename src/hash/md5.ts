@@ -69,7 +69,7 @@ function digest(message: Uint8Array) {
   p[m_byte] = 0x80;
 
   // appending length
-  const p_view = new DataView(p.buffer);
+  const p_view = new DataView(p.buffer, p.byteOffset, p.byteLength);
   p_view.setBigUint64(p.length - 8, m_bit, true);
 
   // * 分块处理

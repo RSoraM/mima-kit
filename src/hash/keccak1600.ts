@@ -135,7 +135,7 @@ function createStateArray(): StateArray1600 {
  */
 function toStateArray(S: Uint8Array) {
   const A = createStateArray();
-  const view = new DataView(S.buffer);
+  const view = new DataView(S.buffer, S.byteOffset, S.byteLength);
 
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
@@ -153,7 +153,7 @@ function toStateArray(S: Uint8Array) {
  */
 function toState(A: StateArray1600) {
   const S = new Uint8Array(200);
-  const view = new DataView(S.buffer);
+  const view = new DataView(S.buffer, S.byteOffset, S.byteLength);
 
   for (let x = 0; x < 5; x++) {
     for (let y = 0; y < 5; y++) {
