@@ -30,12 +30,7 @@ export function rotateR32(x: number, n: number) {
  * @param {number | bigint} n - 位移 / shift
  * @param {bigint} [mask] - 位掩码 / bit mask
  */
-export function rotateL(
-  bit: number | bigint,
-  x: number | bigint,
-  n: number | bigint,
-  mask?: bigint,
-) {
+export function rotateL(bit: number | bigint, x: number | bigint, n: number | bigint, mask?: bigint) {
   bit = BigInt(bit);
   mask ??= genBitMask(bit);
   x = BigInt(x);
@@ -54,12 +49,7 @@ export function rotateL(
  * @param {number | bigint} n - 位移 / shift
  * @param {bigint} [mask] - 位掩码 / bit mask
  */
-export function rotateR(
-  bit: number | bigint,
-  x: number | bigint,
-  n: number | bigint,
-  mask?: bigint,
-) {
+export function rotateR(bit: number | bigint, x: number | bigint, n: number | bigint, mask?: bigint) {
   bit = BigInt(bit);
   mask ??= genBitMask(bit);
   x = BigInt(x);
@@ -343,8 +333,7 @@ export class U8 extends Uint8Array {
    */
   view(word_size: number) {
     const length = Math.floor(this.length / word_size);
-    const get = (index: number, little_endian = false) =>
-      this.getWord(word_size, index, little_endian);
+    const get = (index: number, little_endian = false) => this.getWord(word_size, index, little_endian);
     const set = (index: number, word: bigint | Uint8Array, little_endian = false) =>
       this.setWord(word_size, index, word, little_endian);
     return { get, set, length };
@@ -531,14 +520,7 @@ export class U8 extends Uint8Array {
   }
 }
 
-type TypedArray =
-  | Uint8Array
-  | Int8Array
-  | Uint8ClampedArray
-  | Uint16Array
-  | Int16Array
-  | Uint32Array
-  | Int32Array;
+type TypedArray = Uint8Array | Int8Array | Uint8ClampedArray | Uint16Array | Int16Array | Uint32Array | Int32Array;
 
 /**
  * Convert TypedArray to Uint8Array

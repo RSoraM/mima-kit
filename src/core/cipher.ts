@@ -79,10 +79,7 @@ export function createCipher(
   algorithm: Cipher | IVCipher,
   description: BlockCipherInfo | StreamCipherInfo | IVStreamCipherInfo,
 ) {
-  return wrap(
-    (key: Uint8Array, iv: Uint8Array) => wrap(algorithm(key, iv), description),
-    description,
-  );
+  return wrap((key: Uint8Array, iv: Uint8Array) => wrap(algorithm(key, iv), description), description);
 }
 
 // * 填充方案包装器
@@ -108,8 +105,7 @@ export interface PaddingInfo {
 export interface Padding extends DoPad, UnPad, PaddingInfo {}
 export function createPadding(doPad: DoPad, unPad: UnPad, description: PaddingInfo): Padding {
   return wrap(
-    (M: Uint8Array, BLOCK_SIZE?: number) =>
-      typeof BLOCK_SIZE === 'number' ? doPad(M, BLOCK_SIZE) : unPad(M),
+    (M: Uint8Array, BLOCK_SIZE?: number) => (typeof BLOCK_SIZE === 'number' ? doPad(M, BLOCK_SIZE) : unPad(M)),
     description,
   );
 }

@@ -1,5 +1,5 @@
-import type { U8 } from './utils'
-import { wrap } from './utils'
+import type { U8 } from './utils';
+import { wrap } from './utils';
 
 // * 散列函数包装器
 
@@ -7,19 +7,18 @@ export interface Digest {
   /**
    * @param {Uint8Array} M - 消息 / message
    */
-  (M: Uint8Array): U8
+  (M: Uint8Array): U8;
 }
 export interface HashDescription {
   /** 算法名称 / Algorithm name */
-  ALGORITHM: string
+  ALGORITHM: string;
   /** 分块大小 / Block size (byte) */
-  BLOCK_SIZE: number
+  BLOCK_SIZE: number;
   /** 摘要大小 / Digest size (byte) */
-  DIGEST_SIZE: number
-  OID?: string
+  DIGEST_SIZE: number;
+  OID?: string;
 }
-export interface Hash extends Digest, HashDescription {
-}
+export interface Hash extends Digest, HashDescription {}
 /**
  * 散列算法包装器,
  * 提供散列算法描述, 以实现 `HMAC` 等拓展算法.
@@ -36,7 +35,7 @@ export interface Hash extends Digest, HashDescription {
  * const hash = createHash(digest, description)
  * ```
  */
-export const createHash = (digest: Digest, description: HashDescription): Hash => wrap(digest, description)
+export const createHash = (digest: Digest, description: HashDescription): Hash => wrap(digest, description);
 
 // * 元组散列函数包装器
 
@@ -44,12 +43,10 @@ export interface TupleDigest {
   /**
    * @param {Uint8Array[]} M - 消息 / message
    */
-  (M: Uint8Array[]): U8
+  (M: Uint8Array[]): U8;
 }
-export interface TupleHashDescription extends HashDescription {
-}
-export interface TupleHash extends TupleDigest, TupleHashDescription {
-}
+export interface TupleHashDescription extends HashDescription {}
+export interface TupleHash extends TupleDigest, TupleHashDescription {}
 /**
  * 元组散列算法包装器
  *
@@ -64,7 +61,8 @@ export interface TupleHash extends TupleDigest, TupleHashDescription {
  * const hash = createTupleHash(digest, description)
  * ```
  */
-export const createTupleHash = (digest: TupleDigest, description: TupleHashDescription): TupleHash => wrap(digest, description)
+export const createTupleHash = (digest: TupleDigest, description: TupleHashDescription): TupleHash =>
+  wrap(digest, description);
 
 // * 密钥散列函数
 
@@ -73,13 +71,12 @@ export interface KeyDigest {
    * @param {Uint8Array} K - 密钥 / key
    * @param {Uint8Array} M - 消息 / message
    */
-  (K: Uint8Array, M: Uint8Array): U8
+  (K: Uint8Array, M: Uint8Array): U8;
 }
 export interface KeyHashDescription extends HashDescription {
   /** 推荐的密钥大小 / Recommended key size (byte) */
-  KEY_SIZE: number
+  KEY_SIZE: number;
 }
 /** 密钥散列函数 / Keyed hash function */
-export interface KeyHash extends KeyDigest, KeyHashDescription {
-}
-export const createKeyHash = (digest: KeyDigest, description: KeyHashDescription): KeyHash => wrap(digest, description)
+export interface KeyHash extends KeyDigest, KeyHashDescription {}
+export const createKeyHash = (digest: KeyDigest, description: KeyHashDescription): KeyHash => wrap(digest, description);
