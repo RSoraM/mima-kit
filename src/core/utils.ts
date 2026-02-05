@@ -575,7 +575,7 @@ export function joinBuffer(...buffers: Uint8Array[]) {
  */
 export function resizeBuffer(buffer: Uint8Array, size: number) {
   const b = new U8(size);
-  b.set(new U8(buffer));
+  b.set(buffer);
   return b;
 }
 
