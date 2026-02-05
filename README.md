@@ -170,7 +170,7 @@ npm install mima-kit
 
 密码学中的数据通常是二进制数据，在 `JS` 中通常以 `Uint8Array` 表示，`string` 和 `Uint8Array` 的转换需要 `字符编码`。
 
-> 如果您使用 `Node.js` 这类支持 `Buffer` 的环境，那么您可以直接使用 `Buffer` 进行编解码。如果您使用的是浏览器环境，就可以使用 `mima-kit` 提供的解码器。
+> 如果您使用 `Node.js` 这类支持 `Buffer` 的环境，那么您可以直接使用 `Buffer` 进行编解码。但推荐您将 `Buffer` 转为 `Uint8Array` 或 `U8`，因为历史原因 `Buffer` 的 API 和 `Uint8Array` 有细微的差别，参考：[Buffers and TypedArrays](https://nodejs.org/api/buffer.html#buffers-and-typedarrays)。如果您使用的是浏览器环境，就可以使用 `mima-kit` 提供的解码器。
 
 `mima-kit` 提供的编解码器会自动判断输入数据的类型。
 

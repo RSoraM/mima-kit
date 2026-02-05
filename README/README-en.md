@@ -172,7 +172,7 @@ npm install mima-kit
 
 Data in cryptography is usually binary data, which is usually represented by `Uint8Array` in `JS`. The conversion between `string` and `Uint8Array` requires `Character Codec`.
 
-> If you are using an environment such as `Node.js` that supports `Buffer`, you can directly use `Buffer` as `codec`. If you are using a browser environment, you can use the `codec` provided by `mima-kit`.
+> If you're using an environment like `Node.js` that supports `Buffer`, you can directly use `Buffer` for encoding and decoding. However, it's recommended to convert `Buffer` to `Uint8Array` or `U8`. Due to historical reasons, the `Buffer` API has subtle differences from `Uint8Array`. For reference: [Buffers and TypedArrays](https://nodejs.org/api/buffer.html#buffers-and-typedarrays). If you're working in a browser environment, you can utilize the decoders provided by `mima-kit`.
 
 The `codec` provided by `mima-kit` will automatically determine the type of the input data.
 
