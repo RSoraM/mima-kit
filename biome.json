@@ -21,7 +21,8 @@
         "noExplicitAny": "off"
       },
       "style": {
-        "useShorthandFunctionType": "off"
+        "useShorthandFunctionType": "off",
+        "noNonNullAssertion": "off"
       }
     }
   },
