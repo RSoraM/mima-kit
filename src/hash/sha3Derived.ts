@@ -151,14 +151,7 @@ const cshakePadding: Sha3Padding = (r_byte: number) => {
  * @param {number} r_byte - 处理速率 / Rate (byte)
  * @param {Hash} SHAKE - SHAKE 函数
  */
-function cshake(
-  d: number,
-  N: Uint8Array,
-  S: Uint8Array,
-  c: number,
-  r_byte: number,
-  SHAKE: typeof shake128,
-) {
+function cshake(d: number, N: Uint8Array, S: Uint8Array, c: number, r_byte: number, SHAKE: typeof shake128) {
   if (N.byteLength === 0 && S.byteLength === 0) {
     return (M: Uint8Array) => SHAKE(d)(M);
   }
@@ -401,24 +394,15 @@ export function tuplehash256XOF(d: number, S: Uint8Array = new Uint8Array()) {
  * @param {number} r_byte - 处理速率 / Rate (byte)
  * @param {boolean} XOF - 是否为 XOF 模式 / XOF mode
  */
-function parallelhash(
-  b: number,
-  d: number,
-  S: Uint8Array,
-  c: number,
-  r_byte: number,
-  XOF: boolean,
-  SHAKE: Hash,
-) {
+function parallelhash(b: number, d: number, S: Uint8Array, c: number, r_byte: number, XOF: boolean, SHAKE: Hash) {
   const bByte = b >> 3;
   return (M: Uint8Array) => {
-    M = u8(M);
     const n = Math.ceil(M.byteLength / bByte);
     const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], r_byte);
     X.push(leftEncode(b));
 
     for (let i = 0; i < n; i++) {
-      const B = M.slice(i * (b << 3), (i + 1) * (b << 3));
+      const B = u8(M).slice(i * (b << 3), (i + 1) * (b << 3));
       X.push(SHAKE(B));
     }
 

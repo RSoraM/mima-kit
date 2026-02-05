@@ -120,8 +120,6 @@ function expand(K: Uint8Array, iv: Uint8Array) {
 // * Salsa20 Algorithm
 
 function _salsa20(key: Uint8Array, iv: Uint8Array) {
-  key = u8(key);
-  iv = u8(iv);
   /** Counter Block */
   const E = expand(key, iv);
   /** Pseudo Random Byte Stream */

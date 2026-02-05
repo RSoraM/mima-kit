@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher';
-import { KitError, U8, u8 } from '../../core/utils';
+import { KitError, U8 } from '../../core/utils';
 
 // * Constants
 
@@ -54,7 +54,6 @@ function GFMultiply(a: number, b: number): number {
 }
 
 function KeyExpansion(K: Uint8Array, Nr: 10 | 12 | 14) {
-  K = u8(K);
   const Nk = K.byteLength >> 2;
   const W = new Uint8Array((Nr + 1) << 4);
   W.set(K);
@@ -89,11 +88,10 @@ function KeyExpansion(K: Uint8Array, Nr: 10 | 12 | 14) {
 // * AES Algorithm
 
 function Cipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
-  W = u8(W);
   if (M.byteLength !== 16) {
     throw new KitError(`AES block must be 16 byte`);
   }
-  const S = u8(M).slice(0);
+  const S = U8.from(M);
 
   const AddRoundKey = (W: Uint8Array) => {
     for (let i = 0; i < S.byteLength; i++) {
@@ -228,7 +226,6 @@ function InvCipher(M: Uint8Array, W: Uint8Array, Nr: 10 | 12 | 14) {
 }
 
 function _aes(K: Uint8Array, b: 128 | 192 | 256) {
-  K = u8(K);
   if (K.byteLength !== b >> 3) {
     throw new KitError(`AES key must be ${b >> 3} byte`);
   }

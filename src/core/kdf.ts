@@ -18,10 +18,8 @@ export interface KDF {
  * ANSI-X9.63 密钥派生函数
  */
 export function x963kdf(hash: Hash, info = new Uint8Array(0)): KDF {
-  info = u8(info);
   const d_byte = hash.DIGEST_SIZE;
   return (k_byte: number, ikm: Uint8Array) => {
-    ikm = u8(ikm);
     /** Output Keying Material */
     const okm: Uint8Array[] = [];
 
@@ -42,7 +40,6 @@ export function x963kdf(hash: Hash, info = new Uint8Array(0)): KDF {
  * 基于 HMAC 的密钥派生函数 (HKDF), 请在外部组合 `hmac` 和 `hash` 函数, 以控制在函数内部调用 `hmac` 时的行为.
  */
 export function hkdf(k_hash: KeyHash, info = new Uint8Array(0)): KDF {
-  info = u8(info);
   const d_byte = k_hash.DIGEST_SIZE;
   return (k_byte: number, ikm: Uint8Array, salt = new Uint8Array(0)) => {
     ikm = u8(ikm);
@@ -72,7 +69,6 @@ export function hkdf(k_hash: KeyHash, info = new Uint8Array(0)): KDF {
 export function pbkdf2(k_hash: KeyHash, iterations = 1000): KDF {
   const d_byte = k_hash.DIGEST_SIZE;
   return (k_byte: number, ikm: Uint8Array, salt = new Uint8Array(0)) => {
-    salt = u8(salt);
     ikm = u8(ikm);
 
     /** Output Keying Material */

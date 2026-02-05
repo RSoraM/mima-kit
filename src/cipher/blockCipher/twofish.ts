@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher';
-import { KitError, rotateL32, rotateR32, U8, u8 } from '../../core/utils';
+import { KitError, rotateL32, rotateR32, U8 } from '../../core/utils';
 
 // * Constants
 
@@ -266,7 +266,6 @@ function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
   const { Subkeys, SBox } = initKeySchedule(K);
 
   const encrypt = (M: Uint8Array) => {
-    M = u8(M);
     if (M.byteLength !== 16) {
       throw new KitError('Twofish block must be 16 byte');
     }
@@ -305,7 +304,6 @@ function _twofish(K: Uint8Array, b: 128 | 192 | 256) {
     return new U8(_.buffer, _.byteOffset, _.byteLength);
   };
   const decrypt = (C: Uint8Array) => {
-    C = u8(C);
     if (C.byteLength !== 16) {
       throw new KitError('Twofish block must be 16 byte');
     }

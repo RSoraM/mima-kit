@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher';
-import { KitError, resizeBuffer, rotateL32, u8 } from '../../core/utils';
+import { KitError, resizeBuffer, rotateL32, U8 } from '../../core/utils';
 
 // * Constants
 
@@ -10,8 +10,6 @@ const A = new Uint32Array([
 // * Rabbit Algorithm
 
 function _rabbit(key: Uint8Array, iv: Uint8Array) {
-  key = u8(key);
-  iv = u8(iv);
   if (key.length !== 16) {
     throw new KitError('Rabbit key must be 16 byte');
   }
@@ -124,7 +122,7 @@ function _rabbit(key: Uint8Array, iv: Uint8Array) {
   const cipher = (M: Uint8Array) => {
     const BLOCK_TOTAL = Math.ceil(M.length >> 4) || 1;
     S = squeeze(BLOCK_TOTAL);
-    return u8(M).map((_, i) => _ ^ S[i]);
+    return U8.from(M).map((_, i) => _ ^ S[i]);
   };
 
   return {
