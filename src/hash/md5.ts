@@ -76,7 +76,7 @@ function digest(message: Uint8Array) {
   for (let offset = 0; offset < p.length; ) {
     // 获取分块
     const end = offset + block_size;
-    const current_buffer = p.subarray(offset, end).buffer;
+    const M = new Uint32Array(p.buffer, p.byteOffset + offset, block_size >> 2);
     offset = end;
 
     // 准备状态字
@@ -90,8 +90,6 @@ function digest(message: Uint8Array) {
     let d = D;
 
     // 划分词典
-    const M = new Uint32Array(current_buffer);
-
     /* Round 1 */
     a = FF(a, b, c, d, M[0], 7, K[0]);
     d = FF(d, a, b, c, M[1], 12, K[1]);
