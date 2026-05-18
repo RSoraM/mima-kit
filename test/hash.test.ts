@@ -31,6 +31,8 @@ it('md5', () => {
   const meow = UTF8('meow, 喵， 🐱')
   expect(md5(_).to(HEX)).toMatchInlineSnapshot('"d41d8cd98f00b204e9800998ecf8427e"')
   expect(md5(meow).to(HEX)).toMatchInlineSnapshot('"49ac572e5f34b3e212e727fbd05df30c"')
+  expect(md5(UTF8('f3166a3a404599d2046ed2aae479b37d54b51d2e85259c9e314042753be7d813')).to(HEX))
+    .toMatchInlineSnapshot('"e1276aa683dc7adb38fd366744d037e5"')
 })
 // * SHA-1
 it('sha1', () => {
