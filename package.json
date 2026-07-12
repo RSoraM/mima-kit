@@ -46,6 +46,8 @@
     "rc4",
     "rabbit",
     "salsa20",
+    "chacha20",
+    "chacha20-poly1305",
     "rsa",
     "sm2",
     "ecdh",
