@@ -1,4 +1,4 @@
-import { modPow, U8 } from './utils';
+import { modPow, U8 } from './utils'
 
 // * Interfaces
 
@@ -7,13 +7,13 @@ export interface RandomPrimeGenerator {
   /**
    * @param {bigint} b - 位数 / Bits
    */
-  (b: number): bigint;
+  (b: number): bigint
 }
 
 // * Constants
 
 /** deterministic >= 1 - 0.5^t */
-const T = 40;
+const T = 40
 const LOW_PRIMES = [
   2n,
   3n,
@@ -183,8 +183,8 @@ const LOW_PRIMES = [
   983n,
   991n,
   997n,
-];
-const LOW_PRIMES_LIMIT = (1n << 26n) / LOW_PRIMES[LOW_PRIMES.length - 1];
+]
+const LOW_PRIMES_LIMIT = (1n << 26n) / LOW_PRIMES[LOW_PRIMES.length - 1]
 
 // * Functions
 
@@ -195,30 +195,30 @@ const LOW_PRIMES_LIMIT = (1n << 26n) / LOW_PRIMES[LOW_PRIMES.length - 1];
  * @param {number} t - 测试轮数 / Number of tests
  */
 function MillerRabin(n: bigint, t: number): boolean {
-  const n_1 = n - 1n;
-  let s = 0n;
-  let d = n_1;
+  const n_1 = n - 1n
+  let s = 0n
+  let d = n_1
   while ((d & 1n) === 0n) {
-    d >>= 1n;
-    s++;
+    d >>= 1n
+    s++
   }
 
-  t = (t + 1) >> 1;
-  if (t > LOW_PRIMES.length) t = LOW_PRIMES.length;
+  t = (t + 1) >> 1
+  if (t > LOW_PRIMES.length) t = LOW_PRIMES.length
 
-  const tested: bigint[] = [2n];
+  const tested: bigint[] = [2n]
   for (let i = 0; i < t; ++i) {
     // Pick bases at random
-    let base: bigint;
+    let base: bigint
     do {
-      base = LOW_PRIMES[Math.floor(Math.random() * LOW_PRIMES.length)];
-    } while (tested.includes(base));
-    tested.push(base);
+      base = LOW_PRIMES[Math.floor(Math.random() * LOW_PRIMES.length)]
+    } while (tested.includes(base))
+    tested.push(base)
     if (StrongPseudoPrime(n, n_1, s, d, base) === false) {
-      return false;
+      return false
     }
   }
-  return true;
+  return true
 }
 
 /**
@@ -235,16 +235,16 @@ function MillerRabin(n: bigint, t: number): boolean {
  * @param {bigint} base - 测试基数 / Test base
  */
 function StrongPseudoPrime(n: bigint, n_1: bigint, s: bigint, d: bigint, base: bigint): boolean {
-  let x = modPow(base, d, n);
-  if (x === 1n || x === n_1) return true;
+  let x = modPow(base, d, n)
+  if (x === 1n || x === n_1) return true
 
-  let y = 0n;
+  let y = 0n
   for (let i = 1; i < s; i++) {
-    y = modPow(x, 2n, n);
-    if (y === 1n && x !== 1n && x !== n_1) return false;
-    x = y;
+    y = modPow(x, 2n, n)
+    if (y === 1n && x !== 1n && x !== n_1) return false
+    x = y
   }
-  return y === 1n;
+  return y === 1n
 }
 
 /**
@@ -255,28 +255,28 @@ function StrongPseudoPrime(n: bigint, n_1: bigint, s: bigint, d: bigint, base: b
 function _isProbablePrime(n: bigint, t: number = T): boolean {
   // 低素数倍数
   for (let i = 1; i < LOW_PRIMES.length; ) {
-    let m = LOW_PRIMES[i];
-    let j = i + 1;
+    let m = LOW_PRIMES[i]
+    let j = i + 1
     while (j < LOW_PRIMES.length && m < LOW_PRIMES_LIMIT) {
-      m *= LOW_PRIMES[j++];
+      m *= LOW_PRIMES[j++]
     }
-    m = n % m;
+    m = n % m
     while (i < j) {
-      if (m % LOW_PRIMES[i++] === 0n) return false;
+      if (m % LOW_PRIMES[i++] === 0n) return false
     }
   }
 
-  return MillerRabin(n, t);
+  return MillerRabin(n, t)
 }
 
 function genPrimeCandidate(buffer: U8) {
-  crypto.getRandomValues(buffer);
-  buffer[0] |= 0x80;
-  let n = buffer.toBI() | 1n;
-  const n_mod_6 = n % 6n;
-  if (n_mod_6 !== 1n && n_mod_6 !== 5n) n += 4n;
+  crypto.getRandomValues(buffer)
+  buffer[0] |= 0x80
+  let n = buffer.toBI() | 1n
+  const n_mod_6 = n % 6n
+  if (n_mod_6 !== 1n && n_mod_6 !== 5n) n += 4n
 
-  return n;
+  return n
 }
 
 /**
@@ -285,13 +285,13 @@ function genPrimeCandidate(buffer: U8) {
  * @param {bigint} b - 位数 / Bits
  */
 export const genPrime: RandomPrimeGenerator = (b: number): bigint => {
-  const buffer = new U8(b >> 3);
-  let n: bigint;
+  const buffer = new U8(b >> 3)
+  let n: bigint
   do {
-    n = genPrimeCandidate(buffer);
-  } while (!_isProbablePrime(n));
-  return n;
-};
+    n = genPrimeCandidate(buffer)
+  } while (!_isProbablePrime(n))
+  return n
+}
 
 /**
  * 素性测试: 确定性 >= 1-.5^t
@@ -302,14 +302,14 @@ export const genPrime: RandomPrimeGenerator = (b: number): bigint => {
  * @param {number} t - 测试轮数 / Number of tests
  */
 export function isProbablePrime(n: bigint, t: number = T): boolean {
-  if (t <= 0) return false;
+  if (t <= 0) return false
   // 偶数
-  if ((n & 1n) === 0n) return false;
+  if ((n & 1n) === 0n) return false
   // 六倍原理
-  const n_mod_6 = n % 6n;
-  if (n_mod_6 !== 1n && n_mod_6 !== 5n) return false;
+  const n_mod_6 = n % 6n
+  if (n_mod_6 !== 1n && n_mod_6 !== 5n) return false
   // 小素数
-  if (n <= LOW_PRIMES[LOW_PRIMES.length - 1]) return LOW_PRIMES.includes(n);
+  if (n <= LOW_PRIMES[LOW_PRIMES.length - 1]) return LOW_PRIMES.includes(n)
 
-  return _isProbablePrime(n, t);
+  return _isProbablePrime(n, t)
 }

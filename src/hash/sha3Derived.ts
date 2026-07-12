@@ -1,9 +1,9 @@
-import { UTF8 } from '../core/codec';
-import type { Hash, KeyHash } from '../core/hash';
-import { createHash, createKeyHash, createTupleHash } from '../core/hash';
-import { joinBuffer, KitError, U8, u8 } from '../core/utils';
-import type { Sha3Padding } from './sha3';
-import { Keccak_c, shake128, shake256 } from './sha3';
+import { UTF8 } from '../core/codec'
+import type { Hash, KeyHash } from '../core/hash'
+import { createHash, createKeyHash, createTupleHash } from '../core/hash'
+import { joinBuffer, KitError, U8, u8 } from '../core/utils'
+import type { Sha3Padding } from './sha3'
+import { Keccak_c, shake128, shake256 } from './sha3'
 
 // * Encode and Padding Function
 
@@ -22,13 +22,13 @@ import { Keccak_c, shake128, shake256 } from './sha3';
  * @param {number} x - 输入 / input
  */
 function leftEncode(x: number): Uint8Array {
-  const result = [];
+  const result = []
   do {
-    result.unshift(x & 0xff);
-    x = x >> 8;
-  } while (x > 0);
-  result.unshift(result.length);
-  return Uint8Array.from(result);
+    result.unshift(x & 0xff)
+    x = x >> 8
+  } while (x > 0)
+  result.unshift(result.length)
+  return Uint8Array.from(result)
 }
 
 /**
@@ -46,13 +46,13 @@ function leftEncode(x: number): Uint8Array {
  * @param {number | bigint} x - 输入 / input
  */
 function rightEncode(x: number): Uint8Array {
-  const result = [];
+  const result = []
   do {
-    result.unshift(x & 0xff);
-    x = x >> 8;
-  } while (x > 0);
-  result.push(result.length);
-  return Uint8Array.from(result);
+    result.unshift(x & 0xff)
+    x = x >> 8
+  } while (x > 0)
+  result.push(result.length)
+  return Uint8Array.from(result)
 }
 
 /**
@@ -71,8 +71,8 @@ function rightEncode(x: number): Uint8Array {
  * @param {string | Uint8Array} input - 输入 / input
  */
 function encodeString(input: string | Uint8Array) {
-  input = typeof input === 'string' ? UTF8(input) : input;
-  return [leftEncode(input.byteLength << 3), input];
+  input = typeof input === 'string' ? UTF8(input) : input
+  return [leftEncode(input.byteLength << 3), input]
 }
 
 /**
@@ -94,27 +94,27 @@ function encodeString(input: string | Uint8Array) {
  */
 function bytepad(X: Uint8Array[], w: number): Uint8Array[] {
   if (w <= 0) {
-    throw new KitError('w must be greater than 0');
+    throw new KitError('w must be greater than 0')
   }
 
   // 使用 leftEncode 函数编码 w
-  const left_encoded_w = leftEncode(w);
+  const left_encoded_w = leftEncode(w)
 
   // z = left_encode(w) || X0 || ... || Xn
 
   // 计算 z 的有效字节长度总和, 用于计算填充零字节的数量
-  let z_byte = left_encoded_w.length;
+  let z_byte = left_encoded_w.length
   X.forEach((x) => {
-    z_byte += x.length;
-  });
+    z_byte += x.length
+  })
 
   // 计算需要填充的零字节的数量
-  const zero_byte = w - (z_byte % w);
+  const zero_byte = w - (z_byte % w)
 
-  X.unshift(left_encoded_w);
-  X.push(new Uint8Array(zero_byte));
+  X.unshift(left_encoded_w)
+  X.push(new Uint8Array(zero_byte))
 
-  return X;
+  return X
 }
 
 /**
@@ -128,18 +128,18 @@ function bytepad(X: Uint8Array[], w: number): Uint8Array[] {
  */
 const cshakePadding: Sha3Padding = (r_byte: number) => {
   return (M: Uint8Array) => {
-    const sig_byte = M.length;
-    const pad_byte = r_byte - (sig_byte % r_byte);
-    const P = new U8(sig_byte + pad_byte);
-    P.set(M);
+    const sig_byte = M.length
+    const pad_byte = r_byte - (sig_byte % r_byte)
+    const P = new U8(sig_byte + pad_byte)
+    P.set(M)
     if (pad_byte === 1) {
-      P[sig_byte] = 0x84;
+      P[sig_byte] = 0x84
     }
-    P[sig_byte] = 0x04;
-    P[P.length - 1] |= 0x80;
-    return P;
-  };
-};
+    P[sig_byte] = 0x04
+    P[P.length - 1] |= 0x80
+    return P
+  }
+}
 
 // * cSHAKE
 
@@ -153,13 +153,13 @@ const cshakePadding: Sha3Padding = (r_byte: number) => {
  */
 function cshake(d: number, N: Uint8Array, S: Uint8Array, c: number, r_byte: number, SHAKE: typeof shake128) {
   if (N.byteLength === 0 && S.byteLength === 0) {
-    return (M: Uint8Array) => SHAKE(d)(M);
+    return (M: Uint8Array) => SHAKE(d)(M)
   }
   return (M: Uint8Array) => {
-    const P = bytepad([...encodeString(N), ...encodeString(S)], r_byte);
-    P.push(M);
-    return Keccak_c(c, d, cshakePadding)(joinBuffer(...P));
-  };
+    const P = bytepad([...encodeString(N), ...encodeString(S)], r_byte)
+    P.push(M)
+    return Keccak_c(c, d, cshakePadding)(joinBuffer(...P))
+  }
 }
 
 /**
@@ -176,7 +176,7 @@ export function cshake128(d: number, N = new Uint8Array(), S = new Uint8Array())
     ALGORITHM: `cSHAKE128/${d}`,
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 /**
@@ -193,7 +193,7 @@ export function cshake256(d: number, N = new Uint8Array(), S = new Uint8Array())
     ALGORITHM: `cSHAKE256/${d}`,
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 // * KMAC
@@ -207,12 +207,12 @@ export function cshake256(d: number, N = new Uint8Array(), S = new Uint8Array())
  */
 function kmac(d: number, S: Uint8Array, c: number, r_byte: number, XOF: boolean) {
   return (K: Uint8Array, M: Uint8Array) => {
-    const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], r_byte);
-    X.push(...bytepad(encodeString(K), r_byte));
-    X.push(M);
-    X.push(rightEncode(XOF ? 0 : d));
-    return Keccak_c(c, d, cshakePadding)(joinBuffer(...X));
-  };
+    const X = bytepad([...encodeString('KMAC'), ...encodeString(S)], r_byte)
+    X.push(...bytepad(encodeString(K), r_byte))
+    X.push(M)
+    X.push(rightEncode(XOF ? 0 : d))
+    return Keccak_c(c, d, cshakePadding)(joinBuffer(...X))
+  }
 }
 
 /**
@@ -232,7 +232,7 @@ export function kmac128(d: number, S = new Uint8Array(0), k_size: number = 128):
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
     KEY_SIZE: k_size >> 3,
-  });
+  })
 }
 
 /**
@@ -252,7 +252,7 @@ export function kmac256(d: number, S = new Uint8Array(0), k_size: number = 256):
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
     KEY_SIZE: k_size >> 3,
-  });
+  })
 }
 
 /**
@@ -272,7 +272,7 @@ export function kmac128XOF(d: number, S = new Uint8Array(0), k_size: number = 12
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
     KEY_SIZE: k_size >> 3,
-  });
+  })
 }
 
 /**
@@ -292,7 +292,7 @@ export function kmac256XOF(d: number, S = new Uint8Array(0), k_size: number = 25
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
     KEY_SIZE: k_size >> 3,
-  });
+  })
 }
 
 // * TupleHash
@@ -306,13 +306,13 @@ export function kmac256XOF(d: number, S = new Uint8Array(0), k_size: number = 25
  */
 function tuplehash(d: number, S: Uint8Array, c: number, r_byte: number, XOF: boolean) {
   return (M: Uint8Array[]) => {
-    const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], r_byte);
+    const X = bytepad([...encodeString('TupleHash'), ...encodeString(S)], r_byte)
     M.forEach((m) => {
-      X.push(...encodeString(m));
-    });
-    X.push(rightEncode(XOF ? 0 : d));
-    return Keccak_c(c, d, cshakePadding)(joinBuffer(...X));
-  };
+      X.push(...encodeString(m))
+    })
+    X.push(rightEncode(XOF ? 0 : d))
+    return Keccak_c(c, d, cshakePadding)(joinBuffer(...X))
+  }
 }
 
 /**
@@ -328,7 +328,7 @@ export function tuplehash128(d: number, S: Uint8Array = new Uint8Array()) {
     ALGORITHM: `TupleHash128/${d}`,
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 /**
@@ -344,7 +344,7 @@ export function tuplehash256(d: number, S: Uint8Array = new Uint8Array()) {
     ALGORITHM: `TupleHash256/${d}`,
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 /**
@@ -360,7 +360,7 @@ export function tuplehash128XOF(d: number, S: Uint8Array = new Uint8Array()) {
     ALGORITHM: `TupleHash128XOF/${d}`,
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 /**
@@ -376,7 +376,7 @@ export function tuplehash256XOF(d: number, S: Uint8Array = new Uint8Array()) {
     ALGORITHM: `TupleHash256XOF/${d}`,
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 // * ParallelHash
@@ -395,22 +395,22 @@ export function tuplehash256XOF(d: number, S: Uint8Array = new Uint8Array()) {
  * @param {boolean} XOF - 是否为 XOF 模式 / XOF mode
  */
 function parallelhash(b: number, d: number, S: Uint8Array, c: number, r_byte: number, XOF: boolean, SHAKE: Hash) {
-  const bByte = b >> 3;
+  const bByte = b >> 3
   return (M: Uint8Array) => {
-    const n = Math.ceil(M.byteLength / bByte);
-    const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], r_byte);
-    X.push(leftEncode(b));
+    const n = Math.ceil(M.byteLength / bByte)
+    const X = bytepad([...encodeString('ParallelHash'), ...encodeString(S)], r_byte)
+    X.push(leftEncode(b))
 
     for (let i = 0; i < n; i++) {
-      const B = u8(M).slice(i * (b << 3), (i + 1) * (b << 3));
-      X.push(SHAKE(B));
+      const B = u8(M).slice(i * (b << 3), (i + 1) * (b << 3))
+      X.push(SHAKE(B))
     }
 
-    X.push(rightEncode(n));
-    X.push(rightEncode(XOF ? 0 : d));
+    X.push(rightEncode(n))
+    X.push(rightEncode(XOF ? 0 : d))
 
-    return Keccak_c(c, d, cshakePadding)(joinBuffer(...X));
-  };
+    return Keccak_c(c, d, cshakePadding)(joinBuffer(...X))
+  }
 }
 
 /**
@@ -427,7 +427,7 @@ export function parallelhash128(b: number, d: number, S: Uint8Array = new Uint8A
     ALGORITHM: `ParallelHash128/${d}`,
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 /**
@@ -444,7 +444,7 @@ export function parallelhash256(b: number, d: number, S: Uint8Array = new Uint8A
     ALGORITHM: `ParallelHash256/${d}`,
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 /**
@@ -461,7 +461,7 @@ export function parallelhash128XOF(b: number, d: number, S: Uint8Array = new Uin
     ALGORITHM: `ParallelHash128XOF`,
     BLOCK_SIZE: 168,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }
 
 /**
@@ -478,5 +478,5 @@ export function parallelhash256XOF(b: number, d: number, S: Uint8Array = new Uin
     ALGORITHM: `ParallelHash256XOF`,
     BLOCK_SIZE: 136,
     DIGEST_SIZE: d >> 3,
-  });
+  })
 }

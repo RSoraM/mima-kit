@@ -6,18 +6,18 @@ import { GF, GF2 } from '../src/core/galois_field'
 
 describe('field-p', () => {
   it('op', () => {
-    const gf = GF(0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEDn)
-    const x = 0x6C533682766ED5FB0CF26AF5DD566E29922A5337ED849AAB78F697D80E60D885n
-    const y = 0x3DE8BB63832A430EB26B4D6BCCCC49E30B1429B75C14F989A32FD8305E074164n
+    const gf = GF(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffedn)
+    const x = 0x6c533682766ed5fb0cf26af5dd566e29922a5337ed849aab78f697d80e60d885n
+    const y = 0x3de8bb63832a430eb26b4d6bcccc49e30b1429b75c14f989a32fd8305e074164n
 
-    expect(gf.add(x, y)).toBe(0x2A3BF1E5F9991909BF5DB861AA22B80C9D3E7CEF499994351C2670086C6819FCn)
-    expect(gf.sub(x, y)).toBe(0x2E6A7B1EF34492EC5A871D8A108A244687162980916FA121D5C6BFA7B0599721n)
-    expect(gf.mul(x, y)).toBe(0x6800A96CAB0F23CDFE657EA1EA0E7D7FEFCFB0ED95559C1606802431397FD6F3n)
-    expect(gf.div(x, y)).toBe(0x19C6491BE351DF42A7051EA6427ADDDD9BC680C09352BDBA34AB6022BC1BC836n)
-    expect(gf.squ(x)).toBe(0x68A61FC28D771792C9D831DF25D69DCE3F3D1248BD3FCB75BA330EE13959C59n)
-    expect(gf.inv(x)).toBe(0x2C8F6A2D142F9272C7895D50283498870DA0DD1AF5E2D3EEF17DF13AC8AF9492n)
+    expect(gf.add(x, y)).toBe(0x2a3bf1e5f9991909bf5db861aa22b80c9d3e7cef499994351c2670086c6819fcn)
+    expect(gf.sub(x, y)).toBe(0x2e6a7b1ef34492ec5a871d8a108a244687162980916fa121d5c6bfa7b0599721n)
+    expect(gf.mul(x, y)).toBe(0x6800a96cab0f23cdfe657ea1ea0e7d7fefcfb0ed95559c1606802431397fd6f3n)
+    expect(gf.div(x, y)).toBe(0x19c6491be351df42a7051ea6427adddd9bc680c09352bdba34ab6022bc1bc836n)
+    expect(gf.squ(x)).toBe(0x68a61fc28d771792c9d831df25d69dce3f3d1248bd3fcb75ba330ee13959c59n)
+    expect(gf.inv(x)).toBe(0x2c8f6a2d142f9272c7895d50283498870da0dd1af5e2d3eef17df13ac8af9492n)
     expect(gf.root(x)).toBe(2358163505433048610056987694548018235043609703918291809597028843250752468275n)
-    expect(gf.pow(x, y)).toBe(0x60B2782342839E41A9D315327FA38B95992B2A36269CE5B7E5B61A91798B58BBn)
+    expect(gf.pow(x, y)).toBe(0x60b2782342839e41a9d315327fa38b95992b2a36269ce5b7e5b61a91798b58bbn)
   })
 
   it('coordinate-system', () => {
@@ -26,13 +26,13 @@ describe('field-p', () => {
     const { toAffine, toJacobian } = cs
 
     const G = secp160r1.G
-    const J = toJacobian(G, 0x3804B518F749CBC304D9D0D296BB9A1017992CB8n)
+    const J = toJacobian(G, 0x3804b518f749cbc304d9d0d296bb9a1017992cb8n)
     const R = {
       type: 'jacobian',
       isInfinity: false,
-      x: 0xC4897651B4B5653DF7AEA36A58FBC450D31E6A4En,
-      y: 0x0BC560C62AE2E229F2D5A7FA8D198A2E2136342Bn,
-      z: 0x3804B518F749CBC304D9D0D296BB9A1017992CB8n,
+      x: 0xc4897651b4b5653df7aea36a58fbc450d31e6a4en,
+      y: 0x0bc560c62ae2e229f2d5a7fa8d198a2e2136342bn,
+      z: 0x3804b518f749cbc304d9d0d296bb9a1017992cb8n,
     }
     expect(J).toMatchObject(R)
     expect(toAffine(J)).toMatchObject(G)
@@ -42,29 +42,29 @@ describe('field-p', () => {
     const ec = EC(secp160r1)
     const R = {
       isInfinity: false,
-      x: 0x4A96B5688EF573284664698968C38BB913CBFC82n,
-      y: 0x23A628553168947D59DCC912042351377AC5FB32n,
+      x: 0x4a96b5688ef573284664698968c38bb913cbfc82n,
+      y: 0x23a628553168947d59dcc912042351377ac5fb32n,
     }
     const R2 = {
       isInfinity: false,
-      x: 0x2F997F33C5ED04C55D3EDF8675D3E92E8F46686n,
-      y: 0xF083A323482993E9440E817E21CFB7737DF8797Bn,
+      x: 0x2f997f33c5ed04c55d3edf8675d3e92e8f46686n,
+      y: 0xf083a323482993e9440e817e21cfb7737df8797bn,
     }
     const R3 = {
       isInfinity: false,
-      x: 0x7B76FF541EF363F2DF13DE1650BD48DAA958BC59n,
-      y: 0xC915CA790D8C8877B55BE0079D12854FFE9F6F5An,
+      x: 0x7b76ff541ef363f2df13de1650bd48daa958bc59n,
+      y: 0xc915ca790d8c8877b55be0079d12854ffe9f6f5an,
     }
     const R4 = {
       isInfinity: false,
-      x: 0xB4041D8683BE99F0AFE01C307B1AD4C100CF2A88n,
-      y: 0x3F32CAED841F08C00660CC74CAF4A5BCF9BEED08n,
+      x: 0xb4041d8683be99f0afe01c307b1ad4c100cf2a88n,
+      y: 0x3f32caed841f08c00660cc74caf4a5bcf9beed08n,
     }
     const n = 520883674333875308841598528610693034323391171945n
     const Rn = {
       isInfinity: false,
-      x: 0x6FCC9F4A03A1432381C74DC478AB79A6845D101En,
-      y: 0x58453ABB84F81EDC065373215E59281855628D33n,
+      x: 0x6fcc9f4a03a1432381c74dc478ab79a6845d101en,
+      y: 0x58453abb84f81edc065373215e59281855628d33n,
     }
 
     const G = secp160r1.G
@@ -95,28 +95,28 @@ describe('field-p', () => {
     const R = {
       isInfinity: false,
       x: 0x9n,
-      y: 0x20AE19A1B8A086B4E01EDD2C7748D14C923D4D7E6D7C61B229E9C5A27ECED3D9n,
+      y: 0x20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9n,
     }
     const R2 = {
       isInfinity: false,
-      x: 0x20D342D51873F1B7D9750C687D1571148F3F5CED1E350B5C5CAE469CDD684EFBn,
-      y: 0x13B57E011700E8AE050A00945D2BA2F377659EB28D8D391EBCD70465C72DF563n,
+      x: 0x20d342d51873f1b7d9750c687d1571148f3f5ced1e350b5c5cae469cdd684efbn,
+      y: 0x13b57e011700e8ae050a00945d2ba2f377659eb28d8d391ebcd70465c72df563n,
     }
     const R3 = {
       isInfinity: false,
-      x: 0x1C12BC1A6D57ABE645534D91C21BBA64F8824E67621C0859C00A03AFFB713C12n,
-      y: 0x2986855CBE387EAEACEEA446532C338C536AF570F71EF7CF75C665019C41222Bn,
+      x: 0x1c12bc1a6d57abe645534d91c21bba64f8824e67621c0859c00a03affb713c12n,
+      y: 0x2986855cbe387eaeaceea446532c338c536af570f71ef7cf75c665019c41222bn,
     }
     const R4 = {
       isInfinity: false,
-      x: 0x79CE98B7E0689D7DE7D1D074A15B315FFE1805DFCD5D2A230FEE85E4550013EFn,
-      y: 0x75AF5BF4EBDC75C8FE26873427D275D73C0FB13DA361077A565539F46DE1C30n,
+      x: 0x79ce98b7e0689d7de7d1d074a15b315ffe1805dfcd5d2a230fee85e4550013efn,
+      y: 0x75af5bf4ebdc75c8fe26873427d275d73c0fb13da361077a565539f46de1c30n,
     }
     const n = 28858031113744144219319953636765136992609993254249076323988998198036398117213n
     const Rn = {
       isInfinity: false,
-      x: 0x2AA87D5B3E78AAB1745F5CE9FD10B12B107CF0E30AE388E7E309030327A59714n,
-      y: 0x550094A00CA4C5A805BB5E882F20E362E7A164CF920028BF893152F687C5E3B9n,
+      x: 0x2aa87d5b3e78aab1745f5ce9fd10b12b107cf0e30ae388e7e309030327a59714n,
+      y: 0x550094a00ca4c5a805bb5e882f20e362e7a164cf920028bf893152f687c5e3b9n,
     }
 
     const G = curve25519.G
@@ -146,19 +146,19 @@ describe('field-p', () => {
 describe('field-2m', () => {
   it('op', () => {
     const m = 163n
-    const ip = 0x800000000000000000000000000000000000000C9n
+    const ip = 0x800000000000000000000000000000000000000c9n
     const gf = GF2(m, ip)
-    const x = 0x1DBFD60B8BC7B317EE5B82B49BC4331D3516C4226n
-    const y = 0x3CB11CBD786BF745C8FFA5CFEB34A2E89E3D5514Bn
+    const x = 0x1dbfd60b8bc7b317ee5b82b49bc4331d3516c4226n
+    const y = 0x3cb11cbd786bf745c8ffa5cfeb34a2e89e3d5514bn
 
-    expect(gf.add(x, y)).toBe(0x210ECAB6F3AC445226A4277B70F091F5AB2B9136Dn)
-    expect(gf.sub(x, y)).toBe(0x210ECAB6F3AC445226A4277B70F091F5AB2B9136Dn)
-    expect(gf.mul(x, y)).toBe(0xE1425E42292CD16D6B6EAF8A0CF9F9B59BE5B720n)
-    expect(gf.div(x, y)).toBe(0x5465392D46497EF0F837A62B7AB9CE9ACAE211F12n)
-    expect(gf.squ(x)).toBe(0x6E157102393D623EB377AB890CCB9DC492F0916A7n)
-    expect(gf.inv(x)).toBe(0x511D27B568F484E177FCEC85712E7C3EA44D59BB0n)
-    expect(gf.root(x)).toBe(0x7AA6A350395887F4D27F4DC468C5377B0EB2462E1n)
-    expect(gf.pow(x, y)).toBe(0x4B70BD3D9949890AC03A284CD6996CD29C46088F4n)
+    expect(gf.add(x, y)).toBe(0x210ecab6f3ac445226a4277b70f091f5ab2b9136dn)
+    expect(gf.sub(x, y)).toBe(0x210ecab6f3ac445226a4277b70f091f5ab2b9136dn)
+    expect(gf.mul(x, y)).toBe(0xe1425e42292cd16d6b6eaf8a0cf9f9b59be5b720n)
+    expect(gf.div(x, y)).toBe(0x5465392d46497ef0f837a62b7ab9ce9acae211f12n)
+    expect(gf.squ(x)).toBe(0x6e157102393d623eb377ab890ccb9dc492f0916a7n)
+    expect(gf.inv(x)).toBe(0x511d27b568f484e177fcec85712e7c3ea44d59bb0n)
+    expect(gf.root(x)).toBe(0x7aa6a350395887f4d27f4dc468c5377b0eb2462e1n)
+    expect(gf.pow(x, y)).toBe(0x4b70bd3d9949890ac03a284cd6996cd29c46088f4n)
   })
 
   it('coordinate-system', () => {
@@ -167,13 +167,13 @@ describe('field-2m', () => {
     const { toAffine, toLD } = cs
 
     const G = sect163r1.G
-    const L = toLD(G, 0x4581D79888B23905C7FFFB8B7FEB862BE5F73EB98n)
+    const L = toLD(G, 0x4581d79888b23905c7fffb8b7feb862be5f73eb98n)
     const R = {
       type: 'ld',
       isInfinity: false,
-      x: 0x7422FB7B60AC486E3AB0A3A73281480FA9DAD5EADn,
-      y: 0x38BBF17705658F03D9B3FDCA9F1694B4059B19C65n,
-      z: 0x4581D79888B23905C7FFFB8B7FEB862BE5F73EB98n,
+      x: 0x7422fb7b60ac486e3ab0a3a73281480fa9dad5eadn,
+      y: 0x38bbf17705658f03d9b3fdca9f1694b4059b19c65n,
+      z: 0x4581d79888b23905c7fffb8b7feb862be5f73eb98n,
     }
     expect(L).toMatchObject(R)
     expect(toAffine(L)).toMatchObject(G)
@@ -183,29 +183,29 @@ describe('field-2m', () => {
     const ec = EC(sect163r1)
     const R = {
       isInfinity: false,
-      x: 0x0369979697AB43897789566789567F787A7876A654n,
-      y: 0x00435EDB42EFAFB2989D51FEFCE3C80988F41FF883n,
+      x: 0x0369979697ab43897789566789567f787a7876a654n,
+      y: 0x00435edb42efafb2989d51fefce3c80988f41ff883n,
     }
     const R2 = {
       isInfinity: false,
-      x: 0x04E1456FFEAD56A68862E3006A87BCF6D6FC3672B4n,
-      y: 0x0223F5DD8AB164D4E51D903623764F48A787E528A8n,
+      x: 0x04e1456ffead56a68862e3006a87bcf6d6fc3672b4n,
+      y: 0x0223f5dd8ab164d4e51d903623764f48a787e528a8n,
     }
     const R3 = {
       isInfinity: false,
-      x: 0x048A0A8A89D53DFB023EA98CEE93381C6715AA87D1n,
-      y: 0x06BE5460DA1AD9AC2EFF25554DDB5FE237BAE5D412n,
+      x: 0x048a0a8a89d53dfb023ea98cee93381c6715aa87d1n,
+      y: 0x06be5460da1ad9ac2eff25554ddb5fe237bae5d412n,
     }
     const R4 = {
       isInfinity: false,
-      x: 0x06580F74EE239912537F7C8BF2C2D9320D448F0057n,
-      y: 0x07E641D37C09C6B64909DAC22A1627D63C428DCCC9n,
+      x: 0x06580f74ee239912537f7c8bf2c2d9320d448f0057n,
+      y: 0x07e641d37c09c6b64909dac22a1627d63c428dccc9n,
     }
     const n = 8731870941184819475799947245630709385883641160251n
     const Rn = {
       isInfinity: false,
-      x: 0x2C78B4D66711CF62CA0FAC917690671E546DBB0E3n,
-      y: 0x602D79F7E63EAD2AF3B687D1A89A68A56BFCD7EDAn,
+      x: 0x2c78b4d66711cf62ca0fac917690671e546dbb0e3n,
+      y: 0x602d79f7e63ead2af3b687d1a89a68a56bfcd7edan,
     }
 
     const G = sect163r1.G
@@ -220,7 +220,7 @@ describe('field-2m', () => {
     // expect(ec._addPoint!(G2, G2)).toMatchObject(R4)
     // expect(Gn).toMatchObject(Rn)
 
-    const J = ec.cs.toLD(G, 0x28B22AA5B3CD1EB33B17A2FB272492F9C612B7160n)
+    const J = ec.cs.toLD(G, 0x28b22aa5b3cd1eb33b17a2fb272492f9c612b7160n)
     const J2 = ec.addPoint(J, J)
     const J3 = ec.addPoint(J2, J)
     const J4 = ec.addPoint(J3, J)
@@ -236,29 +236,29 @@ describe('field-2m', () => {
     const ec = EC(sect163k1)
     const R = {
       isInfinity: false,
-      x: 0x02FE13C0537BBC11ACAA07D793DE4E6D5E5C94EEE8n,
-      y: 0x0289070FB05D38FF58321F2E800536D538CCDAA3D9n,
+      x: 0x02fe13c0537bbc11acaa07d793de4e6d5e5c94eee8n,
+      y: 0x0289070fb05d38ff58321f2e800536d538ccdaa3d9n,
     }
     const R2 = {
       isInfinity: false,
-      x: 0x0CB5CA2738FE300AACFB00B42A77B828D8A5C41EBn,
-      y: 0x229C79E9AB85F90ACD3D5FA3A696664515EFEFA6Bn,
+      x: 0x0cb5ca2738fe300aacfb00b42a77b828d8a5c41ebn,
+      y: 0x229c79e9ab85f90acd3d5fa3a696664515efefa6bn,
     }
     const R3 = {
       isInfinity: false,
-      x: 0x2ACFCFCC9A2AF8E3F2828024F820033DB20F69520n,
-      y: 0x5729C47F915BADC7B4C17DF14E5804109FFECDFE4n,
+      x: 0x2acfcfcc9a2af8e3f2828024f820033db20f69520n,
+      y: 0x5729c47f915badc7b4c17df14e5804109ffecdfe4n,
     }
     const R4 = {
       isInfinity: false,
-      x: 0x0BA8C7E6E2523EF94CBC1E56FACFEDE24F3F91578n,
-      y: 0x510F96CBC41CF3BDFA0157E9E8FEE2C605791DB0Dn,
+      x: 0x0ba8c7e6e2523ef94cbc1e56facfede24f3f91578n,
+      y: 0x510f96cbc41cf3bdfa0157e9e8fee2c605791db0dn,
     }
     const n = 860749895544662177846543624795725813985896149794n
     const Rn = {
       isInfinity: false,
-      x: 0x0FD34391FC1240E14C36D6749328A5591B63983C0n,
-      y: 0x3AEC697608E7252B72147591FA8AEBC4CCFC8A9DDn,
+      x: 0x0fd34391fc1240e14c36d6749328a5591b63983c0n,
+      y: 0x3aec697608e7252b72147591fa8aebc4ccfc8a9ddn,
     }
 
     const G = sect163k1.G

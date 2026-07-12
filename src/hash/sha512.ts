@@ -1,6 +1,6 @@
-import { UTF8 } from '../core/codec';
-import { createHash } from '../core/hash';
-import { genBitMask, KitError, rotateR, U8 } from '../core/utils';
+import { UTF8 } from '../core/codec'
+import { createHash } from '../core/hash'
+import { genBitMask, KitError, rotateR, U8 } from '../core/utils'
 
 // * Constants
 
@@ -85,18 +85,18 @@ const K = new BigUint64Array([
   0x597f299cfc657e2an,
   0x5fcb6fab3ad6faecn,
   0x6c44198c4a475817n,
-]);
+])
 
 // * Function
-const mask64 = genBitMask(64);
-const rotateR64 = (x: bigint, n: bigint) => rotateR(64, x, n, mask64);
+const mask64 = genBitMask(64)
+const rotateR64 = (x: bigint, n: bigint) => rotateR(64, x, n, mask64)
 
-const Ch = (x: bigint, y: bigint, z: bigint) => (x & y) ^ (~x & z);
-const Maj = (x: bigint, y: bigint, z: bigint) => (x & y) ^ (x & z) ^ (y & z);
-const Sigma0 = (x: bigint) => rotateR64(x, 28n) ^ rotateR64(x, 34n) ^ rotateR64(x, 39n);
-const Sigma1 = (x: bigint) => rotateR64(x, 14n) ^ rotateR64(x, 18n) ^ rotateR64(x, 41n);
-const sigma0 = (x: bigint) => rotateR64(x, 1n) ^ rotateR64(x, 8n) ^ (x >> 7n);
-const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n);
+const Ch = (x: bigint, y: bigint, z: bigint) => (x & y) ^ (~x & z)
+const Maj = (x: bigint, y: bigint, z: bigint) => (x & y) ^ (x & z) ^ (y & z)
+const Sigma0 = (x: bigint) => rotateR64(x, 28n) ^ rotateR64(x, 34n) ^ rotateR64(x, 39n)
+const Sigma1 = (x: bigint) => rotateR64(x, 14n) ^ rotateR64(x, 18n) ^ rotateR64(x, 41n)
+const sigma0 = (x: bigint) => rotateR64(x, 1n) ^ rotateR64(x, 8n) ^ (x >> 7n)
+const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n)
 
 /**
  * SHA-512/t IV 生成函数 / generator
@@ -109,143 +109,143 @@ const sigma1 = (x: bigint) => rotateR64(x, 19n) ^ rotateR64(x, 61n) ^ (x >> 6n);
  */
 function IVGen(t: number) {
   if (t <= 0) {
-    throw new KitError('SHA-512 truncation must be greater than 0');
+    throw new KitError('SHA-512 truncation must be greater than 0')
   }
   if (t >= 512) {
-    throw new KitError('SHA-512 truncation must be less than 512');
+    throw new KitError('SHA-512 truncation must be less than 512')
   }
   if (t === 384) {
-    throw new KitError('SHA-512 truncation must not be 384');
+    throw new KitError('SHA-512 truncation must not be 384')
   }
 
-  const state = new U8(64);
-  const state_view = state.view(8);
-  state_view.set(0, 0x6a09e667f3bcc908n ^ 0xa5a5a5a5a5a5a5a5n);
-  state_view.set(1, 0xbb67ae8584caa73bn ^ 0xa5a5a5a5a5a5a5a5n);
-  state_view.set(2, 0x3c6ef372fe94f82bn ^ 0xa5a5a5a5a5a5a5a5n);
-  state_view.set(3, 0xa54ff53a5f1d36f1n ^ 0xa5a5a5a5a5a5a5a5n);
-  state_view.set(4, 0x510e527fade682d1n ^ 0xa5a5a5a5a5a5a5a5n);
-  state_view.set(5, 0x9b05688c2b3e6c1fn ^ 0xa5a5a5a5a5a5a5a5n);
-  state_view.set(6, 0x1f83d9abfb41bd6bn ^ 0xa5a5a5a5a5a5a5a5n);
-  state_view.set(7, 0x5be0cd19137e2179n ^ 0xa5a5a5a5a5a5a5a5n);
+  const state = new U8(64)
+  const state_view = state.view(8)
+  state_view.set(0, 0x6a09e667f3bcc908n ^ 0xa5a5a5a5a5a5a5a5n)
+  state_view.set(1, 0xbb67ae8584caa73bn ^ 0xa5a5a5a5a5a5a5a5n)
+  state_view.set(2, 0x3c6ef372fe94f82bn ^ 0xa5a5a5a5a5a5a5a5n)
+  state_view.set(3, 0xa54ff53a5f1d36f1n ^ 0xa5a5a5a5a5a5a5a5n)
+  state_view.set(4, 0x510e527fade682d1n ^ 0xa5a5a5a5a5a5a5a5n)
+  state_view.set(5, 0x9b05688c2b3e6c1fn ^ 0xa5a5a5a5a5a5a5a5n)
+  state_view.set(6, 0x1f83d9abfb41bd6bn ^ 0xa5a5a5a5a5a5a5a5n)
+  state_view.set(7, 0x5be0cd19137e2179n ^ 0xa5a5a5a5a5a5a5a5n)
 
-  return digest(state, UTF8(`SHA-512/${t}`));
+  return digest(state, UTF8(`SHA-512/${t}`))
 }
 
 // * Algorithm
 
 function digest(state: U8, message: Uint8Array) {
   // * 初始化
-  state = state.slice(0);
-  const state_view = state.view(8);
+  state = state.slice(0)
+  const state_view = state.view(8)
 
-  const m_byte = message.byteLength;
-  const m_bit = BigInt(m_byte) << 3n;
-  const block_size = 128;
+  const m_byte = message.byteLength
+  const m_bit = BigInt(m_byte) << 3n
+  const block_size = 128
   // ceil((m_byte + 17) / 128)
-  const block_total = (m_byte + 17 + 127) >> 7;
+  const block_total = (m_byte + 17 + 127) >> 7
 
   // * 填充
-  const p = new U8(block_total * block_size);
-  p.set(message);
+  const p = new U8(block_total * block_size)
+  p.set(message)
 
   // appending the bit '1' to the message
-  p[m_byte] = 0x80;
+  p[m_byte] = 0x80
 
   // appending length
-  const p_view = new DataView(p.buffer, p.byteOffset, p.byteLength);
-  p_view.setBigUint64(p.byteLength - 16, m_bit >> 32n);
-  p_view.setBigUint64(p.byteLength - 8, m_bit & 0xffffffffffffffffn);
+  const p_view = new DataView(p.buffer, p.byteOffset, p.byteLength)
+  p_view.setBigUint64(p.byteLength - 16, m_bit >> 32n)
+  p_view.setBigUint64(p.byteLength - 8, m_bit & 0xffffffffffffffffn)
 
   // * 分块处理
   for (let offset = 0; offset < p.length; offset += block_size) {
     /** B(n) = p[offset:offset + block_size] */
 
     // 准备状态字
-    const H0 = state_view.get(0);
-    const H1 = state_view.get(1);
-    const H2 = state_view.get(2);
-    const H3 = state_view.get(3);
-    const H4 = state_view.get(4);
-    const H5 = state_view.get(5);
-    const H6 = state_view.get(6);
-    const H7 = state_view.get(7);
-    let a = H0;
-    let b = H1;
-    let c = H2;
-    let d = H3;
-    let e = H4;
-    let f = H5;
-    let g = H6;
-    let h = H7;
+    const H0 = state_view.get(0)
+    const H1 = state_view.get(1)
+    const H2 = state_view.get(2)
+    const H3 = state_view.get(3)
+    const H4 = state_view.get(4)
+    const H5 = state_view.get(5)
+    const H6 = state_view.get(6)
+    const H7 = state_view.get(7)
+    let a = H0
+    let b = H1
+    let c = H2
+    let d = H3
+    let e = H4
+    let f = H5
+    let g = H6
+    let h = H7
 
     // 合并执行 扩展 & 压缩
-    const W = new BigUint64Array(80);
+    const W = new BigUint64Array(80)
     for (let i = 0; i < W.length; i++) {
       // 扩展
       if (i < 16)
         // W[i] = B(n)[i]
-        W[i] = p_view.getBigUint64(offset + (i << 3));
-      else W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16];
+        W[i] = p_view.getBigUint64(offset + (i << 3))
+      else W[i] = sigma1(W[i - 2]) + W[i - 7] + sigma0(W[i - 15]) + W[i - 16]
 
       // 压缩
-      const T1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i];
-      const T2 = Sigma0(a) + Maj(a, b, c);
-      h = g;
-      g = f;
-      f = e;
-      e = (d + T1) & 0xffffffffffffffffn;
-      d = c;
-      c = b;
-      b = a;
-      a = (T1 + T2) & 0xffffffffffffffffn;
+      const T1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i]
+      const T2 = Sigma0(a) + Maj(a, b, c)
+      h = g
+      g = f
+      f = e
+      e = (d + T1) & 0xffffffffffffffffn
+      d = c
+      c = b
+      b = a
+      a = (T1 + T2) & 0xffffffffffffffffn
     }
 
     // 更新状态字
-    state_view.set(0, H0 + a);
-    state_view.set(1, H1 + b);
-    state_view.set(2, H2 + c);
-    state_view.set(3, H3 + d);
-    state_view.set(4, H4 + e);
-    state_view.set(5, H5 + f);
-    state_view.set(6, H6 + g);
-    state_view.set(7, H7 + h);
+    state_view.set(0, H0 + a)
+    state_view.set(1, H1 + b)
+    state_view.set(2, H2 + c)
+    state_view.set(3, H3 + d)
+    state_view.set(4, H4 + e)
+    state_view.set(5, H5 + f)
+    state_view.set(6, H6 + g)
+    state_view.set(7, H7 + h)
   }
 
   // * 返回状态
-  return state;
+  return state
 }
 
 function sha384Digest(M: Uint8Array) {
   // * 初始化 SHA-384 状态
-  const state = new U8(64);
-  const state_view = state.view(8);
-  state_view.set(0, 0xcbbb9d5dc1059ed8n);
-  state_view.set(1, 0x629a292a367cd507n);
-  state_view.set(2, 0x9159015a3070dd17n);
-  state_view.set(3, 0x152fecd8f70e5939n);
-  state_view.set(4, 0x67332667ffc00b31n);
-  state_view.set(5, 0x8eb44a8768581511n);
-  state_view.set(6, 0xdb0c2e0d64f98fa7n);
-  state_view.set(7, 0x47b5481dbefa4fa4n);
+  const state = new U8(64)
+  const state_view = state.view(8)
+  state_view.set(0, 0xcbbb9d5dc1059ed8n)
+  state_view.set(1, 0x629a292a367cd507n)
+  state_view.set(2, 0x9159015a3070dd17n)
+  state_view.set(3, 0x152fecd8f70e5939n)
+  state_view.set(4, 0x67332667ffc00b31n)
+  state_view.set(5, 0x8eb44a8768581511n)
+  state_view.set(6, 0xdb0c2e0d64f98fa7n)
+  state_view.set(7, 0x47b5481dbefa4fa4n)
 
-  return digest(state, M).slice(0, 48);
+  return digest(state, M).slice(0, 48)
 }
 
 function sha512Digest(M: Uint8Array) {
   // * 初始化 SHA-512 状态
-  const state = new U8(64);
-  const state_view = state.view(8);
-  state_view.set(0, 0x6a09e667f3bcc908n);
-  state_view.set(1, 0xbb67ae8584caa73bn);
-  state_view.set(2, 0x3c6ef372fe94f82bn);
-  state_view.set(3, 0xa54ff53a5f1d36f1n);
-  state_view.set(4, 0x510e527fade682d1n);
-  state_view.set(5, 0x9b05688c2b3e6c1fn);
-  state_view.set(6, 0x1f83d9abfb41bd6bn);
-  state_view.set(7, 0x5be0cd19137e2179n);
+  const state = new U8(64)
+  const state_view = state.view(8)
+  state_view.set(0, 0x6a09e667f3bcc908n)
+  state_view.set(1, 0xbb67ae8584caa73bn)
+  state_view.set(2, 0x3c6ef372fe94f82bn)
+  state_view.set(3, 0xa54ff53a5f1d36f1n)
+  state_view.set(4, 0x510e527fade682d1n)
+  state_view.set(5, 0x9b05688c2b3e6c1fn)
+  state_view.set(6, 0x1f83d9abfb41bd6bn)
+  state_view.set(7, 0x5be0cd19137e2179n)
 
-  return digest(state, M);
+  return digest(state, M)
 }
 
 export const sha384 = createHash(sha384Digest, {
@@ -253,30 +253,30 @@ export const sha384 = createHash(sha384Digest, {
   BLOCK_SIZE: 128,
   DIGEST_SIZE: 48,
   OID: '2.16.840.1.101.3.4.2.2',
-});
+})
 
 export const sha512 = createHash(sha512Digest, {
   ALGORITHM: 'SHA-512',
   BLOCK_SIZE: 128,
   DIGEST_SIZE: 64,
   OID: '2.16.840.1.101.3.4.2.3',
-});
+})
 
 /**
  * @param {number} t - 截断长度 / truncation length (bit)
  */
 export function sha512t(t: number) {
   // * 初始化 SHA-512/t 状态
-  const status = IVGen(t);
+  const status = IVGen(t)
 
-  let OID: string | undefined;
-  if (t === 224) OID = '2.16.840.1.101.3.4.2.5';
-  if (t === 256) OID = '2.16.840.1.101.3.4.2.6';
+  let OID: string | undefined
+  if (t === 224) OID = '2.16.840.1.101.3.4.2.5'
+  if (t === 256) OID = '2.16.840.1.101.3.4.2.6'
 
   return createHash((M: Uint8Array) => digest(status, M).slice(0, t >> 3), {
     ALGORITHM: `SHA-512/${t}`,
     BLOCK_SIZE: 128,
     DIGEST_SIZE: t >> 3,
     OID,
-  });
+  })
 }

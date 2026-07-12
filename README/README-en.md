@@ -1814,7 +1814,7 @@ interface ScryptConfig {
 > Outside the table, `sm2p256v1` is also a exported `Weierstrass` curve. It is applicable to all `ECC` algorithms, but it is commonly used in the `SM2` algorithm, so it is not included in the table.
 
 | SEC         | NIST     | X9.63        | RFC 5639  |
-|-------------|----------|--------------|-----------|
+| ----------- | -------- | ------------ | --------- |
 | -           | `w25519` | -            | -         |
 | -           | `w448`   | -            | -         |
 | `secp192k1` | -        | -            | -         |
@@ -1835,14 +1835,14 @@ interface ScryptConfig {
 ### Prime Field `Montgomery` Curves
 
 | NIST       |
-|------------|
+| ---------- |
 | Curve25519 |
 | Curve448   |
 
 ### Binary Field
 
 | Type    | SEC       |
-|---------|-----------|
+| ------- | --------- |
 | Koblitz | sect163k1 |
 | Random  | sect163r1 |
 | Random  | sect163r2 |

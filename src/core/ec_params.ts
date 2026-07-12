@@ -1,4 +1,4 @@
-import type { FbKECParams, FbPECParams, FpMECParams, FpTECParams, FpWECParams } from './ec';
+import type { FbKECParams, FbPECParams, FpMECParams, FpTECParams, FpWECParams } from './ec'
 
 // * SM2 Prime Curve
 
@@ -20,7 +20,7 @@ export const sm2p256v1: FpWECParams = Object.freeze({
   },
   n: 0xfffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123n,
   h: 1n,
-});
+})
 
 // * SEC-1 Prime Curves
 
@@ -45,7 +45,7 @@ export const secp112r1: FpWECParams = Object.freeze({
   },
   n: 0xdb7c2abf62e35e7628dfac6561c5n,
   h: 1n,
-});
+})
 
 /**
  * 112 位素域上的 SECG 曲线
@@ -65,7 +65,7 @@ export const secp112r2: FpWECParams = Object.freeze({
   },
   n: 0x36df0aafd8b8d7597ca10520d04bn,
   h: 4n,
-});
+})
 
 /**
  * 128 位素域上的 SECG 曲线
@@ -85,7 +85,7 @@ export const secp128r1: FpWECParams = Object.freeze({
   },
   n: 0xfffffffe0000000075a30d1b9038a115n,
   h: 1n,
-});
+})
 
 /**
  * 128 位素域上的 SECG 曲线
@@ -105,7 +105,7 @@ export const secp128r2: FpWECParams = Object.freeze({
   },
   n: 0x3fffffff7fffffffbe0024720613b5a3n,
   h: 4n,
-});
+})
 
 /**
  * 160 位素域上的 SECG 曲线
@@ -125,7 +125,7 @@ export const secp160k1: FpWECParams = Object.freeze({
   },
   n: 0x0100000000000000000001b8fa16dfab9aca16b6b3n,
   h: 1n,
-});
+})
 
 /**
  * 160 位素域上的 SECG/WTLS 曲线
@@ -148,7 +148,7 @@ export const secp160r1: FpWECParams = Object.freeze({
   },
   n: 0x0100000000000000000001f4c8f927aed3ca752257n,
   h: 1n,
-});
+})
 
 /**
  * 160 位素域上的 SECG 曲线
@@ -168,7 +168,7 @@ export const secp160r2: FpWECParams = Object.freeze({
   },
   n: 0x0100000000000000000000351ee786a818f3a1a16bn,
   h: 1n,
-});
+})
 
 /**
  * 192 位素域上的 SECG 曲线
@@ -188,7 +188,7 @@ export const secp192k1: FpWECParams = Object.freeze({
   },
   n: 0xfffffffffffffffffffffffe26f2fc170f69466a74defd8dn,
   h: 1n,
-});
+})
 
 /**
  * 192 位素域上的 NIST/X9.62/SECG 曲线
@@ -212,7 +212,7 @@ export const secp192r1: FpWECParams = Object.freeze({
   },
   n: 0xffffffffffffffffffffffff99def836146bc9b1b4d22831n,
   h: 1n,
-});
+})
 
 /**
  * 224 位素域上的 SECG 曲线
@@ -232,7 +232,7 @@ export const secp224k1: FpWECParams = Object.freeze({
   },
   n: 0x010000000000000000000000000001dce8d2ec6184caf0a971769fb1f7n,
   h: 1n,
-});
+})
 
 /**
  * 224 位素域上的 NIST/SECG 曲线
@@ -255,7 +255,7 @@ export const secp224r1: FpWECParams = Object.freeze({
   },
   n: 0xffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3dn,
   h: 1n,
-});
+})
 
 /**
  * 256 位素域上的 SECG 曲线
@@ -275,7 +275,7 @@ export const secp256k1: FpWECParams = Object.freeze({
   },
   n: 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n,
   h: 1n,
-});
+})
 
 /**
  * 256 位素域上的 NIST/X9.62/SECG 曲线
@@ -299,7 +299,7 @@ export const secp256r1: FpWECParams = Object.freeze({
   },
   n: 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n,
   h: 1n,
-});
+})
 
 /**
  * 384 位素域上的 NIST/SECG 曲线
@@ -322,7 +322,7 @@ export const secp384r1: FpWECParams = Object.freeze({
   },
   n: 0xffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973n,
   h: 1n,
-});
+})
 
 /**
  * 521 位素域上的 NIST/SECG 曲线
@@ -345,7 +345,7 @@ export const secp521r1: FpWECParams = Object.freeze({
   },
   n: 0x01fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409n,
   h: 1n,
-});
+})
 
 // * SEC-1 Binary Curves
 
@@ -363,7 +363,7 @@ export const sect163k1: FbKECParams = Object.freeze({
   },
   n: 0x04000000000000000000020108a2e0cc0d99f8a5efn,
   h: 2n,
-});
+})
 
 export const sect163r1: FbPECParams = Object.freeze({
   type: 'Pseudo-Random',
@@ -379,7 +379,7 @@ export const sect163r1: FbPECParams = Object.freeze({
   },
   n: 0x03ffffffffffffffffffff48aab689c29ca710279bn,
   h: 2n,
-});
+})
 
 export const sect163r2: FbPECParams = Object.freeze({
   type: 'Pseudo-Random',
@@ -395,7 +395,7 @@ export const sect163r2: FbPECParams = Object.freeze({
   },
   n: 0x040000000000000000000292fe77e70c12a4234c33n,
   h: 2n,
-});
+})
 
 export const sect233k1: FbKECParams = Object.freeze({
   type: 'Koblitz',
@@ -411,7 +411,7 @@ export const sect233k1: FbKECParams = Object.freeze({
   },
   n: 0x8000000000000000000000000000069d5bb915bcd46efb1ad5f173abdfn,
   h: 4n,
-});
+})
 
 export const sect233r1: FbPECParams = Object.freeze({
   type: 'Pseudo-Random',
@@ -427,7 +427,7 @@ export const sect233r1: FbPECParams = Object.freeze({
   },
   n: 0x01000000000000000000000000000013e974e72f8a6922031d2603cfe0d7n,
   h: 2n,
-});
+})
 
 export const sect239k1: FbKECParams = Object.freeze({
   type: 'Koblitz',
@@ -443,7 +443,7 @@ export const sect239k1: FbKECParams = Object.freeze({
   },
   n: 0x2000000000000000000000000000005a79fec67cb6e91f1c1da800e478a5n,
   h: 4n,
-});
+})
 
 export const sect283k1: FbKECParams = Object.freeze({
   type: 'Koblitz',
@@ -459,7 +459,7 @@ export const sect283k1: FbKECParams = Object.freeze({
   },
   n: 0x01ffffffffffffffffffffffffffffffffffe9ae2ed07577265dff7f94451e061e163c61n,
   h: 4n,
-});
+})
 
 export const sect283r1: FbPECParams = Object.freeze({
   type: 'Pseudo-Random',
@@ -475,7 +475,7 @@ export const sect283r1: FbPECParams = Object.freeze({
   },
   n: 0x03ffffffffffffffffffffffffffffffffffef90399660fc938a90165b042a7cefadb307n,
   h: 2n,
-});
+})
 
 export const sect409k1: FbKECParams = Object.freeze({
   type: 'Koblitz',
@@ -491,7 +491,7 @@ export const sect409k1: FbKECParams = Object.freeze({
   },
   n: 0x7ffffffffffffffffffffffffffffffffffffffffffffffffffe5f83b2d4ea20400ec4557d5ed3e3e7ca5b4b5c83b8e01e5fcfn,
   h: 4n,
-});
+})
 
 export const sect409r1: FbPECParams = Object.freeze({
   type: 'Pseudo-Random',
@@ -507,7 +507,7 @@ export const sect409r1: FbPECParams = Object.freeze({
   },
   n: 0x010000000000000000000000000000000000000000000000000001e2aad6a612f33307be5fa47c3c9e052f838164cd37d9a21173n,
   h: 2n,
-});
+})
 
 export const sect571k1: FbKECParams = Object.freeze({
   type: 'Koblitz',
@@ -523,7 +523,7 @@ export const sect571k1: FbKECParams = Object.freeze({
   },
   n: 0x020000000000000000000000000000000000000000000000000000000000000000000000131850e1f19a63e4b391a8db917f4138b630d84be5d639381e91deb45cfe778f637c1001n,
   h: 4n,
-});
+})
 
 export const sect571r1: FbPECParams = Object.freeze({
   type: 'Pseudo-Random',
@@ -539,7 +539,7 @@ export const sect571r1: FbPECParams = Object.freeze({
   },
   n: 0x03ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe661ce18ff55987308059b186823851ec7dd9ca1161de93d5174d66e8382e9bb2fe84e47n,
   h: 2n,
-});
+})
 
 // * X9.63 Prime Curves
 
@@ -552,7 +552,7 @@ export const sect571r1: FbPECParams = Object.freeze({
  * @alias prime192v1
  * @alias secp192r1
  */
-export const prime192v1 = secp192r1;
+export const prime192v1 = secp192r1
 
 /**
  * 256 位素域上的 NIST/X9.62/SECG 曲线
@@ -563,7 +563,7 @@ export const prime192v1 = secp192r1;
  * @alias prime256v1
  * @alias secp256r1
  */
-export const prime256v1 = secp256r1;
+export const prime256v1 = secp256r1
 
 // * NIST Prime Curves
 
@@ -576,7 +576,7 @@ export const prime256v1 = secp256r1;
  * @alias prime192v1
  * @alias secp192r1
  */
-export const p192 = secp192r1;
+export const p192 = secp192r1
 
 /**
  * 224 位素域上的 NIST/SECG 曲线
@@ -586,7 +586,7 @@ export const p192 = secp192r1;
  * @alias p224
  * @alias secp224r1
  */
-export const p224 = secp224r1;
+export const p224 = secp224r1
 
 /**
  * 256 位素域上的 SECG 曲线
@@ -597,7 +597,7 @@ export const p224 = secp224r1;
  * @alias prime256v1
  * @alias secp256r1
  */
-export const p256 = secp256r1;
+export const p256 = secp256r1
 
 /**
  * 384 位素域上的 NIST/SECG 曲线
@@ -607,7 +607,7 @@ export const p256 = secp256r1;
  * @alias p384
  * @alias secp384r1
  */
-export const p384 = secp384r1;
+export const p384 = secp384r1
 
 /**
  * 521 位素域上的 NIST/SECG 曲线
@@ -617,7 +617,7 @@ export const p384 = secp384r1;
  * @alias p521
  * @alias secp521r1
  */
-export const p521 = secp521r1;
+export const p521 = secp521r1
 
 /**
  * NIST W-25519 是与 Curve25519 同构的 Weierstrass 曲线
@@ -637,7 +637,7 @@ export const w25519: FpWECParams = Object.freeze({
   },
   n: 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3edn,
   h: 8n,
-});
+})
 
 /**
  * NIST W-448 是与 Curve448 同构的 Weierstrass 曲线
@@ -657,7 +657,7 @@ export const w448: FpWECParams = Object.freeze({
   },
   n: 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3n,
   h: 4n,
-});
+})
 
 /**
  * 素域 p^255 - 19 上的 NIST Montgomery 曲线
@@ -677,7 +677,7 @@ export const curve25519: FpMECParams = Object.freeze({
   },
   n: 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3edn,
   h: 8n,
-});
+})
 
 /**
  * 素域 p^448 - 2^224 - 1 上的 NIST Montgomery 曲线
@@ -697,7 +697,7 @@ export const curve448: FpMECParams = Object.freeze({
   },
   n: 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3n,
   h: 4n,
-});
+})
 
 /**
  * ed25519 是与 Curve25519 同构的 Twisted Edwards 曲线
@@ -717,7 +717,7 @@ export const ed25519: FpTECParams = Object.freeze({
   },
   n: 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3edn,
   h: 8n,
-});
+})
 
 /**
  * ed448 是与 Curve448 同构的 Twisted Edwards 曲线
@@ -737,7 +737,7 @@ export const ed448: FpTECParams = Object.freeze({
   },
   n: 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3n,
   h: 4n,
-});
+})
 
 // * Brainpool Prime Curves
 
@@ -759,7 +759,7 @@ export const bp160r1: FpWECParams = Object.freeze({
   },
   n: 0xe95e4a5f737059dc60df5991d45029409e60fc09n,
   h: 1n,
-});
+})
 
 /**
  * 192 位素域上的 RFC 5639 曲线
@@ -779,7 +779,7 @@ export const bp192r1: FpWECParams = Object.freeze({
   },
   n: 0xc302f41d932a36cda7a3462f9e9e916b5be8f1029ac4acc1n,
   h: 1n,
-});
+})
 
 /**
  * 224 位素域上的 RFC 5639 曲线
@@ -799,7 +799,7 @@ export const bp224r1: FpWECParams = Object.freeze({
   },
   n: 0xd7c134aa264366862a18302575d0fb98d116bc4b6ddebca3a5a7939fn,
   h: 1n,
-});
+})
 
 /**
  * 256 位素域上的 RFC 5639 曲线
@@ -819,7 +819,7 @@ export const bp256r1: FpWECParams = Object.freeze({
   },
   n: 0xa9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7n,
   h: 1n,
-});
+})
 
 /**
  * 320 位素域上的 RFC 5639 曲线
@@ -839,7 +839,7 @@ export const bp320r1: FpWECParams = Object.freeze({
   },
   n: 0xd35e472036bc4fb7e13c785ed201e065f98fcfa5b68f12a32d482ec7ee8658e98691555b44c59311n,
   h: 1n,
-});
+})
 
 /**
  * 384 位素域上的 RFC 5639 曲线
@@ -859,7 +859,7 @@ export const bp384r1: FpWECParams = Object.freeze({
   },
   n: 0x8cb91e82a3386d280f5d6f7e50e641df152f7109ed5456b31f166e6cac0425a7cf3ab6af6b7fc3103b883202e9046565n,
   h: 1n,
-});
+})
 
 /**
  * 512 位素域上的 RFC 5639 曲线
@@ -879,4 +879,4 @@ export const bp512r1: FpWECParams = Object.freeze({
   },
   n: 0xaadd9db8dbe9c48b3fd4e6ae33c9fc07cb308db3b3c9d20ed6639cca70330870553e5c414ca92619418661197fac10471db1d381085ddaddb58796829ca90069n,
   h: 1n,
-});
+})
