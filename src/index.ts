@@ -52,6 +52,7 @@ export { kt128, kt256 } from './hash/kangaroo12'
 export { hmac } from './hash/hmac'
 export { kmac128, kmac128XOF } from './hash/sha3Derived'
 export { kmac256, kmac256XOF } from './hash/sha3Derived'
+export { poly1305 } from './hash/poly1305'
 
 /* ========================================================================== */
 /* TOTP                                                                       */
@@ -80,7 +81,7 @@ export { arc4 } from './cipher/streamCipher/arc4'
 export { rabbit } from './cipher/streamCipher/rabbit'
 export { salsa20 } from './cipher/streamCipher/salsa20'
 export { chacha20, chacha20poly1305 } from './cipher/streamCipher/chacha20'
-export type { ChaCha20Poly1305Cipherable } from './cipher/streamCipher/chacha20'
+export type { ChaCha20Poly1305AEAD } from './cipher/streamCipher/chacha20'
 export type { ZUCParams } from './cipher/streamCipher/zuc'
 export { eea3, eia3, zuc } from './cipher/streamCipher/zuc'
 

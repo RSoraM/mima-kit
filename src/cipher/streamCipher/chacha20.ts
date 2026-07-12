@@ -1,5 +1,6 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, resizeBuffer, rotateL32, U8, u8, u32 } from '../../core/utils'
+import { KitError, resizeBuffer, rotateL32, type U8, u8, u32 } from '../../core/utils'
+import { poly1305 } from '../../hash/poly1305'
 
 // * Constants
 // "expa" "nd 3" "2-by" "te k" in little-endian
@@ -156,11 +157,6 @@ function _chacha20(key: Uint8Array, nonce: Uint8Array, counter: number = 1) {
 
 /**
  * ChaCha20 流密码 / Stream Cipher
- *
- * ChaCha20 is a stream cipher designed by Daniel J. Bernstein.
- * It uses a 256-bit key and a 96-bit nonce to generate a keystream.
- *
- * @see RFC 8439 - ChaCha20 and Poly1305
  */
 export const chacha20 = createCipher(_chacha20, {
   ALGORITHM: 'ChaCha20',
@@ -174,106 +170,33 @@ export const chacha20 = createCipher(_chacha20, {
 
 // * ChaCha20-Poly1305 AEAD
 
-/**
- * Poly1305 one-time authenticator
- *
- * Computes a 16-byte authentication tag using the Poly1305 algorithm
- * with r and s derived from a 32-byte one-time key.
- */
-function poly1305(message: Uint8Array, key: Uint8Array): Uint8Array {
-  if (key.byteLength !== 32) {
-    throw new KitError('Poly1305 key must be 32 bytes')
-  }
-
-  // Split key into r (clamped) and s
-  const r = new Uint8Array(16)
-  const s = new Uint8Array(16)
-  r.set(key.subarray(0, 16))
-  s.set(key.subarray(16, 32))
-
-  // Clamp r
-  r[3] &= 0x0f
-  r[7] &= 0x0f
-  r[11] &= 0x0f
-  r[15] &= 0x0f
-  r[4] &= 0xfc
-  r[8] &= 0xfc
-  r[12] &= 0xfc
-
-  // Convert r and s to bigint (little-endian)
-  let rVal = 0n
-  let sVal = 0n
-  for (let i = 15; i >= 0; i--) {
-    rVal = (rVal << 8n) | BigInt(r[i])
-    sVal = (sVal << 8n) | BigInt(s[i])
-  }
-
-  // Prime: 2^130 - 5
-  const P = (1n << 130n) - 5n
-
-  // Process message blocks
-  let accumulator = 0n
-  const paddedLen = Math.ceil(message.length / 16) * 16
-  const padded = new Uint8Array(paddedLen)
-  padded.set(message)
-
-  for (let i = 0; i < paddedLen; i += 16) {
-    // Read block as little-endian number
-    let block = 0n
-    for (let j = 15; j >= 0; j--) {
-      block = (block << 8n) | BigInt(padded[i + j])
-    }
-
-    // Add high bit (2^128 for full blocks, 2^(8*remaining_bits) for last partial block)
-    const remainingBytes = message.length - i
-    const highBit = remainingBytes >= 16 ? 1n << 128n : 1n << BigInt(remainingBytes * 8)
-    block += highBit
-
-    // Accumulate
-    accumulator = ((accumulator + block) * rVal) % P
-  }
-
-  // Add s
-  let tag = (accumulator + sVal) % (1n << 128n)
-
-  // Convert to bytes (little-endian)
-  const result = new Uint8Array(16)
-  for (let i = 0; i < 16; i++) {
-    result[i] = Number(tag & 0xffn)
-    tag >>= 8n
-  }
-
-  return result
+export interface ChaCha20Poly1305AEAD {
+  /**
+   * @param {Uint8Array} plaintext - 明文 / plaintext
+   */
+  encrypt: (plaintext: Uint8Array) => U8
+  /**
+   * @param {Uint8Array} ciphertext - 密文 / ciphertext
+   */
+  decrypt: (ciphertext: Uint8Array) => U8
+  /**
+   * @param {Uint8Array} cipherText - 密文 / ciphertext
+   * @param {Uint8Array} additional_data - 附加数据 / Additional data
+   * @returns {Uint8Array} - 认证标签 / Authentication tag
+   */
+  sign: (ciphertext: Uint8Array, additional_data?: Uint8Array) => U8
+  /**
+   * @param {Uint8Array} auth_tag - 认证标签 / Authentication tag
+   * @param {Uint8Array} ciphertext - 密文 / ciphertext
+   * @param {Uint8Array} additional_data - 附加数据 / Additional data
+   */
+  verify: (auth_tag: Uint8Array, ciphertext: Uint8Array, additional_data?: Uint8Array) => boolean
 }
 
 /**
- * ChaCha20-Poly1305 AEAD Interface
+ * ChaCha20-Poly1305 AEAD
  */
-export interface ChaCha20Poly1305Cipherable {
-  /**
-   * Encrypt plaintext with associated data
-   * @param plaintext - Data to encrypt
-   * @param aad - Additional authenticated data (not encrypted)
-   * @returns Ciphertext with 16-byte authentication tag appended
-   */
-  encrypt: (plaintext: Uint8Array, aad?: Uint8Array) => Uint8Array
-  /**
-   * Decrypt ciphertext and verify authentication tag
-   * @param ciphertext - Ciphertext with 16-byte tag appended
-   * @param aad - Additional authenticated data
-   * @returns Decrypted plaintext, or throws error if authentication fails
-   */
-  decrypt: (ciphertext: Uint8Array, aad?: Uint8Array) => Uint8Array
-}
-
-/**
- * ChaCha20-Poly1305 AEAD Cipher
- *
- * Authenticated Encryption with Associated Data using ChaCha20 and Poly1305.
- *
- * @see RFC 8439 - ChaCha20 and Poly1305
- */
-export function chacha20poly1305(key: Uint8Array, nonce: Uint8Array): ChaCha20Poly1305Cipherable {
+export function chacha20poly1305(key: Uint8Array, nonce: Uint8Array): ChaCha20Poly1305AEAD {
   if (key.byteLength !== 32) {
     throw new KitError('ChaCha20-Poly1305 key must be 32 bytes')
   }
@@ -288,21 +211,16 @@ export function chacha20poly1305(key: Uint8Array, nonce: Uint8Array): ChaCha20Po
   // Initialize cipher with counter starting at 1
   const cipher = _chacha20(key, nonce, 1)
 
-  const encrypt = (plaintext: Uint8Array, aad: Uint8Array = new Uint8Array(0)): U8 => {
-    // Encrypt plaintext
-    const ciphertext = cipher.encrypt(plaintext)
-
-    // Compute authentication tag
+  const sign = (ciphertext: Uint8Array, additional_data: Uint8Array = new Uint8Array(0)): U8 => {
     // Poly1305 input: aad || pad16(aad) || ciphertext || pad16(ciphertext) || len(aad) || len(ciphertext)
-    const aadLen = aad.length
     const ctLen = ciphertext.length
+    const aadLen = additional_data.length
     const aadPadLen = (16 - (aadLen % 16)) % 16
     const ctPadLen = (16 - (ctLen % 16)) % 16
-
     const polyInput = new Uint8Array(aadLen + aadPadLen + ctLen + ctPadLen + 16)
 
     let offset = 0
-    polyInput.set(aad, offset)
+    polyInput.set(additional_data, offset)
     offset += aadLen + aadPadLen
     polyInput.set(ciphertext, offset)
     offset += ctLen + ctPadLen
@@ -312,57 +230,17 @@ export function chacha20poly1305(key: Uint8Array, nonce: Uint8Array): ChaCha20Po
     view.setBigUint64(offset, BigInt(aadLen), true)
     view.setBigUint64(offset + 8, BigInt(ctLen), true)
 
-    const tag = poly1305(polyInput, polyKey)
-
-    // Return ciphertext || tag
-    const result = new U8(ctLen + 16)
-    result.set(ciphertext)
-    result.set(tag, ctLen)
-
-    return result
+    return poly1305(polyKey, polyInput)
   }
 
-  const decrypt = (ciphertext: Uint8Array, aad: Uint8Array = new Uint8Array(0)): U8 => {
-    if (ciphertext.length < 16) {
-      throw new KitError('Ciphertext too short (must include 16-byte tag)')
-    }
-
-    const ctLen = ciphertext.length - 16
-    const ct = ciphertext.subarray(0, ctLen)
-    const tag = ciphertext.subarray(ctLen)
-
-    // Verify authentication tag
-    const aadLen = aad.length
-    const aadPadLen = (16 - (aadLen % 16)) % 16
-    const ctPadLen = (16 - (ctLen % 16)) % 16
-
-    const polyInput = new Uint8Array(aadLen + aadPadLen + ctLen + ctPadLen + 16)
-
-    let offset = 0
-    polyInput.set(aad, offset)
-    offset += aadLen + aadPadLen
-    polyInput.set(ct, offset)
-    offset += ctLen + ctPadLen
-
-    const view = new DataView(polyInput.buffer, polyInput.byteOffset, polyInput.byteLength)
-    view.setBigUint64(offset, BigInt(aadLen), true)
-    view.setBigUint64(offset + 8, BigInt(ctLen), true)
-
-    const expectedTag = poly1305(polyInput, polyKey)
-
-    // Constant-time comparison
-    let diff = 0
-    for (let i = 0; i < 16; i++) {
-      diff |= tag[i] ^ expectedTag[i]
-    }
-
-    if (diff !== 0) {
-      throw new KitError('Authentication failed')
-    }
-
-    // Decrypt ciphertext
-    return cipher.decrypt(ct)
+  const verify = (auth_tag: Uint8Array, ciphertext: Uint8Array, additional_data: Uint8Array = new Uint8Array(0)): boolean => {
+    return sign(ciphertext, additional_data).every((_, i) => _ === auth_tag[i])
   }
 
-  return { encrypt, decrypt }
+  return {
+    encrypt: cipher.encrypt,
+    decrypt: cipher.decrypt,
+    sign,
+    verify,
+  }
 }
