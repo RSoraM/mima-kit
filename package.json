@@ -124,6 +124,9 @@
     "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
-    "*": "biome lint --write"
+    "*.{ts,js,mjs,cjs,json}": [
+      "biome lint --write",
+      "biome format --write"
+    ]
   }
 }
