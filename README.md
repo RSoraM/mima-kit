@@ -63,6 +63,7 @@ npm install mima-kit
     <li><a href="#hmac">HMAC</a></li>
     <li><a href="#totp">TOTP</a></li>
     <li><a href="#kmac">KMAC</a></li>
+    <li><a href="#poly1305">Poly1305</a></li>
   </ul>
   <li><a href="#包装您的加密散列算法">包装您的加密散列算法</a></li>
 </ul>
@@ -96,6 +97,7 @@ npm install mima-kit
   <ul>
     <li><a href="#zuc">ZUC</a></li>
     <li><a href="#arc4">ARC4</a></li>
+    <li><a href="#chacha20">ChaCha20</a></li>
     <li><a href="#salsa20">Salsa20</a></li>
     <li><a href="#rabbit">Rabbit</a></li>
   </ul>
@@ -468,6 +470,16 @@ kmac128(256, s)(key, m).to(HEX)
 kmac256(512, s)(key, m).to(HEX)
 kmac128XOF(256, s)(key, m).to(HEX)
 kmac256XOF(512, s)(key, m).to(HEX)
+```
+
+### Poly1305
+
+Specification: [RFC 8439](https://www.rfc-editor.org/rfc/rfc8439.txt)
+
+```typescript
+const key = HEX('') // 必须使用 32 字节的密钥
+const m = UTF8('mima-kit')
+poly1305(key, m).to(HEX)
 ```
 
 ## 包装您的加密散列算法
@@ -1114,6 +1126,35 @@ const cipher = salsa20(k, iv)
 const c = cipher.encrypt(UTF8('mima-kit'))
 const m = cipher.decrypt(c)
 ```
+
+### ChaCha20
+
+Specification: [RFC 8439](https://www.rfc-editor.org/rfc/rfc8439.txt)
+
+`ChaCha20` 算法可以接受长度为 `32` 字节的密钥和 `12` 字节的 `iv`。
+
+```typescript
+const k = HEX('')
+const iv = HEX('')
+const cipher = chacha20(k, iv)
+const c = cipher.encrypt(UTF8('mima-kit'))
+const m = cipher.decrypt(c)
+```
+
+`ChaCha20-Poly1305` 是 `ChaCha20` 与 `Poly1305` 组合的认证加密算法。
+`mima-kit` 提供的 `chacha20poly1305` 将加密和身份认证的部分进行了解耦，使用时需要自行组织相关代码。
+
+```typescript
+const k = HEX('')
+const iv = HEX('')
+const aad = UTF8('附加认证数据')
+const cipher = chacha20poly1305(k, iv)
+const c = cipher.encrypt(UTF8('mima-kit'))
+const tag = cipher.sign(c, aad)
+const m = cipher.decrypt(c)
+const valid = cipher.verify(tag, c, aad)
+```
+
 
 ### Rabbit
 

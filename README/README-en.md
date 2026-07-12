@@ -65,6 +65,7 @@ npm install mima-kit
     <li><a href="#hmac">HMAC</a></li>
     <li><a href="#totp">TOTP</a></li>
     <li><a href="#kmac">KMAC</a></li>
+    <li><a href="#poly1305">Poly1305</a></li>
   </ul>
   <li><a href="#wrap-your-hash-algorithm">Wrap Your Hash Algorithm</a></li>
 </ul>
@@ -98,6 +99,7 @@ npm install mima-kit
   <ul>
     <li><a href="#zuc">ZUC</a></li>
     <li><a href="#arc4">ARC4</a></li>
+    <li><a href="#chacha20">ChaCha20</a></li>
     <li><a href="#salsa20">Salsa20</a></li>
     <li><a href="#rabbit">Rabbit</a></li>
   </ul>
@@ -452,6 +454,16 @@ kmac128(256, s)(key, m).to(HEX)
 kmac256(512, s)(key, m).to(HEX)
 kmac128XOF(256, s)(key, m).to(HEX)
 kmac256XOF(512, s)(key, m).to(HEX)
+```
+
+### Poly1305
+
+Specification: [RFC 8439](https://www.rfc-editor.org/rfc/rfc8439.txt)
+
+```typescript
+const key = HEX('') // A 32-byte key must be used.
+const m = UTF8('mima-kit')
+poly1305(key, m).to(HEX)
 ```
 
 ## Wrap Your Hash Algorithm
@@ -1083,6 +1095,35 @@ const cipher = salsa20(k, iv)
 const c = cipher.encrypt(UTF8('mima-kit'))
 const m = cipher.decrypt(c)
 ```
+
+### ChaCha20
+
+Specification: [RFC 8439](https://www.rfc-editor.org/rfc/rfc8439.txt)
+
+The `ChaCha20` algorithm can accept a key of length `32` byte and an `iv` of `12` byte.
+
+```typescript
+const k = HEX('')
+const iv = HEX('')
+const cipher = chacha20(k, iv)
+const c = cipher.encrypt(UTF8('mima-kit'))
+const m = cipher.decrypt(c)
+```
+
+`ChaCha20-Poly1305` is an authenticated encryption algorithm combining `ChaCha20` and `Poly1305`.
+The `chacha20poly1305` provided by `mima-kit` decouples the encryption and authentication parts, and you need to organize the relevant code yourself when using it.
+
+```typescript
+const k = HEX('')
+const iv = HEX('')
+const aad = UTF8('additional authenticated data')
+const cipher = chacha20poly1305(k, iv)
+const c = cipher.encrypt(UTF8('mima-kit'))
+const tag = cipher.sign(c, aad)
+const m = cipher.decrypt(c)
+const valid = cipher.verify(tag, c, aad)
+```
+
 
 ### Rabbit
 
