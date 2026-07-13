@@ -239,6 +239,10 @@ export function chacha20poly1305(key: Uint8Array, nonce: Uint8Array): ChaCha20Po
     auth_tag = u8(auth_tag)
     const T = sign(ciphertext, additional_data)
 
+    if (auth_tag.length !== T.length) {
+      return false
+    }
+
     // 恒定时间比较，防止时序攻击
     let diff = 0
     for (let i = 0; i < auth_tag.length; i++) {
