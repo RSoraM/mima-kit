@@ -82,17 +82,28 @@ export function pkcs1_es_oaep(key: RSAPublicKey | RSAPrivateKey, hash: Hash = sh
     const dbMask = mgf(seed, maskedDB.length)
     const DB = maskedDB.map((v, i) => v ^ dbMask[i])
     const lHash_ = DB.subarray(0, hLen)
-    if (lHash.some((v, i) => v !== lHash_[i])) {
+
+    // 恒定时间比较，防止时序攻击
+    let lh_diff = 0
+    for (let i = 0; i < lHash.length; i++) {
+      lh_diff |= lHash[i] ^ lHash_[i]
+    }
+    if (lh_diff !== 0) {
       throw new KitError('Decryption error')
     }
+
     const PS = DB.subarray(hLen)
     const mOffset = PS.indexOf(0x01)
-    if (mOffset === -1) {
+
+    // 恒定时间比较，防止时序攻击
+    let ps_diff = 0
+    for (let i = 0; i < mOffset; i++) {
+      ps_diff |= PS[i]
+    }
+    if (ps_diff !== 0 || mOffset === -1) {
       throw new KitError('Decryption error')
     }
-    if (PS.subarray(0, mOffset).some((v) => v !== 0x00)) {
-      throw new KitError('Decryption error')
-    }
+
     const M = PS.slice(mOffset + 1)
     return M
   }
