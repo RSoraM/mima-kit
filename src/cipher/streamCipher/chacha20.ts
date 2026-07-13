@@ -122,6 +122,9 @@ function initState(key: Uint8Array, nonce: Uint8Array, counter: number = 0): Uin
 // * ChaCha20 Algorithm
 
 function _chacha20(key: Uint8Array, nonce: Uint8Array, counter: number = 1) {
+  key = u8(key)
+  nonce = u8(nonce)
+
   // Initialize state
   const state = initState(key, nonce, counter)
 
@@ -197,12 +200,8 @@ export interface ChaCha20Poly1305AEAD {
  * ChaCha20-Poly1305 AEAD
  */
 export function chacha20poly1305(key: Uint8Array, nonce: Uint8Array): ChaCha20Poly1305AEAD {
-  if (key.byteLength !== 32) {
-    throw new KitError('ChaCha20-Poly1305 key must be 32 bytes')
-  }
-  if (nonce.byteLength !== 12) {
-    throw new KitError('ChaCha20-Poly1305 nonce must be 12 bytes')
-  }
+  key = u8(key)
+  nonce = u8(nonce)
 
   // Generate Poly1305 one-time key from first keystream block
   const polyKeyState = initState(key, nonce, 0)
@@ -212,6 +211,9 @@ export function chacha20poly1305(key: Uint8Array, nonce: Uint8Array): ChaCha20Po
   const cipher = _chacha20(key, nonce, 1)
 
   const sign = (ciphertext: Uint8Array, additional_data: Uint8Array = new Uint8Array(0)): U8 => {
+    ciphertext = u8(ciphertext)
+    additional_data = u8(additional_data)
+
     // Poly1305 input: aad || pad16(aad) || ciphertext || pad16(ciphertext) || len(aad) || len(ciphertext)
     const ctLen = ciphertext.length
     const aadLen = additional_data.length
@@ -234,7 +236,15 @@ export function chacha20poly1305(key: Uint8Array, nonce: Uint8Array): ChaCha20Po
   }
 
   const verify = (auth_tag: Uint8Array, ciphertext: Uint8Array, additional_data: Uint8Array = new Uint8Array(0)): boolean => {
-    return sign(ciphertext, additional_data).every((_, i) => _ === auth_tag[i])
+    auth_tag = u8(auth_tag)
+    const T = sign(ciphertext, additional_data)
+
+    // 恒定时间比较，防止时序攻击
+    let diff = 0
+    for (let i = 0; i < auth_tag.length; i++) {
+      diff |= auth_tag[i] ^ T[i]
+    }
+    return diff === 0
   }
 
   return {
