@@ -109,12 +109,13 @@ export function createPadding(doPad: DoPad, unPad: UnPad, description: PaddingIn
 /** PKCS7 填充方案 / Padding Scheme */
 export const PKCS7_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
+    M = u8(M)
     const pad = BLOCK_SIZE - (M.length % BLOCK_SIZE)
     return joinBuffer(M, new Uint8Array(pad).fill(pad))
   },
   (P: Uint8Array) => {
     const pad = P[P.length - 1]
-    return new U8(P.slice(0, P.length - pad))
+    return u8(P).slice(0, P.length - pad)
   },
   { ALGORITHM: 'PKCS#7' },
 )
@@ -122,6 +123,7 @@ export const PKCS7_PAD = createPadding(
 /** ISO/IEC 7816 填充方案 / Padding Scheme */
 export const ISO7816_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
+    M = u8(M)
     const BLOCK_TOTAL = Math.ceil((M.length + 1) / BLOCK_SIZE)
     const P = new U8(BLOCK_TOTAL * BLOCK_SIZE)
     P.set(M)
@@ -130,14 +132,11 @@ export const ISO7816_PAD = createPadding(
   },
   (P: Uint8Array) => {
     let i = P.length - 1
-    while (P[i] === 0x80) {
-      i = i - 1
-      if (i < 0) {
-        console.warn('This message may not be ISO/IEC 7816-4 padded')
-        return new U8()
-      }
+    while (i >= 0 && P[i] === 0) i--
+    if (i < 0 || P[i] !== 0x80) {
+      return new U8()
     }
-    return new U8(P.slice(0, i + 1))
+    return u8(P).slice(0, i)
   },
   { ALGORITHM: 'ISO/IEC 7816-4' },
 )
@@ -145,6 +144,7 @@ export const ISO7816_PAD = createPadding(
 /** ANSI X9.23 填充方案 / Padding Scheme */
 export const X923_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
+    M = u8(M)
     const BLOCK_TOTAL = Math.ceil((M.length + 1) / BLOCK_SIZE)
     const P = new U8(BLOCK_TOTAL * BLOCK_SIZE)
     P.set(M)
@@ -153,7 +153,7 @@ export const X923_PAD = createPadding(
   },
   (P: Uint8Array) => {
     const pad = P[P.length - 1]
-    return new U8(P.slice(0, P.length - pad))
+    return u8(P).slice(0, P.length - pad)
   },
   { ALGORITHM: 'ANSI X9.23' },
 )
@@ -161,26 +161,23 @@ export const X923_PAD = createPadding(
 /** Zero 零填充方案 / Padding Scheme */
 export const ZERO_PAD = createPadding(
   (M: Uint8Array, BLOCK_SIZE: number) => {
+    M = u8(M)
     const pad = BLOCK_SIZE - (M.length % BLOCK_SIZE)
     return joinBuffer(M, new Uint8Array(pad))
   },
   (P: Uint8Array) => {
     let i = P.length - 1
-    while (P[i] === 0) {
-      i = i - 1
-      if (i < 0) {
-        return new U8()
-      }
-    }
-    return new U8(P.slice(0, i + 1))
+    while (i >= 0 && P[i] === 0) i--
+    if (i < 0) return new U8()
+    return u8(P).slice(0, i + 1)
   },
   { ALGORITHM: 'Zero Padding' },
 )
 
 /** 无填充 / No Padding */
 export const NO_PAD = createPadding(
-  (M: Uint8Array) => new U8(M.slice(0)),
-  (P: Uint8Array) => new U8(P.slice(0)),
+  (M: Uint8Array) => u8(M).slice(0),
+  (P: Uint8Array) => u8(P).slice(0),
   { ALGORITHM: 'No Padding' },
 )
 
