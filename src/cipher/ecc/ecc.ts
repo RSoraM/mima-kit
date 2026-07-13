@@ -412,7 +412,14 @@ export function ECC(curve: FpWECParams | FpMECParams | FbPECParams | FbKECParams
       const KM = K.slice(cipher.KEY_SIZE, cipher.KEY_SIZE + mac.KEY_SIZE)
       const _cipher = cipher(KE, iv)
       // 校验
-      if (mac(KM, joinBuffer(C, S2)).some((v, i) => v !== D[i])) throw new KitError('ECIES Decryption failed')
+      const T = mac(KM, joinBuffer(C, S2))
+      if (T.length !== D.length) throw new KitError('ECIES Decryption failed')
+      // 恒定时间比较，防止时序攻击
+      let diff = 0
+      for (let i = 0; i < T.length; i++) {
+        diff |= T[i] ^ D[i]
+      }
+      if (diff !== 0) throw new KitError('ECIES Decryption failed')
 
       // 解密
       const M = _cipher.decrypt(C)
