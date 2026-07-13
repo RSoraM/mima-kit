@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, resizeBuffer, rotateL32, U8 } from '../../core/utils'
+import { KitError, resizeBuffer, rotateL32, u8 } from '../../core/utils'
 
 // * Constants
 
@@ -118,9 +118,9 @@ function _rabbit(key: Uint8Array, iv: Uint8Array) {
     return S
   }
   const cipher = (M: Uint8Array) => {
-    const BLOCK_TOTAL = Math.ceil(M.length >> 4) || 1
+    const BLOCK_TOTAL = (M.length + 15) >> 4 || 1
     S = squeeze(BLOCK_TOTAL)
-    return U8.from(M).map((_, i) => _ ^ S[i])
+    return u8(M).map((_, i) => _ ^ S[i])
   }
 
   return {
