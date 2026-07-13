@@ -1,5 +1,5 @@
 import { createCipher } from '../../core/cipher'
-import { KitError, U8 } from '../../core/utils'
+import { KitError, U8, u8 } from '../../core/utils'
 
 // * Constants
 
@@ -52,7 +52,7 @@ function RL128(x: Uint8Array, n: number) {
 
   // 规范化移位数
   const shift = n % x_bit
-  if (shift === 0) return U8.from(x)
+  if (shift === 0) return u8(x).slice(0)
 
   // 计算字节和位移
   const byte_shift = shift >> 3
@@ -82,7 +82,7 @@ function RR128(x: Uint8Array, n: number) {
 
   // 规范化移位数
   const shift = n % x_bit
-  if (shift === 0) U8.from(x)
+  if (shift === 0) return u8(x).slice(0)
 
   // 计算字节和位移
   const byte_shift = shift >> 3
