@@ -729,6 +729,7 @@ export const gcm = wrap<GCMMode>(
       let S = c.encrypt(IV)
       let SByte = 0
       const squeeze = (TByte: number) => {
+        TByte += BLOCK_SIZE
         if (SByte > TByte) return S
         const buffer = [S]
         while (SByte < TByte) {
@@ -765,7 +766,13 @@ export const gcm = wrap<GCMMode>(
         A = A ? u8(A) : undefined
         if (T.length !== tag_size) return false
         const T1 = sign(C, A)
-        return T.every((_, i) => _ === T1[i])
+
+        // 恒定时间比较，防止时序攻击
+        let diff = 0
+        for (let i = 0; i < tag_size; i++) {
+          diff |= T[i] ^ T1[i]
+        }
+        return diff === 0
       }
       return wrap({ encrypt, decrypt, sign, verify }, info)
     }
