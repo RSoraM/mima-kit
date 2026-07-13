@@ -468,7 +468,7 @@ export class U8 extends Uint8Array {
    * @param end The end of the specified portion of the array. This is exclusive of the element at the index 'end'.
    */
   slice(start?: number, end?: number): U8 {
-    const _ = super.slice(start, end)
+    const _ = new Uint8Array(this.subarray(start, end))
     return new U8(_.buffer, _.byteOffset, _.byteLength)
   }
 
@@ -604,7 +604,7 @@ export class Counter extends U8 {
       throw new KitError('Invalid counter offset')
     }
     // 如果不提供长度，则默认计数器长度为剩余长度
-    length = length || this.length - offset
+    length = length ?? this.length - offset
     if (length < 0 || offset + length > this.length) {
       throw new KitError('Invalid counter length')
     }
